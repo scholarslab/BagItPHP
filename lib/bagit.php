@@ -125,9 +125,9 @@ class BagIt {
     var $bagCompression;
 
     /**
-     * A list of all bag validation errors. Each entries is a two-element list 
+     * An array of all bag validation errors. Each entries is a two-element array 
      * containing the path of the file and the error message.
-     * @var list
+     * @var array
      */
     var $bagErrors;
 
@@ -200,7 +200,7 @@ class BagIt {
     }
 
     /**
-     * @return list A list of absolute paths for all of the files in the data 
+     * @return array An array of absolute paths for all of the files in the data 
      * directory.
      */
     function getBagContents() {
@@ -209,7 +209,7 @@ class BagIt {
     /**
      * @param boolean $validate If true, then it will run this->validate() to 
      * verify the integrity first. Default is false.
-     * @return list A list of all bag errors.
+     * @return array An array of all bag errors.
      */
     function getBagErrors($validate=false) {
     }
@@ -251,7 +251,7 @@ class BagIt {
     /**
      * Writes new entries in 'fetch.txt'.
      *
-     * @param list $fetchEntries A list containing the URL and path relative to 
+     * @param array $fetchEntries An array containing the URL and path relative to 
      * the data directory for file.
      * @param boolean $append If false, the current entries in 'fetch.txt' will 
      * be overwritten. Default is true.
