@@ -1,9 +1,41 @@
 <?php
 
+require_once 'lib/bagit.php';
+
+function rrmdir($dir) {
+    if (is_dir($dir)) {
+        $objects = scandir($dir);
+        foreach ($objects as $object) {
+            if ($object != "." && $object != "..") {
+                if (filetype($dir . "/" . $object) == "dir")
+                    rrmdir($dir . "/" . $object);
+                else
+                    unlink($dir . "/" . $object);
+            }
+        }
+        reset($objects);
+        rmdir($dir);
+    }
+}
+
+function tmpdir($prefix='bag') {
+    $dir = tempnam(sys_get_temp_dir(), $prefix);
+    unlink($dir);
+    mkdir($dir, 0700);
+    return $dir;
+}
+
 class BagPhpTest extends PHPUnit_Framework_TestCase {
+    var $tmpdir;
     var $bag;
 
     public function setUp() {
+        $this->tmpdir = tmpdir();
+        $this->bag = new BagIt($this->tmpdir);
+    }
+
+    public function tearDown() {
+        rrmdir($this->tmpdir);
     }
 
     public function testBagDirectory() {

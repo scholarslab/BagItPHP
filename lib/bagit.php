@@ -190,7 +190,7 @@ class BagIt {
      * @param string $hashAlgorithm The bag's checksum hash algorithm. Must be 
      * either 'sha1' or 'md5'.
      */
-    function setHashEncoding(hashAlgorithm) {
+    function setHashEncoding($hashAlgorithm) {
     }
 
     /**
