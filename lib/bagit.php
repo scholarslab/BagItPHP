@@ -94,26 +94,26 @@ class BagIt {
     var $bagInfoFile;
 
     /**
-     * A dictionary containing the manifest file contents.
-     * @var dictionary
+     * A dictionary array containing the manifest file contents.
+     * @var array
      */
     var $manifestContents;
 
     /**
-     * A dictionary containing the tagmanifest file contents.
-     * @var dictionary
+     * A dictionary array containing the tagmanifest file contents.
+     * @var array
      */
     var $tagManifestContents;
 
     /**
-     * A dictionary containing the 'fetch.txt' file contents.
-     * @var dictionary
+     * A dictionary array containing the 'fetch.txt' file contents.
+     * @var array
      */
     var $fetchContents;
 
     /**
-     * A dictionary containing the 'bag-info.txt' file contents.
-     * @var dictionary
+     * A dictionary array containing the 'bag-info.txt' file contents.
+     * @var array
      */
     var $bagInfoContents;
 
@@ -167,7 +167,7 @@ class BagIt {
     }
 
     /**
-     * @return dictionary A dictionary containing these keys: 'version', 
+     * @return array A dictionary array containing these keys: 'version', 
      * 'encoding', 'hash'.
      */
     function getBagInfo() {
