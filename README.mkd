@@ -1,0 +1,7 @@
+
+# BagIt PHP
+
+This is a PHP implementation of the [BagIt
+specification](https://wiki.ucop.edu/display/Curation/BagIt). Really, it is a
+port of [PyBagIt](https://github.com/ahankinson/pybagit/) for PHP.
+
