@@ -22,6 +22,13 @@
 class BagIt {
 
     /**
+     * The bag as passed into the constructor. This could be a directory or a 
+     * file name, and it may not exist.
+     * @var string
+     */
+    var $bag;
+
+    /**
      * Absolute path to the bag directory.
      * @var string
      */
@@ -150,13 +157,56 @@ class BagIt {
      * @param boolean $fetch If true, it will download all files in 
      * 'fetch.txt'. Default is false.
      */
-    function BagIt($bag, $validate=false, $extended=true, $fetch=false) {
+    public function BagIt($bag, $validate=false, $extended=true, $fetch=false) {
+        $this->bag = $bag;
+        $this->extended = $extended;
+        $this->hashEncoding = 'sha1';
+        $this->bagMajorVersion = 0;
+        $this->bagMinorVersion = 96;
+        $this->tagFileEncoding = 'UTF-8';
+        $this->dataDirectory = null;
+        $this->bagDirectory = null;
+        $this->bagitFile = null;
+        $this->manifestFile = null;
+        $this->tagManifestFile = null;
+        $this->fetchFile = null;
+        $this->bagInfoFile = null;
+        $this->manifestContents = null;
+        $this->tagManifestContents = null;
+        $this->fetchContents = null;
+        $this->bagInfoContents = null;
+        $this->bagCompression = null;
+        $this->bagErrors = array();
+
+        if (file_exists($this->bag)) {
+            $this->openBag();
+            return;
+        } else {
+            $this->createBag();
+        }
+
+        if ($validate) {
+            $this->validate();
+        }
+    }
+
+    /**
+     * Open an existing bag. This expects $bag to be set.
+     */
+    private function openBag() {
+    }
+
+    /**
+     * Create a new bag. This expects $bag to be set.
+     */
+    private function createBag() {
     }
 
     /**
      * @return boolean True if no validation errors occurred.
      */
-    function isValid() {
+    public function isValid() {
+        return (count($this->bagErrors) == 0);
     }
 
     /**

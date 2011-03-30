@@ -79,7 +79,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testBagMajorVersion() {
-        $this->assertEquals('0', $this->bag->bagMajorVersion);
+        $this->assertEquals(0, $this->bag->bagMajorVersion);
 
         $tmp2 = tmpdir();
         try {
@@ -89,7 +89,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 "Tag-File-Character-Encoding: ISO-8859-1\n"
             );
             $bag = new BagIt($tmp2);
-            $this->assertEquals('1', $bag->bagMajorVersion);
+            $this->assertEquals(1, $bag->bagMajorVersion);
         } catch (Exception $e) {
             rrmdir($tmp2);
             throw $e;
@@ -98,7 +98,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testBagMinorVersion() {
-        $this->assertEquals('96', $this->bag->bagMinorVersion);
+        $this->assertEquals(96, $this->bag->bagMinorVersion);
 
         $tmp2 = tmpdir();
         try {
@@ -108,7 +108,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 "Tag-File-Character-Encoding: ISO-8859-1\n"
             );
             $bag = new BagIt($tmp2);
-            $this->assertEquals('3', $bag->bagMinorVersion);
+            $this->assertEquals(3, $bag->bagMinorVersion);
         } catch (Exception $e) {
             rrmdir($tmp2);
             throw $e;
