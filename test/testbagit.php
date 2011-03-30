@@ -49,13 +49,13 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testExtended() {
-        $this->assertFalse($this->bag->extended);
+        $this->assertTrue($this->bag->extended);
 
         $tmp2 = tmpdir();
         try {
             touch($tmp2 . "/bag-info.txt");
-            $bag = new BagIt($tmp2);
-            $this->assertTrue($bag->extended);
+            $bag = new BagIt($tmp2, false, false);
+            $this->assertFalse($bag->extended);
         } catch (Exception $e) {
             rrmdir($tmp2);
             throw $e;
@@ -384,6 +384,36 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             throw $e;
         }
         rrmdir($tmp);
+    }
+
+    public function testConstructorInvalidBagitFile() {
+        $this->assertEquals(0, $this->bag->bagMajorVersion);
+
+        $tmp = tmpdir();
+        try {
+            file_put_contents(
+                $tmp . "/bagit.txt",
+                "BagIt-Version: 1.3\n" .
+                "Tag-File-Character-Encoding: ISO-8859-1\n"
+            );
+            $bag = new BagIt($tmp);
+
+            $this->assertFalse($bag->isValid());
+
+            $bagErrors = $bag->getBagErrors();
+            $seen = false;
+            foreach ($bagErrors as $err) {
+                if ($err[0] == 'bagit') {
+                    $seen = true;
+                }
+            }
+            $this->assertTrue($seen);
+
+        } catch (Exception $e) {
+            rrmdir($tmp2);
+            throw $e;
+        }
+        rrmdir($tmp2);
     }
 
     public function testIsValid() {

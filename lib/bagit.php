@@ -16,6 +16,32 @@
 
 
 /**
+ * This is a class for all bag exceptions.
+ * @package bagit
+ */
+class BagItException extends Exception {
+}
+
+/**
+ * This filters an array by items that match a regex.
+ * @param string $regex The regex to filter by.
+ * @param array $list The list of items to filter.
+ * @return The match objects for items from $list that match $regex.
+ */
+function filterArrayMatches($regex, $list) {
+    $ret = array();
+
+    foreach ($list as $item) {
+        $matches = array();
+        if (preg_match($regex, $item, $matches)) {
+            array_push($ret, $matches);
+        }
+    }
+
+    return $ret;
+}
+
+/**
  * This is the main class for interacting with a bag.
  * @package bagit
  */
@@ -191,18 +217,6 @@ class BagIt {
     }
 
     /**
-     * Open an existing bag. This expects $bag to be set.
-     */
-    private function openBag() {
-    }
-
-    /**
-     * Create a new bag. This expects $bag to be set.
-     */
-    private function createBag() {
-    }
-
-    /**
      * @return boolean True if no validation errors occurred.
      */
     public function isValid() {
@@ -316,6 +330,185 @@ class BagIt {
      * @param string $method Either 'tgz' or 'zip'. Default is 'tgz'.
      */
     function package($destination, $method) {
+    }
+
+    /**
+     * Open an existing bag. This expects $bag to be set.
+     */
+    private function openBag() {
+        if ($this->isCompressed()) {
+            $matches = array();
+            if (preg_match('/^(.*)\.(zip|tar\.gz|tgz)/', $this->bag, $matches)) {
+                $base = $matches[1];
+                $this->bagDirectory = $this->uncompressBag($base);
+            } else {
+                throw new BagItException(
+                    "Invalid compressed bag name: {$this->bag}."
+                );
+            }
+        } else {
+            $this->bagDirectory = realpath($this->bag);
+        }
+
+        try {
+            $this->bagitFile = $this->bagDirectory . '/bagit.txt';
+            $bFileContents = iconv(
+                $this->tagFileEncoding,
+                'UTF-8',
+                file_get_contents($this->bagitFile)
+            );
+
+            $versions = $this->parseVersionString($bFileContents);
+            $this->bagMajorVersion = $versions[0];
+            $this->bagMinorVersion = $versions[1];
+
+            $this->tagFileEncoding = $this->parseEncodingString($bFileContents);
+
+        } catch (Exception $e) {
+            array_push(
+                $this->bagErrors,
+                array('bagit', 'Error reading the bagit.txt file.')
+            );
+        }
+
+        $ls = scandir($this->bagDirectory);
+        if (count($ls) > 0) {
+            $manifests = filterArrayMatches('/^manifest-(sha1|md5)\.txt$/', $ls);
+            if (count($manifests) > 0) {
+                $this->hashEncoding = strtolower($manifests[0][1]);
+                $this->manifestFile = "{$this->bagDirectory}/{$manifests[0][0]}";
+                $this->readManifestToArray();
+            }
+
+            $this->dataDirectory = "{$this->bagDirectory}/data";
+
+            $manifests = filterArrayMatches(
+                '/^tagmanifest-(sha1|md5)\.txt$/',
+                $ls
+            );
+            if (count($manifests) > 0) {
+                $this->tagManifestFile = "{$this->bagDirectory}/{$manifests[0][0]}";
+                $this->readManifestToArray('t');
+            }
+
+            if (file_exists("{$this->bagDirectory}/fetch.txt")) {
+                $this->fetchFile = "{$this->bagDirectory}/fetch.txt";
+                $this->readFetchToArray();
+            }
+
+            if (file_exists("{$this->bagDirectory}/bag-info.txt")) {
+                $this->bagInfoFile = "{$this->bagDirectory}/bag-info.txt";
+                $this->readBagInfoToArray();
+            }
+        }
+    }
+
+    /**
+     * Create a new bag. This expects $bag to be set.
+     */
+    private function createBag() {
+        $cwd = getcwd();
+
+        $this->bagDirectory = realpath($this->bag);
+        mkdir($this->bagDirectory);
+
+        $this->dataDirectory = $this->bagDirectory . '/data';
+        mkdir($this->dataDirectory);
+
+        $versionId = "BagIt-Version: {$this->bagMajorVersion}.{$this->bagMinorVersion}\n";
+        $encoding = "Tag-File-Character-Encoding: {$this->tagFileEncoding}\n";
+
+        $this->bagitFile = $this->bagDirectory . '/bagit.txt';
+        $this->manifestFile = $this->bagDirectory .
+            "/manifest-{$this->hashEncoding}.txt";
+
+        file_put_contents(
+            $this->bagitFile,
+            iconv('UTF-8', $this->tagFileEncoding, $versionId . $encoding)
+        );
+
+        touch($this->manifestFile);
+        $this->readManifestToArray();
+
+        if ($this->extended) {
+            $this->tagManifestFile = $this->bagDirectory .
+                "tagmanifest-{$this->hashEncoding}.txt";
+
+            touch($this->tagManifestFile);
+            $this->readManifestToArray('t');
+
+            $this->fetchFile = $this->bagDirectory . '/fetch.txt';
+            touch($this->fetchFile);
+            $this->readFetchToArray();
+
+            $this->bagInfoFile = $this->bagDirectory . '/bag-info.txt';
+            touch($this->bagInfoFile);
+            $this->readBagInfoToArray();
+        }
+
+    }
+
+    /**
+     * This reads the manifest file into manifestContents.
+     * @param string $mode The type of manifest to read. <code>t</code> means 
+     * reading a tagmanifest file.
+     */
+    private function readManifestToArray($mode='') {
+        $prefix = $mode == 't' ? 'tag' : '';
+
+        array_push(
+            $this->bagErrors,
+            array('manifest', "Error reading {$prefix}manifest file.")
+        );
+    }
+
+    /**
+     * This reads the fetch.txt file into an array list.
+     */
+    private function readFetchToArray() {
+        array_push(
+            $this->bagErrors,
+            array('fetch', 'Error reading fetch file.')
+        );
+    }
+
+    /**
+     * This reads the bag-info.txt file into an array dictionary.
+     */
+    private function readBagInfoToArray() {
+        array_push(
+            $this->bagErrors,
+            array('baginfo', 'Error reading bag info file.')
+        );
+    }
+
+    /**
+     * Returns true if this is a compressed bag.
+     */
+    private function isCompressed() {
+    }
+
+    /**
+     * This uncompresses a bag.
+     * @return The bagDirectory.
+     */
+    private function uncompressBag() {
+    }
+
+    /**
+     * This parses the version string from the bagit.txt file.
+     * @param string $bagitFileContents The contents of the bagit file.
+     * @return A two-item array containing the version string as integers.
+     */
+    private function parseVersionString($bagitFileContents) {
+    }
+
+    /**
+     * This parses the encoding string from the bagit.txt file.
+     * @param string $bagitFileContents The contents of the bagit file.
+     * @return The encoding.
+     */
+    private function parseEncodingString($bagitFileContents) {
     }
 
 }
