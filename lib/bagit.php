@@ -218,7 +218,7 @@ class BagIt {
      * Runs the bag validator on the contents of the bag. This verifies the presence of required 
      * files and folders and verifies the checksum for each file.
      *
-     * @exception If there are validation errors, this will throw an exception.
+     * For the results of validation, check isValid() and getBagErrors().
      */
     function validate() {
     }
@@ -245,7 +245,7 @@ class BagIt {
      * @param boolean $validate If true, then it also calls update() and 
      * validate().
      */
-    function fetch($validate) {
+    function fetch($validate=false) {
     }
 
     /**
