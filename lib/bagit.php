@@ -15,6 +15,9 @@
  */
 
 
+include 'Archive/Tar.php';
+
+
 /**
  * This is a class for all bag exceptions.
  * @package bagit
@@ -39,6 +42,17 @@ function filterArrayMatches($regex, $list) {
     }
 
     return $ret;
+}
+
+/**
+ * This tests whether a string ends with another string.
+ * @param string $main The primary string to test.
+ * @param string $suffix The string to test against the end of the other.
+ * @return True if $suffix occurs at the end of $main.
+ */
+function endsWith($main, $suffix) {
+    $len = strlen($suffix);
+    return substr_compare($main, $suffix, -$len, $len) === 0;
 }
 
 /**
@@ -483,16 +497,52 @@ class BagIt {
     }
 
     /**
-     * Returns true if this is a compressed bag.
+     * @return True if this is a compressed bag.
      */
     private function isCompressed() {
+        if (is_dir($this->bag)) {
+            return false;
+        } else {
+            $bag = strtolower($this->bag);
+            if (endsWith($bag, '.zip')) {
+                $this->bagCompression = 'zip';
+                return true;
+            } else if (endsWith($bag, '.tar.gz') || endsWith($bag, '.tgz')) {
+                $this->bagCompression = 'tgz';
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * This uncompresses a bag.
+     * @param string $bagBase The base name for the Bag It directory.
      * @return The bagDirectory.
      */
-    private function uncompressBag() {
+    private function uncompressBag($bagBase) {
+        $dir = tempnam(sys_get_temp_dir(), 'bagit_');
+        unlink($dir);
+        mkdir($dir, 0700);
+
+        $dir = "{$dir}/{$bagBase}";
+
+        if ($this->bagCompression == 'zip') {
+            $zip = new ZipArchive();
+            $zip->open($this->bag);
+            $zip->extractTo($dir);
+
+        } else if ($this->bagCompression == 'tgz') {
+            $tar = new Archive_Tar($this->bag, 'gz');
+            $tar->extract($dir);
+
+        } else {
+            throw new BagItException(
+                "Invalid bag compression format: {$this->bagCompression}."
+            );
+        }
+
+        return $dir;
     }
 
     /**
@@ -501,6 +551,16 @@ class BagIt {
      * @return A two-item array containing the version string as integers.
      */
     private function parseVersionString($bagitFileContents) {
+        $matches = array();
+        $success = preg_match(
+            '/BagIt-Version: (\d+)\.(\d+)/i',
+            $bagitFileContents,
+            $matches
+        );
+
+        if ($success) {
+            return array((int)$matches[1], (int)$matches[2]);
+        }
     }
 
     /**
@@ -509,6 +569,16 @@ class BagIt {
      * @return The encoding.
      */
     private function parseEncodingString($bagitFileContents) {
+        $matches = array();
+        $success = preg_match(
+            '/Tag-File-Character-Encoding: (.*)/i',
+            $bagitFileContents,
+            $matches
+        );
+
+        if ($success && count($matches) > 0) {
+            return $matches[0][1];
+        }
     }
 
 }

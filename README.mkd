@@ -5,3 +5,9 @@ This is a PHP implementation of the [BagIt
 specification](https://wiki.ucop.edu/display/Curation/BagIt). Really, it is a
 port of [PyBagIt](https://github.com/ahankinson/pybagit/) for PHP.
 
+## Dependencies
+
+You'll need to have these installed to use this:
+
+ * Archive\_Tar (http://pear.php.net/package/Archive\_Tar)
+

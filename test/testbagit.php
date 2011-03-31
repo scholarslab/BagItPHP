@@ -306,7 +306,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testBagCompression() {
-        $this->assertEquals("tgz", $this->bag->bagCompression);
+        $this->assertNull($this->bag->bagCompression);
     }
 
     public function testBagErrors() {
@@ -414,6 +414,60 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             throw $e;
         }
         rrmdir($tmp2);
+    }
+
+    private function _testSampleBag($bag) {
+        $this->assertTrue($bag->isValid());
+
+        // Testing what's in the bag (relativize the paths).
+        $stripLen = strlen($bag->bagDirectory) + 1;
+        $ls = $bag->getBagContents();
+        for ($i=0, $lsLen=count($ls); $i<$lsLen; $i++) {
+            $ls[$i] = substr($ls[$i], $stripLen);
+        }
+        $this->assertContains('data/imgs/109x109xcoins1-150x150.png', $ls);
+        $this->assertContains('data/imgs/109x109xprosody.png', $ls);
+        $this->assertContains('data/imgs/110x108xmetaphor1.png', $ls);
+        $this->assertContains('data/imgs/fellows1-150x150.png', $ls);
+        $this->assertContains('data/imgs/fibtriangle-110x110.pjg', $ls);
+        $this->assertContains('data/imgs/uvalib.png', $ls);
+        $this->assertContains('data/README.txt', $ls);
+
+        // Testing the checksums.
+        $this->assertEquals('547b21e9c710f562d448a6cd7d32f8257b04e561', $this->manifestContents['data/imgs/109x109xcoins1-150x150.jpg']);
+        $this->assertEquals('fba552acae866d24fb143fef0ddb24efc49b097a', $this->manifestContents['data/imgs/109x109xprosody.png']);
+        $this->assertEquals('4beed314513ad81e1f5fad42672a3b1bd3a018ea', $this->manifestContents['data/imgs/110x108xmetaphor1.png']);
+        $this->assertEquals('4372383348c55775966bb1deeeb2b758b197e2a1', $this->manifestContents['data/imgs/fellows1-150x150.png']);
+        $this->assertEquals('b8593e2b3c2fa3756d2b206a90c7259967ff6650', $this->manifestContents['data/imgs/fibtriangle-110x110.jpg']);
+        $this->assertEquals('aec60202453733a976433833c9d408a449f136b3', $this->manifestContents['data/imgs/uvalib.png']);
+        $this->assertEquals('0de174b95ebacc2d91b0839cb2874b2e8f604b98', $this->manifestContents['data/README.txt']);
+
+        // Testing the fetch file.
+        $this->assertEquals('http://www.scholarslab.org', $this->fetchContents['data/index.html']);
+    }
+
+    public function testConstructorDir() {
+        $bagDir = __DIR__ . '/TestBag';
+        $bag = new BagIt($bagDir);
+
+        $this->assertNull($bag->bagCompression);
+        $this->_testSampleBag($bag);
+    }
+
+    public function testConstructorZip() {
+        $bagZip = __DIR__ . '/TestBag.zip';
+        $bag = new BagIt($bagZip);
+
+        $this->assertEquals('zip', $bag->bagCompression);
+        $this->_testSampleBag($bag);
+    }
+
+    public function testConstructorTGz() {
+        $bagTar = __DIR__ . '/TestBag.tgz';
+        $bag = new BagIt($bagTar);
+
+        $this->assertEquals('tgz', $bag->bagCompression);
+        $this->_testSampleBag($bag);
     }
 
     public function testIsValid() {
