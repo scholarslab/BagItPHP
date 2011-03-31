@@ -491,13 +491,22 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testIsValid() {
-        $this->assertTrue($this->bag->isValid());
-        $this->bag->validate();
+        // Because the bagit.txt file is missing, this starts off as invalid.
         $this->assertFalse($this->bag->isValid());
     }
 
     public function testIsExtended() {
         $this->assertTrue($this->bag->isExtended());
+
+        $tmp = tmpdir();
+        try {
+            $bag = new BagIt($tmp, false, false);
+            $this->assertFalse($bag->isExtended());
+        } catch (Exception $e) {
+            rrmdir($tmp);
+            throw $e;
+        }
+        rrmdir($tmp);
 
         $tmp = tmpdir();
         try {
@@ -508,39 +517,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 "Bag-size: very, very small\n"
             );
             $bag = new BagIt($tmp, false, false);
-            $this->assertTrue($this->bag->isExtended());
-        } catch (Exception $e) {
-            rrmdir($tmp);
-            throw $e;
-        }
-        rrmdir($tmp);
-
-        $tmp = tmpdir();
-        try {
-            touch($tmp . '/fetch.txt');
-            $bag = new BagIt($tmp, false, false);
-            $this->assertTrue($this->bag->isExtended());
-        } catch (Exception $e) {
-            rrmdir($tmp);
-            throw $e;
-        }
-        rrmdir($tmp);
-
-        $tmp = tmpdir();
-        try {
-            touch($tmp . '/tagmanifest-sha1.txt');
-            $bag = new BagIt($tmp, false, false);
-            $this->assertTrue($this->bag->isExtended());
-        } catch (Exception $e) {
-            rrmdir($tmp);
-            throw $e;
-        }
-        rrmdir($tmp);
-
-        $tmp = tmpdir();
-        try {
-            $bag = new BagIt($tmp, false, false);
-            $this->assertFalse($this->bag->isExtended());
+            $this->assertFalse($bag->isExtended());
         } catch (Exception $e) {
             rrmdir($tmp);
             throw $e;
