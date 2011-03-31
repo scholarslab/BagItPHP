@@ -262,12 +262,14 @@ class BagIt {
      * @return string The absolute path to the bag's data directory.
      */
     function getDataDirectory() {
+        return $this->dataDirectory;
     }
 
     /**
      * @return string The bag's checksum encoding scheme.
      */
     function getHashEncoding() {
+        return $this->hashEncoding;
     }
 
     /**
@@ -297,6 +299,10 @@ class BagIt {
      * @return array An array of all bag errors.
      */
     function getBagErrors($validate=false) {
+        if ($validate) {
+            $this->validate();
+        }
+        return $this->bagErrors;
     }
 
     /**
@@ -453,8 +459,8 @@ class BagIt {
     private function createBag() {
         $cwd = getcwd();
 
+        mkdir($this->bag);
         $this->bagDirectory = realpath($this->bag);
-        mkdir($this->bagDirectory);
 
         $this->dataDirectory = $this->bagDirectory . '/data';
         mkdir($this->dataDirectory);

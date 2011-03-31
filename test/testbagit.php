@@ -27,7 +27,6 @@ function rrmdir($dir) {
 function tmpdir($prefix='bag') {
     $dir = tempnam(sys_get_temp_dir(), $prefix);
     unlink($dir);
-    mkdir($dir, 0700);
     return $dir;
 }
 
@@ -71,6 +70,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp2 = tmpdir();
         try {
+            mkdir($tmp2);
             touch($tmp2 . "/bag-info.txt");
             $bag = new BagIt($tmp2, false, false);
             $this->assertFalse($bag->extended);
@@ -86,6 +86,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp2 = tmpdir();
         try {
+            mkdir($tmp2);
             touch($tmp2 . "/manifest-md5.txt");
             $bag = new BagIt($tmp2);
             $this->assertEquals('md5', $bag->hashEncoding);
@@ -101,6 +102,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp2 = tmpdir();
         try {
+            mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/bagit.txt",
                 "BagIt-Version: 1.3\n" .
@@ -120,6 +122,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp2 = tmpdir();
         try {
+            mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/bagit.txt",
                 "BagIt-Version: 1.3\n" .
@@ -139,6 +142,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp2 = tmpdir();
         try {
+            mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/bagit.txt",
                 "BagIt-Version: 1.3\n" .
@@ -168,7 +172,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         );
         $this->assertFileExists($this->bag->bagitFile);
         $this->assertEquals(
-            "BagId-Version: 0.96\n" .
+            "BagIt-Version: 0.96\n" .
             "Tag-File-Character-Encoding: UTF-8\n",
             file_get_contents($this->bag->bagitFile)
         );
@@ -183,6 +187,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp2 = tmpdir();
         try {
+            mkdir($tmp2);
             touch($tmp2 . "/manifest-md5.txt");
             $bag = new BagIt($tmp2);
             $this->assertEquals(
@@ -199,23 +204,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testTagManifestFile() {
         $this->assertEquals(
             $this->tmpdir . "/tagmanifest-sha1.txt",
-            $this->bag->manifestFile
+            $this->bag->tagManifestFile
         );
         $this->assertFileExists($this->bag->manifestFile);
-
-        $tmp2 = tmpdir();
-        try {
-            touch($tmp2 . "/tagmanifest-md5.txt");
-            $bag = new BagIt($tmp2);
-            $this->assertEquals(
-                $tmp2 . "/tagmanifest-md5.txt",
-                $bag->tagManifestFile
-            );
-        } catch (Exception $e) {
-            rrmdir($tmp2);
-            throw $e;
-        }
-        rrmdir($tmp2);
     }
 
     public function testFetchFile() {
@@ -239,6 +230,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp2 = tmpdir();
         try {
+            mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/manifest-sha1.txt",
                 "CHECK1 File-1\n" .
@@ -260,6 +252,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp2 = tmpdir();
         try {
+            mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/tagmanifest-sha1.txt",
                 "CHECK1 File-1\n" .
@@ -281,6 +274,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp2 = tmpdir();
         try {
+            mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/fetch.txt",
                 "http://www.google.com - google/index.html\n" .
@@ -302,6 +296,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp2 = tmpdir();
         try {
+            mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/bag-info.txt",
                 "Source-organization: University of Virginia Alderman Library\n" .
@@ -370,6 +365,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testConstructorFetch() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             file_put_contents(
                 $tmp . "/fetch.txt",
                 "http://www.google.com - google/index.html\n" .
@@ -390,6 +386,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             file_put_contents(
                 $tmp . "/fetch.txt",
                 "http://www.google.com - google/index.html\n" .
@@ -410,6 +407,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             file_put_contents(
                 $tmp . "/bagit.txt",
                 "BagIt-Version: 1.3\n" .
@@ -510,6 +508,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             file_put_contents(
                 $tmp . "/bag-info.txt",
                 "Source-organization: University of Virginia Alderman Library\n" .
@@ -575,6 +574,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             file_put_contents(
                 $tmp . "/data/something.txt",
                 "Source-organization: University of Virginia Alderman Library\n" .
@@ -621,6 +621,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testValidateMissingDataFile() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             file_put_contents(
                 $tmp . "/manifest-sha1.txt",
                 "CHECKSUM data/missing.txt\n"
@@ -644,6 +645,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testValidateChecksum() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             file_put_contents(
                 $tmp . "/manifest-sha1.txt",
                 "CHECKSUM data/missing.txt\n"
@@ -686,6 +688,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testUpdateSanitize() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             mkdir($tmp . '/data');
             touch($tmp . '/data/has space');
             touch($tmp . '/data/PRN');
@@ -719,6 +722,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testUpdateChecksums() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             file_put_contents(
                 $tmp . "/manifest-sha1.txt",
                 "CHECKSUM data/missing.txt\n"
@@ -750,6 +754,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testUpdateNewFiles() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
                 $tmp . '/data/missing.txt',
@@ -777,6 +782,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testUpdateDeletedFiles() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             file_put_contents(
                 $tmp . "/manifest-sha1.txt",
                 "CHECKSUM data/missing.txt\n"
@@ -818,6 +824,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testFetch() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
                 $tmp . '/data/missing.txt',
@@ -848,6 +855,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testAddFetchEntries() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
                 $tmp . '/data/missing.txt',
@@ -895,6 +903,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testAddFetchEntriesReplace() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
                 $tmp . '/data/missing.txt',
@@ -934,6 +943,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     public function testPackage() {
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
                 $tmp . '/data/missing.txt',
