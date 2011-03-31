@@ -329,7 +329,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
     public function testBagErrors() {
         $this->assertInternalType('array', $this->bag->bagErrors);
-        $this->assertEquals(0, count($this->bag->bagErrors));
+        // There's an error reading the bagit file. It doesn't exist.
+        $this->assertEquals(1, count($this->bag->bagErrors));
     }
 
     public function testConstructorValidate() {
@@ -990,7 +991,6 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         }
         rrmdir($tmp);
     }
-
 }
 
 ?>

@@ -250,6 +250,12 @@ class BagIt {
      * 'encoding', 'hash'.
      */
     function getBagInfo() {
+        $info = array(
+            'version'  => "{$this->bagMajorVersion}.{$this->bagMinorVersion}",
+            'encoding' => $this->tagFileEncoding,
+            'hash'     => $this->hashEncoding
+        );
+        return $info;
     }
 
     /**
@@ -685,8 +691,8 @@ class BagIt {
             $matches
         );
 
-        if ($success && count($matches) > 0) {
-            return $matches[0][1];
+        if ($success) {
+            return $matches[1];
         }
     }
 
