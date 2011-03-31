@@ -31,6 +31,24 @@ function tmpdir($prefix='bag') {
     return $dir;
 }
 
+/**
+ * This tests whether the item is in a list of lists at the given key.
+ * @param array $array The array of arrays to search.
+ * @param integer/string $key The key to search under.
+ * @param anything $item The item to search for.
+ * @return True if $item is in a subarray under $key.
+ */
+function seenAtKey($array, $key, $item) {
+    $keys = array_keys($array);
+    for ($x=0, $len=count($keys); $x<$len; $x++) {
+        $sub = $array[$keys[$x]];
+        if ($sub[$key] == $item) {
+            return true;
+        }
+    }
+    return false;
+}
+
 class BagPhpTest extends PHPUnit_Framework_TestCase {
     var $tmpdir;
     var $bag;
@@ -270,8 +288,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             );
             $bag = new BagIt($tmp2);
             $this->assertNotNull($bag->fetchContents);
-            $this->assertArrayHasKey("google/index.html", $bag->fetchContents);
-            $this->assertArrayHasKey("yahoo/index.html", $bag->fetchContents);
+            $this->assertEquals("http://www.google.com", $bag->fetchContents[0]['url']);
+            $this->assertEquals("http://www.yahoo.com", $bag->fetchContents[0]['url']);
         } catch (Exception $e) {
             rrmdir($tmp2);
             throw $e;
@@ -292,12 +310,12 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             );
             $bag = new BagIt($tmp2);
             $this->assertNotNull($bag->bagInfoContents);
-            $this->assertArrayHasKey("source-organization", $bag->fetchContents);
-            $this->assertArrayHasKey("contact-name", $bag->fetchContents);
-            $this->assertArrayHasKey("bag-size", $bag->fetchContents);
-            $this->assertArrayHasKey("Bag-size", $bag->fetchContents);
-            $this->assertArrayHasKey("BAG-SIZE", $bag->fetchContents);
-            $this->assertFalse(array_key_exists("bag-date", $bag->fetchContents));
+            $this->assertArrayHasKey("source-organization", $bag->bagInfoContents);
+            $this->assertArrayHasKey("contact-name", $bag->bagInfoContents);
+            $this->assertArrayHasKey("bag-size", $bag->bagInfoContents);
+            $this->assertArrayHasKey("Bag-size", $bag->bagInfoContents);
+            $this->assertArrayHasKey("BAG-SIZE", $bag->bagInfoContents);
+            $this->assertFalse(array_key_exists("bag-date", $bag->bagInfoContents));
         } catch (Exception $e) {
             rrmdir($tmp2);
             throw $e;
@@ -443,7 +461,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals('0de174b95ebacc2d91b0839cb2874b2e8f604b98', $this->manifestContents['data/README.txt']);
 
         // Testing the fetch file.
-        $this->assertEquals('http://www.scholarslab.org', $this->fetchContents['data/index.html']);
+        $this->assertEquals('http://www.scholarslab.org', $this->fetchContents[0]['url']);
+        $this->assertEquals('data/index.html', $this->fetchContents[0]['filename']);
     }
 
     public function testConstructorDir() {
@@ -875,17 +894,17 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 file_get_contents($tmp . '/fetch.txt')
             );
 
-            $this->assertArrayHasKey(
+            $this->assertEquals(
                 'http://www.google.com',
-                $bag->fetchContents
+                $bag->fetchContents[0]['url']
             );
             $this->assertArrayHasKey(
                 'http://www.yahoo.com',
-                $bag->fetchContents
+                $bag->fetchContents[1]['url']
             );
             $this->assertArrayHasKey(
                 'http://www.scholarslab.com',
-                $bag->fetchContents
+                $bag->fetchContents[2]['url']
             );
 
         } catch (Exception $e) {
@@ -921,15 +940,10 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 file_get_contents($tmp . '/fetch.txt')
             );
 
-            $this->assertFalse(
-                array_key_exists('http://www.google.com', $bag->fetchContents)
-            );
-            $this->assertFalse(
-                array_key_exists('http://www.yahoo.com', $bag->fetchContents)
-            );
-            $this->assertArrayHasKey(
+            $this->assertEquals(1, count($bag->fetchContents));
+            $this->assertEquals(
                 'http://www.scholarslab.com',
-                $bag->fetchContents
+                $bag->fetchContents[0]['url']
             );
 
         } catch (Exception $e) {

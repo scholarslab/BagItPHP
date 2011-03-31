@@ -242,6 +242,7 @@ class BagIt {
      * 'bag-info.txt', 'fetch.txt', or 'tagmanifest-{sha1,md5}.txt'.
      */
     function isExtended() {
+        return $this->extended;
     }
 
     /**
@@ -347,6 +348,33 @@ class BagIt {
     }
 
     /**
+     * Read the data in the file and convert it from tagFileEncoding into 
+     * UTF-8.
+     * @param string $filename The name of the file to read.
+     * @return string The contents of the file as UTF-8.
+     */
+    private function readFile($filename) {
+        $data = iconv(
+            $this->tagFileEncoding,
+            'UTF-8',
+            file_get_contents($filename)
+        );
+        return $data;
+    }
+
+    /**
+     * Read the data in the file and convert it from tagFileEncoding into 
+     * UTF-8, then split the lines.
+     * @param string $filename The name of the file to read.
+     * @return array The lines in the file.
+     */
+    private function readLines($filename) {
+        $data = $this->readFile($filename);
+        $lines = preg_split('/[\n\r]*/', $data, null, PREG_SPLIT_NO_EMPTY);
+        return $lines;
+    }
+
+    /**
      * Open an existing bag. This expects $bag to be set.
      */
     private function openBag() {
@@ -366,11 +394,7 @@ class BagIt {
 
         try {
             $this->bagitFile = $this->bagDirectory . '/bagit.txt';
-            $bFileContents = iconv(
-                $this->tagFileEncoding,
-                'UTF-8',
-                file_get_contents($this->bagitFile)
-            );
+            $bFileContents = $this->readFile($this->bagitFile);
 
             $versions = $this->parseVersionString($bFileContents);
             $this->bagMajorVersion = $versions[0];
@@ -465,35 +489,112 @@ class BagIt {
     /**
      * This reads the manifest file into manifestContents.
      * @param string $mode The type of manifest to read. <code>t</code> means 
-     * reading a tagmanifest file.
+     * reading a tagmanifest file. Default is <code>d</code>.
      */
-    private function readManifestToArray($mode='') {
-        $prefix = $mode == 't' ? 'tag' : '';
+    private function readManifestToArray($mode='d') {
+        if ($this->hashEncoding == 'sha1') {
+            $hashLen = 40;
+        } else {
+            $hashLen = 32;
+        }
 
-        array_push(
-            $this->bagErrors,
-            array('manifest', "Error reading {$prefix}manifest file.")
-        );
+        $this->updateManifestFileNames();
+
+        if ($mode == 'd') {
+            $filename = $this->manifestFile;
+        } else if ($mode == 't') {
+            $filename = $this->tagManifestFile;
+        }
+
+        try {
+            $lines = $this->readLines($filename);
+
+            $manifest = array();
+            foreach ($lines as $line) {
+                $hash = substr($line, 0, $hashLen);
+                $payload = trim(substr($line, $hashLen));
+
+                if (count($payload) > 0) {
+                    $manifest[$payload] = $hash;
+                }
+            }
+
+            if ($mode == 'd') {
+                $this->manifestContents = $manifest;
+            } else {
+                $this->tagManifestContents = $manifest;
+            }
+
+        } catch (Exception $e) {
+            array_push(
+                $this->bagErrors,
+                array('manifest', "Error reading $filename.")
+            );
+        }
     }
 
     /**
      * This reads the fetch.txt file into an array list.
+     *
+     * This sets $this->fetchContents to a sequential array of arrays with the 
+     * keys 'url', 'length', and 'filename'.
      */
     private function readFetchToArray() {
-        array_push(
-            $this->bagErrors,
-            array('fetch', 'Error reading fetch file.')
-        );
+        $lines = $this->readLines($this->fetchFile);
+        $fetch = array();
+
+        try {
+            foreach ($lines as $line) {
+                $fields = preg_split('/\s+/', $line);
+                if (count($fields) == 3) {
+                    array_push(
+                        $fetch,
+                        array('url' => $fields[0],
+                              'length' => $fields[1],
+                              'filename' => $fields[2])
+                    );
+                }
+            }
+            $this->fetchContents = $fetch;
+
+        } catch (Exception $e) {
+            array_push(
+                $this->bagErrors,
+                array('fetch', 'Error reading fetch file.')
+            );
+        }
     }
 
     /**
      * This reads the bag-info.txt file into an array dictionary.
      */
     private function readBagInfoToArray() {
-        array_push(
-            $this->bagErrors,
-            array('baginfo', 'Error reading bag info file.')
-        );
+        $lines = $this->readLines($this->bagInfoFile);
+        $bagInfo = array();
+
+        try {
+            $prevKey = null;
+            foreach ($lines as $line) {
+                if (count($line) == 0) {
+                    // Skip.
+                } else if ($line[0] == ' ' || $line[1] == '\t') {
+                    // Continued line.
+                    $bagInfo[$prevKey] = $bagInfo[$prevKey] . ' ' . trim($line);
+                } else {
+                    list($key, $val) = preg_split('/:\s*/', $line, 1);
+                    $bagInfo[$key] = trim($val);
+                    $prevKey = $key;
+                }
+            }
+
+            $this->bagInfoContents = $bagInfo;
+
+        } catch (Exception $e) {
+            array_push(
+                $this->bagErrors,
+                array('baginfo', 'Error reading bag info file.')
+            );
+        }
     }
 
     /**
@@ -513,6 +614,14 @@ class BagIt {
             }
         }
         return false;
+    }
+
+    /**
+     * This makes sure that the manifest file names have the correct encoding.
+     */
+    private function updateManifestFileNames() {
+        $this->manifestFile = "{$this->bagDirectory}/manifest-{$this->hashEncoding}.txt";
+        $this->tagManifestFile = "{$this->bagDirectory}/tagmanifest-{$this->hashEncoding}.txt";
     }
 
     /**
