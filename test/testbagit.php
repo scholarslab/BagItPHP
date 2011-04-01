@@ -389,8 +389,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/fetch.txt",
-                "http://www.google.com - google/index.html\n" .
-                "http://www.yahoo.com - yahoo/index.html\n"
+                "http://www.google.com - data/google/index.html\n" .
+                "http://www.yahoo.com - data/yahoo/index.html\n"
             );
             $bag = new BagIt($tmp, false, true, true);
             $this->assertFileExists($bag->dataDirectory . '/google/index.html');
@@ -804,13 +804,13 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             );
             $bag = new BagIt($tmp);
 
-            $this->assertFalse(is_file($tmp . 'data/google/index.html'));
-            $this->assertFalse(is_file($tmp . 'data/yahoo/index.html'));
+            $this->assertFalse(is_file($tmp . '/data/google/index.html'));
+            $this->assertFalse(is_file($tmp . '/data/yahoo/index.html'));
 
             $bag->fetch();
 
-            $this->assertFileExists($tmp . 'data/google/index.html');
-            $this->assertFileExists($tmp . 'data/yahoo/index.html');
+            $this->assertFileExists($tmp . '/data/google/index.html');
+            $this->assertFileExists($tmp . '/data/yahoo/index.html');
 
         } catch (Exception $e) {
             rrmdir($tmp);
