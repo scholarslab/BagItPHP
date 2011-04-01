@@ -278,6 +278,16 @@ class BagIt {
      * either 'sha1' or 'md5'.
      */
     function setHashEncoding($hashAlgorithm) {
+        $hashAlgorithm = strtolower($hashAlgorithm);
+        if ($hashAlgorithm != 'md5' && $hashAlgorithm != 'sha1') {
+            throw new Exception("Invalid hash algorithim: '$hashAlgorithm'.");
+        }
+
+        $this->hashAlgorithm = $hashAlgorithm;
+        $this->manifestFile = "{$this->bagDirectory}/manifest-{$hashAlgorithm}.txt";
+        if ($this->tagManifestFile != null) {
+            $this->tagManifestFile = "{$this->bagDirectory}/tagManifest-{$hashAlgorithm}.txt";
+        }
     }
 
     /**
