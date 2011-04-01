@@ -56,6 +56,39 @@ function endsWith($main, $suffix) {
 }
 
 /**
+ * This recursively lists the contents of a directory. This doesn't return 
+ * hidden files.
+ * @param string $dirname The name of the directory to list.
+ * @return array A list of files in the directory.
+ */
+function rls($dir) {
+    $ls = array();
+    $queue = array($dir);
+
+    while (count($queue) > 0) {
+        $current = array_shift($queue);
+
+        foreach (scandir($current) as $item) {
+            if ($item[0] != '.') {
+                $filename = "$current/$item";
+
+                switch (filetype($filename)) {
+                case 'file':
+                    array_push($ls, $filename);
+                    break;
+                case 'dir':
+                    array_push($queue, $filename);
+                    break;
+                }
+            }
+        }
+    }
+
+    return $ls;
+}
+
+
+/**
  * This is the main class for interacting with a bag.
  * @package bagit
  */
@@ -291,16 +324,11 @@ class BagIt {
     }
 
     /**
-     * Prints a number of bag properties.
-     */
-    function showBagInfo() {
-    }
-
-    /**
      * @return array An array of absolute paths for all of the files in the data 
      * directory.
      */
     function getBagContents() {
+        return rls($this->dataDirectory);
     }
 
     /**
