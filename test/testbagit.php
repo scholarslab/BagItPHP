@@ -960,9 +960,11 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
             $bag->package($tmp . '/../bagtmp1.tgz', 'tgz');
             $this->assertFileExists($tmp . '/../bagtmp1.tgz');
+            rename("{$tmp}/../bagtmp1.tgz", "/tmp/bagtmp1.tgz");
 
             $bag->package($tmp . '/../bagtmp2', 'tgz');
             $this->assertFileExists($tmp . '/../bagtmp2.tgz');
+            rename("{$tmp}/../bagtmp2.tgz", "/tmp/bagtmp2.tgz");
 
             // TODO: Test the contents of the package.
 

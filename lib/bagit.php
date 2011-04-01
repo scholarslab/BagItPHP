@@ -565,7 +565,18 @@ class BagIt {
      * @param string $destination The file to put the bag into.
      * @param string $method Either 'tgz' or 'zip'. Default is 'tgz'.
      */
-    function package($destination, $method) {
+    function package($destination, $method='tgz') {
+        $method = strtolower($method);
+        if ($method != 'zip' && $method != 'tgz') {
+            throw new BagItException("Invalid compression method: '$method'.");
+        }
+
+        if (substr_compare($destination, ".$method", -4, 4, true) != 0) {
+            $destination = "$destination.$method";
+        }
+
+        $package = $this->compressBag($method);
+        rename($package, $destination);
     }
 
     /**
@@ -701,10 +712,7 @@ class BagIt {
         $this->manifestFile = $this->bagDirectory .
             "/manifest-{$this->hashEncoding}.txt";
 
-        file_put_contents(
-            $this->bagitFile,
-            iconv('UTF-8', $this->tagFileEncoding, $versionId . $encoding)
-        );
+        $this->writeFile($this->bagitFile, $versionId . $encoding);
 
         touch($this->manifestFile);
         $this->readManifestToArray();
@@ -724,7 +732,6 @@ class BagIt {
             touch($this->bagInfoFile);
             $this->readBagInfoToArray();
         }
-
     }
 
     /**
@@ -949,6 +956,41 @@ class BagIt {
         }
 
         return "$dir/$bagBase";
+    }
+
+    /**
+     * This compresses the bag into a new file.
+     * @param string $method Either 'tgz' or 'zip'. Default is 'tgz'.
+     * @return string The file name for the file.
+     */
+    private function compressBag($method='tgz') {
+        $output = tempnam(sys_get_temp_dir(), 'bagit_');
+        unlink($output);
+
+        $base = basename($this->bagDirectory);
+        $stripLen = strlen($this->bagDirectory) - strlen($base);
+
+        if ($method == 'zip') {
+            $zip = new ZipArchive();
+            $zip->open($output, ZIPARCHIVE::CREATE);
+
+            foreach (rls($this->bagDirectory) as $file) {
+                $zip->addFile($file, substr($file, $stripLen));
+            }
+
+            $zip->close();
+
+        } else if ($method == 'tgz') {
+            $tar = new Archive_Tar($output, 'gz');
+            $tar->createModify(
+                $this->bagDirectory,
+                $base,
+                $this->bagDirectory
+            );
+
+        }
+
+        return $output;
     }
 
     /**
