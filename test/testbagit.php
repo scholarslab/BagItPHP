@@ -674,8 +674,6 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
             $this->assertFalse(is_file($tmp . '/data/backup~'));
 
-            $this->assertFalse(is_file($tmp . '/data/.hidden'));
-
             $this->assertFalse(is_file($tmp . '/data/quoted "yep" quoted'));
             $this->assertFileExists($tmp . '/data/quoted_yep_quoted');
 
@@ -697,17 +695,17 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             mkdir($tmp . '/data');
             file_put_contents(
                 $tmp . '/data/missing.txt',
-                'This space intentionally left blank.\n'
+                "This space intentionally left blank.\n"
             );
             $bag = new BagIt($tmp);
             $bag->update();
 
             $this->assertEquals(
-                '47659743df0b95772f7ca1b8b6f2ad2dcb196cfd data/missing.txt\n',
+                "a5c44171ca6618c6ee24c3f3f3019df8df09a2e0 data/missing.txt\n",
                 file_get_contents($tmp . '/manifest-sha1.txt')
             );
             $this->assertEquals(
-                '47659743df0b95772f7ca1b8b6f2ad2dcb196cfd',
+                'a5c44171ca6618c6ee24c3f3f3019df8df09a2e0',
                 $bag->manifestContents['data/missing.txt']
             );
 
@@ -725,17 +723,17 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             mkdir($tmp . '/data');
             file_put_contents(
                 $tmp . '/data/missing.txt',
-                'This space intentionally left blank.\n'
+                "This space intentionally left blank.\n"
             );
             $bag = new BagIt($tmp);
             $bag->update();
 
             $this->assertEquals(
-                '47659743df0b95772f7ca1b8b6f2ad2dcb196cfd data/missing.txt\n',
+                "a5c44171ca6618c6ee24c3f3f3019df8df09a2e0 data/missing.txt\n",
                 file_get_contents($tmp . '/manifest-sha1.txt')
             );
             $this->assertEquals(
-                '47659743df0b95772f7ca1b8b6f2ad2dcb196cfd',
+                'a5c44171ca6618c6ee24c3f3f3019df8df09a2e0',
                 $bag->manifestContents['data/missing.txt']
             );
 
@@ -762,7 +760,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 '',
                 file_get_contents($tmp . '/manifest-sha1.txt')
             );
-            $this->assertFalse(array_key_exists('data/missing.txt'));
+            $this->assertFalse(
+                array_key_exists('data/missing.txt', $bag->manifestContents)
+            );
 
         } catch (Exception $e) {
             rrmdir($tmp);

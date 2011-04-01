@@ -417,6 +417,72 @@ class BagIt {
      * </ul>
      */
     function update() {
+        $this->updateManifestFileNames();
+
+        # Clean up old manifest files. We'll regenerate them later.
+        $ls = scandir($this->bagDirectory);
+        $dataManifests = filterArrayMatches(
+            '/^manifest-(sha1|md5)\.txt$/',
+            $ls
+        );
+        $tagManifests = filterArrayMatches(
+            '/^tagmanifest-(sha1|md5)\.txt$/',
+            $ls
+        );
+        $oldManifests = array_merge($dataManifests, $tagManifests);
+        foreach ($oldManifests as $manifest) {
+            unlink("{$this->bagDirectory}/{$manifest[0]}");
+        }
+
+        # Sanitize files in the data directory.
+        $dataFiles = rls($this->dataDirectory);
+        foreach ($dataFiles as $dataFile) {
+            $baseName = basename($dataFile);
+            if ($baseName == '.' || $baseName == '..') {
+                continue;
+            }
+
+            $cleanName = $this->sanitizeFileName($baseName);
+            if ($cleanName === null) {
+                unlink($dataFile);
+            } else if ($baseName != $cleanName) {
+                $dirName = dirname($dataFile);
+                rename($dataFile, "$dirName/$cleanName");
+            }
+        }
+
+        # Checksum files in the data directory.
+        $stripLen = strlen($this->bagDirectory) + 1;
+        $dataFiles = rls($this->dataDirectory);
+        $csums = array();
+        foreach ($dataFiles as $dataFile) {
+            $hash = $this->calculateChecksum($dataFile);
+            $shortName = substr($dataFile, $stripLen);
+            array_push($csums, "$hash $shortName\n");
+        }
+        $this->writeFile($this->manifestFile, implode('', $csums));
+
+        # Re-load manifestContents.
+        $this->readManifestToArray();
+
+        # Clean out any previous tag manifest contents.
+        $this->tagManifestContents = array();
+        $tagFiles = array('bagit.txt', 'bag-info.txt', 'fetch.txt',
+                          basename($this->manifestFile));
+        foreach ($tagFiles as $tagFile) {
+            $fullPath = "{$this->bagDirectory}/$tagFile";
+            if (! file_exists($fullPath)) {
+                touch($fullPath);
+            }
+            $hash = $this->calculateChecksum($fullPath);
+            $this->tagManifestContents[$tagFile] = $hash;
+        }
+
+        # Write out the tag manifest.
+        $this->writeArrayToManifest('t');
+
+        # And re-read it.
+        $this->readManifestToArray('t');
     }
 
     /**
@@ -460,6 +526,18 @@ class BagIt {
             file_get_contents($filename)
         );
         return $data;
+    }
+
+    /**
+     * Write the data in the file, converting it from UTF-8 to tagFileEncoding.
+     * @param string $filename The name of the file to write to.
+     * @param string $data The data to write.
+     */
+    private function writeFile($filename, $data) {
+        file_put_contents(
+            $filename,
+            iconv('UTF-8', $this->tagFileEncoding, $data)
+        );
     }
 
     /**
@@ -651,6 +729,30 @@ class BagIt {
     }
 
     /**
+     * This writes the manifest information from the internal array into the 
+     * manifest file.
+     * @param string $mode This is the type of manifest to use. 't' is for the 
+     * tag manifest. The default is 'd'.
+     */
+    private function writeArrayToManifest($mode='d') {
+        $this->updateManifestFileNames();
+
+        if ($mode == 'd') {
+            $filename = $this->manifestFile;
+            $contents = $this->manifestContents;
+        } else if ($mode == 't') {
+            $filename = $this->tagManifestFile;
+            $contents = $this->tagManifestContents;
+        }
+
+        $lines = array();
+        foreach ($contents as $key => $val) {
+            array_push($lines, "$val $key\n");
+        }
+        $this->writeFile($filename, join('', $lines));
+    }
+
+    /**
      * This reads the fetch.txt file into an array list.
      *
      * This sets $this->fetchContents to a sequential array of arrays with the 
@@ -819,6 +921,35 @@ class BagIt {
         if ($success) {
             return $matches[1];
         }
+    }
+
+    /**
+     * This cleans up the file name.
+     * @param string $filename The file name to clean up.
+     * @return string The cleaned up file name.
+     */
+    private function sanitizeFileName($filename) {
+        # White space => underscores.
+        $filename = preg_replace('/\s+/', '_', $filename);
+
+        # Remove some characters.
+        $filename = preg_replace(
+            '/\.{2}|[~\^@!#%&\*\/:\'?\"<>\|]/',
+            '',
+            $filename
+        );
+
+        $forbidden = '/^(CON|PRN|AUX|NUL|COM1|COM2|COM3|COM4|COM5| ' .
+            'COM6|COM7|COM8|COM9|LPT1|LPT2|LPT3|LPT4|LPT5|LPT6|' .
+            'LPT7|LPT8|LPT9)$/';
+
+        if (preg_match($forbidden, $filename)) {
+            $filename = strtolower($filename);
+            $suffix = substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 12);
+            $filename = "{$filename}_{$suffix}";
+        }
+
+        return $filename;
     }
 
 }
