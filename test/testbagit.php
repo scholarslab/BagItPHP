@@ -233,8 +233,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/manifest-sha1.txt",
-                "CHECK1 File-1\n" .
-                "CHECK2 File-2\n"
+                "0123456789012345678901234567890123456789 File-1\n" .
+                "0123456789012345678901234567890123456789 File-2\n"
             );
             $bag = new BagIt($tmp2);
             $this->assertNotNull($bag->manifestContents);
@@ -255,8 +255,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/tagmanifest-sha1.txt",
-                "CHECK1 File-1\n" .
-                "CHECK2 File-2\n"
+                "0123456789012345678901234567890123456789 File-1\n" .
+                "0123456789012345678901234567890123456789 File-2\n"
             );
             $bag = new BagIt($tmp2);
             $this->assertNotNull($bag->tagManifestContents);
@@ -283,7 +283,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $bag = new BagIt($tmp2);
             $this->assertNotNull($bag->fetchContents);
             $this->assertEquals("http://www.google.com", $bag->fetchContents[0]['url']);
-            $this->assertEquals("http://www.yahoo.com", $bag->fetchContents[0]['url']);
+            $this->assertEquals("http://www.yahoo.com", $bag->fetchContents[1]['url']);
         } catch (Exception $e) {
             rrmdir($tmp2);
             throw $e;
@@ -324,8 +324,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
     public function testBagErrors() {
         $this->assertInternalType('array', $this->bag->bagErrors);
-        // There's an error reading the bagit file. It doesn't exist.
-        $this->assertEquals(1, count($this->bag->bagErrors));
+        $this->assertEquals(0, count($this->bag->bagErrors));
     }
 
     public function testConstructorValidate() {
@@ -334,6 +333,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
         $tmp = tmpdir();
         try {
+            mkdir($tmp);
             $bag = new BagIt($tmp, true);
             $this->assertFalse($bag->isValid());
             $this->assertGreaterThan(0, count($bag->bagErrors));
@@ -410,22 +410,13 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/bagit.txt",
-                "BagIt-Version: 1.3\n" .
+                "BagIt-Version: a.b\n" .
                 "Tag-File-Character-Encoding: ISO-8859-1\n"
             );
             $bag = new BagIt($tmp);
-
             $this->assertFalse($bag->isValid());
-
             $bagErrors = $bag->getBagErrors();
-            $seen = false;
-            foreach ($bagErrors as $err) {
-                if ($err[0] == 'bagit') {
-                    $seen = true;
-                }
-            }
-            $this->assertTrue($seen);
-
+            $this->assertTrue(seenAtKey($bagErrors, 0, 'bagit'));
         } catch (Exception $e) {
             rrmdir($tmp2);
             throw $e;
@@ -442,26 +433,26 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         for ($i=0, $lsLen=count($ls); $i<$lsLen; $i++) {
             $ls[$i] = substr($ls[$i], $stripLen);
         }
-        $this->assertContains('data/imgs/109x109xcoins1-150x150.png', $ls);
+        $this->assertContains('data/imgs/109x109xcoins1-150x150.jpg', $ls);
         $this->assertContains('data/imgs/109x109xprosody.png', $ls);
         $this->assertContains('data/imgs/110x108xmetaphor1.png', $ls);
         $this->assertContains('data/imgs/fellows1-150x150.png', $ls);
-        $this->assertContains('data/imgs/fibtriangle-110x110.pjg', $ls);
+        $this->assertContains('data/imgs/fibtriangle-110x110.jpg', $ls);
         $this->assertContains('data/imgs/uvalib.png', $ls);
         $this->assertContains('data/README.txt', $ls);
 
         // Testing the checksums.
-        $this->assertEquals('547b21e9c710f562d448a6cd7d32f8257b04e561', $this->manifestContents['data/imgs/109x109xcoins1-150x150.jpg']);
-        $this->assertEquals('fba552acae866d24fb143fef0ddb24efc49b097a', $this->manifestContents['data/imgs/109x109xprosody.png']);
-        $this->assertEquals('4beed314513ad81e1f5fad42672a3b1bd3a018ea', $this->manifestContents['data/imgs/110x108xmetaphor1.png']);
-        $this->assertEquals('4372383348c55775966bb1deeeb2b758b197e2a1', $this->manifestContents['data/imgs/fellows1-150x150.png']);
-        $this->assertEquals('b8593e2b3c2fa3756d2b206a90c7259967ff6650', $this->manifestContents['data/imgs/fibtriangle-110x110.jpg']);
-        $this->assertEquals('aec60202453733a976433833c9d408a449f136b3', $this->manifestContents['data/imgs/uvalib.png']);
-        $this->assertEquals('0de174b95ebacc2d91b0839cb2874b2e8f604b98', $this->manifestContents['data/README.txt']);
+        $this->assertEquals('547b21e9c710f562d448a6cd7d32f8257b04e561', $bag->manifestContents['data/imgs/109x109xcoins1-150x150.jpg']);
+        $this->assertEquals('fba552acae866d24fb143fef0ddb24efc49b097a', $bag->manifestContents['data/imgs/109x109xprosody.png']);
+        $this->assertEquals('4beed314513ad81e1f5fad42672a3b1bd3a018ea', $bag->manifestContents['data/imgs/110x108xmetaphor1.png']);
+        $this->assertEquals('4372383348c55775966bb1deeeb2b758b197e2a1', $bag->manifestContents['data/imgs/fellows1-150x150.png']);
+        $this->assertEquals('b8593e2b3c2fa3756d2b206a90c7259967ff6650', $bag->manifestContents['data/imgs/fibtriangle-110x110.jpg']);
+        $this->assertEquals('aec60202453733a976433833c9d408a449f136b3', $bag->manifestContents['data/imgs/uvalib.png']);
+        $this->assertEquals('0de174b95ebacc2d91b0839cb2874b2e8f604b98', $bag->manifestContents['data/README.txt']);
 
         // Testing the fetch file.
-        $this->assertEquals('http://www.scholarslab.org', $this->fetchContents[0]['url']);
-        $this->assertEquals('data/index.html', $this->fetchContents[0]['filename']);
+        $this->assertEquals('http://www.scholarslab.org', $bag->fetchContents[0]['url']);
+        $this->assertEquals('data/index.html', $bag->fetchContents[0]['filename']);
     }
 
     public function testConstructorDir() {
@@ -489,8 +480,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testIsValid() {
-        // Because the bagit.txt file is missing, this starts off as invalid.
-        $this->assertFalse($this->bag->isValid());
+        $this->assertTrue($this->bag->isValid());
     }
 
     public function testIsExtended() {
@@ -575,6 +565,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $tmp = tmpdir();
         try {
             mkdir($tmp);
+            mkdir("$tmp/data");
             file_put_contents(
                 $tmp . "/data/something.txt",
                 "Source-organization: University of Virginia Alderman Library\n" .
@@ -598,48 +589,26 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertInternalType('array', $bagErrors);
         $this->assertEquals(0, count($bagErrors));
 
+        rrmdir($this->bag->dataDirectory);
         $this->bag->validate();
         $this->assertGreaterThan(0, count($this->bag->getBagErrors()));
     }
 
     public function testGetBagErrorsValidate() {
+        rrmdir($this->bag->dataDirectory);
         $bagErrors = $this->bag->getBagErrors(true);
         $this->assertInternalType('array', $bagErrors);
         $this->assertGreaterThan(0, count($bagErrors));
     }
 
     public function testValidateMissingBagFile() {
+        unlink($this->bag->bagitFile);
+
         $this->bag->validate();
         $bagErrors = $this->bag->getBagErrors();
 
         $this->assertFalse($this->bag->isValid());
-        $this->assertContains('Missing "bagit.txt" file.', $bagErrors);
-        $this->assertContains('Missing manifest file.', $bagErrors);
-        // TODO: Add other required files here.
-    }
-
-    public function testValidateMissingDataFile() {
-        $tmp = tmpdir();
-        try {
-            mkdir($tmp);
-            file_put_contents(
-                $tmp . "/manifest-sha1.txt",
-                "CHECKSUM data/missing.txt\n"
-            );
-            $bag = new BagIt($tmp);
-            $bag->validate();
-            $bagErrors = $bag->getBagErrors();
-
-            $this->assertFalse($bag->isValid());
-            $this->assertContains(
-                'Missing data file: "data/missing.txt".',
-                $bagErrors
-            );
-        } catch (Exception $e) {
-            rrmdir($tmp);
-            throw $e;
-        }
-        rrmdir($tmp);
+        $this->assertTrue(seenAtKey($bagErrors, 0, 'bagit.txt'));
     }
 
     public function testValidateChecksum() {
@@ -648,7 +617,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/manifest-sha1.txt",
-                "CHECKSUM data/missing.txt\n"
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa data/missing.txt\n"
             );
             mkdir($tmp . '/data');
             touch($tmp . '/data/missing.txt');
@@ -657,10 +626,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $bagErrors = $bag->getBagErrors();
 
             $this->assertFalse($bag->isValid());
-            $this->assertContains(
-                'Wrong SHA1 checksum for data file "data/missing.txt".',
-                $bagErrors
-            );
+            $this->assertTrue(seenAtKey($bagErrors, 0, 'data/missing.txt'));
+            $this->assertTrue(seenAtKey($bagErrors, 1, 'Checksum mismatch.'));
         } catch (Exception $e) {
             rrmdir($tmp);
             throw $e;
@@ -725,7 +692,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/manifest-sha1.txt",
-                "CHECKSUM data/missing.txt\n"
+                "abababababababababababababababababababab data/missing.txt\n"
             );
             mkdir($tmp . '/data');
             file_put_contents(
@@ -785,7 +752,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/manifest-sha1.txt",
-                "CHECKSUM data/missing.txt\n"
+                "abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd data/missing.txt\n"
             );
             mkdir($tmp . '/data');
             $bag = new BagIt($tmp);

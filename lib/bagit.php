@@ -253,7 +253,6 @@ class BagIt {
 
         if (file_exists($this->bag)) {
             $this->openBag();
-            return;
         } else {
             $this->createBag();
         }
@@ -316,7 +315,7 @@ class BagIt {
             throw new Exception("Invalid hash algorithim: '$hashAlgorithm'.");
         }
 
-        $this->hashAlgorithm = $hashAlgorithm;
+        $this->hashEncoding = $hashAlgorithm;
         $this->manifestFile = "{$this->bagDirectory}/manifest-{$hashAlgorithm}.txt";
         if ($this->tagManifestFile != null) {
             $this->tagManifestFile = "{$this->bagDirectory}/tagManifest-{$hashAlgorithm}.txt";
@@ -348,8 +347,59 @@ class BagIt {
      * files and folders and verifies the checksum for each file.
      *
      * For the results of validation, check isValid() and getBagErrors().
+     * @return array The list of bag errors.
      */
     function validate() {
+        $errors = array();
+
+        if (! file_exists($this->bagitFile)) {
+            array_push(
+                $errors,
+                array('bagit.txt', 'bagit.txt does not exist.')
+            );
+        }
+
+        if (! is_dir($this->dataDirectory)) {
+            array_push(
+                $errors,
+                array('data/', 'Data directory does not exist.')
+            );
+        }
+
+        if (! file_exists($this->manifestFile)) {
+            array_push(
+                $errors,
+                array("manifest-{$this->hashEncoding}",
+                      "manifest-{$this->hashEncoding}.txt does not exist.")
+            );
+        }
+
+        $stripLen = strlen($this->bagDirectory) + 1;
+        if (is_dir($this->dataDirectory) && file_exists($this->manifestFile)) {
+            foreach ($this->getBagContents() as $filename) {
+                $relname = substr($filename, $stripLen);
+                $expected = $this->manifestContents[$relname];
+                $actual = $this->calculateChecksum($filename);
+
+                if ($expected === null) {
+                    array_push(
+                        $errors,
+                        array($relname, 'File missing from manifest.')
+                    );
+                } else if ($expected != $actual) {
+                    array_push($errors, array($relname, 'Checksum mismatch.'));
+                }
+            }
+
+        } else {
+            array_push(
+                $errors,
+                array('checksum verification', 'Unable to verify manifest.')
+            );
+        }
+
+        $this->bagErrors = $errors;
+        return $this->bagErrors;
     }
 
     /**
@@ -420,7 +470,7 @@ class BagIt {
      */
     private function readLines($filename) {
         $data = $this->readFile($filename);
-        $lines = preg_split('/[\n\r]*/', $data, null, PREG_SPLIT_NO_EMPTY);
+        $lines = preg_split('/[\n\r]+/', $data, null, PREG_SPLIT_NO_EMPTY);
         return $lines;
     }
 
@@ -430,7 +480,12 @@ class BagIt {
     private function openBag() {
         if ($this->isCompressed()) {
             $matches = array();
-            if (preg_match('/^(.*)\.(zip|tar\.gz|tgz)/', $this->bag, $matches)) {
+            $success = preg_match(
+                '/^(.*)\.(zip|tar\.gz|tgz)/',
+                basename($this->bag),
+                $matches
+            );
+            if ($success) {
                 $base = $matches[1];
                 $this->bagDirectory = $this->uncompressBag($base);
             } else {
@@ -447,6 +502,9 @@ class BagIt {
             $bFileContents = $this->readFile($this->bagitFile);
 
             $versions = $this->parseVersionString($bFileContents);
+            if ($versions === null) {
+                throw new Exception();
+            }
             $this->bagMajorVersion = $versions[0];
             $this->bagMinorVersion = $versions[1];
 
@@ -520,7 +578,7 @@ class BagIt {
 
         if ($this->extended) {
             $this->tagManifestFile = $this->bagDirectory .
-                "tagmanifest-{$this->hashEncoding}.txt";
+                "/tagmanifest-{$this->hashEncoding}.txt";
 
             touch($this->tagManifestFile);
             $this->readManifestToArray('t');
@@ -534,6 +592,15 @@ class BagIt {
             $this->readBagInfoToArray();
         }
 
+    }
+
+    /**
+     * Create the checksum for a file.
+     * @param string $filename The file to generate a checksum for.
+     * @return string The checksum.
+     */
+    private function calculateChecksum($filename) {
+        return hash_file($this->hashEncoding, $filename);
     }
 
     /**
@@ -629,10 +696,21 @@ class BagIt {
                     // Skip.
                 } else if ($line[0] == ' ' || $line[1] == '\t') {
                     // Continued line.
-                    $bagInfo[$prevKey] = $bagInfo[$prevKey] . ' ' . trim($line);
+                    $val = $bagInfo[$prevKey] . ' ' . trim($line);
+                    $keys = array(
+                        $prevKey,
+                        strtolower($prevKey),
+                        strtoupper($prevKey)
+                    );
+                    foreach ($keys as $pk) {
+                        $bagInfo[$pk] = $val;
+                    }
                 } else {
-                    list($key, $val) = preg_split('/:\s*/', $line, 1);
-                    $bagInfo[$key] = trim($val);
+                    list($key, $val) = preg_split('/:\s*/', $line, 2);
+                    $val = trim($val);
+                    $bagInfo[$key] = $val;
+                    $bagInfo[strtolower($key)] = $val;
+                    $bagInfo[strtoupper($key)] = $val;
                     $prevKey = $key;
                 }
             }
@@ -684,8 +762,6 @@ class BagIt {
         unlink($dir);
         mkdir($dir, 0700);
 
-        $dir = "{$dir}/{$bagBase}";
-
         if ($this->bagCompression == 'zip') {
             $zip = new ZipArchive();
             $zip->open($this->bag);
@@ -701,7 +777,7 @@ class BagIt {
             );
         }
 
-        return $dir;
+        return "$dir/$bagBase";
     }
 
     /**
@@ -712,13 +788,18 @@ class BagIt {
     private function parseVersionString($bagitFileContents) {
         $matches = array();
         $success = preg_match(
-            '/BagIt-Version: (\d+)\.(\d+)/i',
+            "/BagIt-Version: (\d+)\.(\d+)/i",
             $bagitFileContents,
             $matches
         );
 
         if ($success) {
-            return array((int)$matches[1], (int)$matches[2]);
+            $major = (int)$matches[1];
+            $minor = (int)$matches[2];
+            if ($major === null || $minor === null) {
+                throw new Exception("Invalid bagit version: '{$matches[0]}'.");
+            }
+            return array($major, $minor);
         }
     }
 
