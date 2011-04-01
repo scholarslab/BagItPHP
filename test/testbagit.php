@@ -843,7 +843,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertEquals(
                 "http://www.google.com - data/google/index.html\n" .
                 "http://www.yahoo.com - data/yahoo/index.html\n" .
-                "http://www.scholarslab.org/ - data/scholarslab/index.html",
+                "http://www.scholarslab.org/ - data/scholarslab/index.html\n",
                 file_get_contents($tmp . '/fetch.txt')
             );
 
@@ -851,12 +851,12 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 'http://www.google.com',
                 $bag->fetchContents[0]['url']
             );
-            $this->assertArrayHasKey(
+            $this->assertEquals(
                 'http://www.yahoo.com',
                 $bag->fetchContents[1]['url']
             );
-            $this->assertArrayHasKey(
-                'http://www.scholarslab.com',
+            $this->assertEquals(
+                'http://www.scholarslab.org/',
                 $bag->fetchContents[2]['url']
             );
 
@@ -890,13 +890,13 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             );
 
             $this->assertEquals(
-                "http://www.scholarslab.org/ - data/scholarslab/index.html",
+                "http://www.scholarslab.org/ - data/scholarslab/index.html\n",
                 file_get_contents($tmp . '/fetch.txt')
             );
 
             $this->assertEquals(1, count($bag->fetchContents));
             $this->assertEquals(
-                'http://www.scholarslab.com',
+                'http://www.scholarslab.org/',
                 $bag->fetchContents[0]['url']
             );
 
@@ -907,7 +907,40 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         rrmdir($tmp);
     }
 
-    public function testPackage() {
+    public function testPackageZip() {
+        $tmp = tmpdir();
+        try {
+            mkdir($tmp);
+            mkdir($tmp . '/data');
+            file_put_contents(
+                $tmp . '/data/missing.txt',
+                'This space intentionally left blank.\n'
+            );
+            file_put_contents(
+                $tmp . "/fetch.txt",
+                "http://www.google.com - data/google/index.html\n" .
+                "http://www.yahoo.com - data/yahoo/index.html\n"
+            );
+            $bag = new BagIt($tmp);
+
+            $bag->update();
+
+            $bag->package($tmp . '/../bagtmp1.zip', 'zip');
+            $this->assertFileExists($tmp . '/../bagtmp1.zip');
+
+            $bag->package($tmp . '/../bagtmp2', 'zip');
+            $this->assertFileExists($tmp . '/../bagtmp2.zip');
+
+            // TODO: Test the contents of the package.
+
+        } catch (Exception $e) {
+            rrmdir($tmp);
+            throw $e;
+        }
+        rrmdir($tmp);
+    }
+
+    public function testPackageTGz() {
         $tmp = tmpdir();
         try {
             mkdir($tmp);
@@ -930,12 +963,6 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
             $bag->package($tmp . '/../bagtmp2', 'tgz');
             $this->assertFileExists($tmp . '/../bagtmp2.tgz');
-
-            $bag->package($tmp . '/../bagtmp1.zip', 'zip');
-            $this->assertFileExists($tmp . '/../bagtmp1.zip');
-
-            $bag->package($tmp . '/../bagtmp2', 'zip');
-            $this->assertFileExists($tmp . '/../bagtmp2.zip');
 
             // TODO: Test the contents of the package.
 

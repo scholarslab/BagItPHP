@@ -541,6 +541,22 @@ class BagIt {
      * be overwritten. Default is true.
      */
     function addFetchEntries($fetchEntries, $append=true) {
+        $fetches = array();
+        foreach ($fetchEntries as $fetch) {
+            list($url, $filename) = $fetch;
+            array_push(
+                $fetches,
+                array('url' => $url, 'length' => '-', 'filename' => $filename)
+            );
+        }
+
+        if ($append) {
+            $this->fetchContents = array_merge($this->fetchContents, $fetches);
+        } else {
+            $this->fetchContents = $fetches;
+        }
+
+        $this->writeArrayToFetch();
     }
 
     /**
@@ -821,6 +837,20 @@ class BagIt {
                 array('fetch', 'Error reading fetch file.')
             );
         }
+    }
+
+    /**
+     * This writes the data in fetchContents into fetchFile.
+     */
+    private function writeArrayToFetch() {
+        $lines = array();
+
+        foreach ($this->fetchContents as $fetch) {
+            $data = array($fetch['url'], $fetch['length'], $fetch['filename']);
+            array_push($lines, join(' ', $data) . "\n");
+        }
+
+        $this->writeFile($this->fetchFile, join('', $lines));
     }
 
     /**
