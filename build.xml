@@ -188,7 +188,7 @@
         </exec>
     </target>
 
-    <target name="phpcb" depends="setup" description="Generate the PHPCodeBrowser report">
+    <target name="phpcb" depends="setup, phpcs" description="Generate the PHPCodeBrowser report">
         <!--
             Visualize errors in your code from CodeSniffer and PhpUnit
 
