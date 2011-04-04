@@ -34,18 +34,23 @@ function tmpdir($prefix='bag') {
  * This abuses the unit test framework to do some use case testing.
  */
 class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase {
-    var $bags;
+    var $to_rm;
+
+    private function queueRm($dirname)
+    {
+        array_push($this->to_rm, $dirname);
+    }
 
     public function setUp()
     {
-        $this->bags = array();
+        $this->to_rm = array();
     }
 
     public function tearDown()
     {
-        foreach ($this->bags as $bag)
+        foreach ($this->to_rm as $dirname)
         {
-            rrmdir($bag->bagDirectory);
+            rrmdir($dirname);
         }
     }
 
@@ -65,11 +70,12 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase {
     {
         $tmpdir = tmpdir();
         mkdir($tmpdir);
+        $this->queueRm($tmpdir);
+
         $tmpbag = "$tmpdir/BagProducer";
 
         // 1. Create a new bag;
         $bag = new BagIt($tmpbag);
-        array_push($this->bags, $bag);
 
         $this->assertTrue($bag->isValid());
         $this->assertTrue($bag->isExtended());
@@ -85,15 +91,51 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals(0, count($bag->getBagErrors()));
 
         // 2. Add files to the bag;
+        $srcdir = __DIR__ . '/TestBag/data';
+        copy("$srcdir/README.txt", "{$bag->dataDirectory}/README.txt");
+
+        mkdir("{$bag->dataDirectory}/payloads");
+        copy(
+            "$srcdir/imgs/uvalib.png",
+            "{$bag->dataDirectory}/payloads/uvalib.png"
+        );
+        copy(
+            "$srcdir/imgs/fibtriangle-110x110.jpg",
+            "{$bag->dataDirectory}/payloads/fibtri.jpg"
+        );
 
         // 3. Add fetch entries;
+        $bag->addFetchEntries(
+            array(array('http://www.scholarslab.org/', 'data/index.html'))
+        );
 
         // 4. Update the bag; and
+        $bag->update();
 
         // 5. Package the bag.
+        $pkgfile = "$tmpdir/BagProducer.tgz";
+        $bag->package($pkgfile);
+
+        // Finally, we need to validate the contents of the package.
+        $dest = new BagIt($pkgfile);
+        // $this->queueRm($dest->bagDirectory);
+
+        // First, verify that the data files are correct.
+        $this->assertEquals(
+            "BagIt-Version: 0.96\n" .
+            "Tag-File-Character-Encoding: UTF-8\n",
+            file_get_contents($dest->bagitFile)
+        );
+
+        // Second, verify that everything was uncompressed OK.
+        $dest->validate();
+        $this->assertEquals(0, count($dest->bagErrors));
+
+        // Now, check that the file was fetched.
+        $dest->fetch();
+        $this->assertFileExists("{$dest->bagDirectory}/data/index.html");
 
     }
-
 
     /**
      * This is the use case for consuming a bag from someone else. The user 
