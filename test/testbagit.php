@@ -421,7 +421,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             rrmdir($tmp2);
             throw $e;
         }
-        rrmdir($tmp2);
+        rrmdir($tmp);
     }
 
     private function _testSampleBag($bag) {
