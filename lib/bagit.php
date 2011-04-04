@@ -377,43 +377,14 @@ class BagIt
     {
         $errors = array();
 
-        if (! file_exists($this->bagitFile)) {
-            array_push(
-                $errors,
-                array('bagit.txt', 'bagit.txt does not exist.')
-            );
-        }
-
-        if (! is_dir($this->dataDirectory)) {
-            array_push(
-                $errors,
-                array('data/', 'Data directory does not exist.')
-            );
-        }
-
-        if (! file_exists($this->manifestFile)) {
-            array_push(
-                $errors,
-                array("manifest-{$this->hashEncoding}",
-                      "manifest-{$this->hashEncoding}.txt does not exist.")
-            );
-        }
+        $this->validateExists($this->bagitFile, $errors);
+        $this->validateExists($this->dataDirectory, $errors);
+        $this->validateExists($this->manifestFile, $errors);
 
         $stripLen = strlen($this->bagDirectory) + 1;
         if (is_dir($this->dataDirectory) && file_exists($this->manifestFile)) {
             foreach ($this->getBagContents() as $filename) {
-                $relname = substr($filename, $stripLen);
-                $expected = $this->manifestContents[$relname];
-                $actual = $this->calculateChecksum($filename);
-
-                if ($expected === null) {
-                    array_push(
-                        $errors,
-                        array($relname, 'File missing from manifest.')
-                    );
-                } else if ($expected != $actual) {
-                    array_push($errors, array($relname, 'Checksum mismatch.'));
-                }
+                $this->validateChecksum($filename, $stripLen, $errors);
             }
 
         } else {
@@ -425,6 +396,54 @@ class BagIt
 
         $this->bagErrors = $errors;
         return $this->bagErrors;
+    }
+
+    /**
+     * This validates that a file or directory exists.
+     *
+     * @param string $filename The file name to check for.
+     * @param array $errors    The list of errors to add the message to, if the 
+     * file doesn't exist.
+     *
+     * @return boolean True if the file does exist; false otherwise.
+     */
+    private function validateExists($filename, &$errors)
+    {
+        if (! file_exists($filename))
+        {
+            $basename = basename($filename);
+            array_push(
+                $errors,
+                array($basename, "$basename does not exist.")
+            );
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * This validates a file's checksum.
+     *
+     * @param string $filename   The complete filename to check.
+     * @param integer $prefixLen The length of the prefix to strip off to get 
+     * the name of the file relative to the bag directory.
+     * @param errors             The list of errors to add messages to, if the 
+     * file doesn't validate.
+     */
+    private function validateChecksum($filename, $prefixLen, &$errors)
+    {
+        $relname = substr($filename, $prefixLen);
+        $expected = $this->manifestContents[$relname];
+        $actual = $this->calculateChecksum($filename);
+
+        if ($expected === null) {
+            array_push(
+                $errors,
+                array($relname, 'File missing from manifest.')
+            );
+        } else if ($expected != $actual) {
+            array_push($errors, array($relname, 'Checksum mismatch.'));
+        }
     }
 
     /**
