@@ -116,6 +116,9 @@
         <exec executable="phpunit" failonerror="true">
             <arg line="test/testbagit.php" />
         </exec>
+        <exec executable="phpunit" failonerror="true">
+            <arg line="test/testusecases.php" />
+        </exec>
     </target>
 
     <target name="pdepend" depends="setup" description="Create PHP_Depend Static Code Analysis report">
