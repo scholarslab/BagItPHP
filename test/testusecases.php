@@ -118,7 +118,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase {
 
         // Finally, we need to validate the contents of the package.
         $dest = new BagIt($pkgfile);
-        // $this->queueRm($dest->bagDirectory);
+        $this->queueRm($dest->bagDirectory);
 
         // First, verify that the data files are correct.
         $this->assertEquals(
@@ -143,6 +143,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase {
      *
      * <ol>
      * <li>Open the bag;</li>
+     * <li>Validate the downloaded contents;</li>
      * <li>Fetch on-line items in the bag;</li>
      * <li>Validate the bag's contents; and</li>
      * <li>Copy items from the bag onto the local disk.</li>
@@ -150,7 +151,55 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase {
      */
     public function testBagConsumer()
     {
-        $this->fail();
+        $srcbag = __DIR__ . '/TestBag.tgz';
+
+        // 1. Open the bag;
+        $bag = new BagIt($srcbag);
+        $this->queueRm($bag->bagDirectory);
+
+        $this->assertTrue($bag->isValid());
+        $this->assertTrue($bag->isExtended());
+
+        $bagInfo = $bag->getBagInfo();
+        $this->assertEquals('0.96',  $bagInfo['version']);
+        $this->assertEquals('UTF-8', $bagInfo['encoding']);
+        $this->assertEquals('sha1',  $bagInfo['hash']);
+
+        $this->assertEquals('sha1', $bag->getHashEncoding());
+        $this->assertEquals(7, count($bag->getBagContents()));
+        $this->assertEquals(0, count($bag->getBagErrors()));
+
+        // 2. Validate the downloaded contents;
+        $bag->validate();
+        $this->assertEquals(0, count($bag->getBagErrors()));
+
+        // 3. Fetch on-line items in the bag;
+        $bag->fetch(true);
+        $this->assertEquals(8, count($bag->getBagContents()));
+
+        // 4. Validate the bag's contents; and
+        $this->assertEquals(0, count($bag->getBagErrors()));
+
+        // 5. Copy items from the bag onto the local disk.
+        $tmpdir = tmpdir();
+        mkdir($tmpdir);
+        $this->queueRm($tmpdir);
+
+        foreach ($bag->getBagContents() as $bagFile)
+        {
+            $basename = basename($bagFile);
+            copy($bagFile, "$tmpdir/$basename");
+        }
+
+        $this->assertEquals(
+            count($bag->getBagContents()) + 2,
+            count(scandir($tmpdir))
+        );
+        $this->assertEquals(
+            count($bag->manifestContents) + 2,
+            count(scandir($tmpdir))
+        );
+
     }
 
 }
