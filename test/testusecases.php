@@ -3,34 +3,6 @@
 require_once 'lib/bagit.php';
 
 /**
- * Recursively delete a directory.
- */
-function rrmdir($dir) {
-    if (is_dir($dir)) {
-        $objects = scandir($dir);
-        foreach ($objects as $object) {
-            if ($object != "." && $object != "..") {
-                if (filetype($dir . "/" . $object) == "dir")
-                    rrmdir($dir . "/" . $object);
-                else
-                    unlink($dir . "/" . $object);
-            }
-        }
-        reset($objects);
-        rmdir($dir);
-    }
-}
-
-/**
- * Get a temporary name and create a directory there.
- */
-function tmpdir($prefix='bag') {
-    $dir = tempnam(sys_get_temp_dir(), $prefix);
-    unlink($dir);
-    return $dir;
-}
-
-/**
  * This abuses the unit test framework to do some use case testing.
  */
 class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase {

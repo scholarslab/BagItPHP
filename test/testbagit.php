@@ -1,52 +1,7 @@
 <?php
 
 require_once 'lib/bagit.php';
-
-/**
- * Recursively delete a directory.
- */
-function rrmdir($dir) {
-    if (is_dir($dir)) {
-        $objects = scandir($dir);
-        foreach ($objects as $object) {
-            if ($object != "." && $object != "..") {
-                if (filetype($dir . "/" . $object) == "dir")
-                    rrmdir($dir . "/" . $object);
-                else
-                    unlink($dir . "/" . $object);
-            }
-        }
-        reset($objects);
-        rmdir($dir);
-    }
-}
-
-/**
- * Get a temporary name and create a directory there.
- */
-function tmpdir($prefix='bag') {
-    $dir = tempnam(sys_get_temp_dir(), $prefix);
-    unlink($dir);
-    return $dir;
-}
-
-/**
- * This tests whether the item is in a list of lists at the given key.
- * @param array $array The array of arrays to search.
- * @param integer/string $key The key to search under.
- * @param anything $item The item to search for.
- * @return True if $item is in a subarray under $key.
- */
-function seenAtKey($array, $key, $item) {
-    $keys = array_keys($array);
-    for ($x=0, $len=count($keys); $x<$len; $x++) {
-        $sub = $array[$keys[$x]];
-        if ($sub[$key] == $item) {
-            return true;
-        }
-    }
-    return false;
-}
+require_once 'lib/bagit_utils.php';
 
 class BagPhpTest extends PHPUnit_Framework_TestCase {
     var $tmpdir;

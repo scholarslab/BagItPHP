@@ -30,6 +30,7 @@
 
 
 require_once 'Archive/Tar.php';
+require_once 'bagit_utils.php';
 
 
 /**
@@ -48,77 +49,6 @@ require_once 'Archive/Tar.php';
 class BagItException extends Exception 
 {
 
-}
-
-/**
- * This filters an array by items that match a regex.
- *
- * @param string $regex The regex to filter by.
- * @param array  $list  The list of items to filter.
- * 
- * @return The match objects for items from $list that match $regex.
- */
-function filterArrayMatches($regex, $list) 
-{
-    $ret = array();
-
-    foreach ($list as $item) {
-        $matches = array();
-        if (preg_match($regex, $item, $matches)) {
-            array_push($ret, $matches);
-        }
-    }
-
-    return $ret;
-}
-
-/**
- * This tests whether a string ends with another string.
- *
- * @param string $main   The primary string to test.
- * @param string $suffix The string to test against the end of the other.
- * 
- * @return True if $suffix occurs at the end of $main.
- */
-function endsWith($main, $suffix) 
-{
-    $len = strlen($suffix);
-    return substr_compare($main, $suffix, -$len, $len) === 0;
-}
-
-/**
- * This recursively lists the contents of a directory. This doesn't return 
- * hidden files.
- * 
- * @param string $dir The name of the directory to list.
- * 
- * @return array A list of files in the directory.
- */
-function rls($dir) 
-{
-    $ls = array();
-    $queue = array($dir);
-
-    while (count($queue) > 0) {
-        $current = array_shift($queue);
-
-        foreach (scandir($current) as $item) {
-            if ($item[0] != '.') {
-                $filename = "$current/$item";
-
-                switch (filetype($filename)) {
-                case 'file':
-                    array_push($ls, $filename);
-                    break;
-                case 'dir':
-                    array_push($queue, $filename);
-                    break;
-                }
-            }
-        }
-    }
-
-    return $ls;
 }
 
 
