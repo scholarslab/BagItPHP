@@ -76,7 +76,7 @@ function endsWith($main, $suffix)
  */
 function rls($dir) 
 {
-    $ls = array();
+    $files = array();
     $queue = array($dir);
 
     while (count($queue) > 0) {
@@ -86,9 +86,10 @@ function rls($dir)
             if ($item[0] != '.') {
                 $filename = "$current/$item";
 
-                switch (filetype($filename)) {
+                switch (filetype($filename))
+                {
                 case 'file':
-                    array_push($ls, $filename);
+                    array_push($files, $filename);
                     break;
                 case 'dir':
                     array_push($queue, $filename);
@@ -98,21 +99,27 @@ function rls($dir)
         }
     }
 
-    return $ls;
+    return $files;
 }
 
 /**
  * Recursively delete a directory.
+ *
+ * @param string $dir The directory to delete.
+ *
+ * @return void
  */
-function rrmdir($dir) {
+function rrmdir($dir)
+{
     if (is_dir($dir)) {
         $objects = scandir($dir);
         foreach ($objects as $object) {
             if ($object != "." && $object != "..") {
-                if (filetype($dir . "/" . $object) == "dir")
+                if (filetype($dir . "/" . $object) == "dir") {
                     rrmdir($dir . "/" . $object);
-                else
+                } else {
                     unlink($dir . "/" . $object);
+                }
             }
         }
         reset($objects);
@@ -122,8 +129,15 @@ function rrmdir($dir) {
 
 /**
  * Get a temporary name and create a directory there.
+ *
+ * The caller is responsible for deleting this directory and its contents.
+ *
+ * @param string $prefix The prefix for the temporary directory.
+ *
+ * @return string The name of the temporary directory.
  */
-function tmpdir($prefix='bag') {
+function tmpdir($prefix='bag')
+{
     $dir = tempnam(sys_get_temp_dir(), $prefix);
     unlink($dir);
     return $dir;
@@ -131,12 +145,15 @@ function tmpdir($prefix='bag') {
 
 /**
  * This tests whether the item is in a list of lists at the given key.
- * @param array $array The array of arrays to search.
- * @param integer/string $key The key to search under.
- * @param anything $item The item to search for.
+ *
+ * @param array          $array The array of arrays to search.
+ * @param integer/string $key   The key to search under.
+ * @param anything       $item  The item to search for.
+ *
  * @return True if $item is in a subarray under $key.
  */
-function seenAtKey($array, $key, $item) {
+function seenAtKey($array, $key, $item)
+{
     $keys = array_keys($array);
     for ($x=0, $len=count($keys); $x<$len; $x++) {
         $sub = $array[$keys[$x]];
@@ -150,21 +167,23 @@ function seenAtKey($array, $key, $item) {
 /**
  * This copies a URL to a file.
  *
- * @param string $url       The URL to pull.
- * @param string $filename  The file name to write to.
+ * @param string $url      The URL to pull.
+ * @param string $filename The file name to write to.
+ *
+ * @return void
  */
-function save_url($url, $filename)
+function saveUrl($url, $filename)
 {
     $curl = curl_init($url);
-    $fp = fopen($filename, 'w');
+    $file = fopen($filename, 'w');
 
-    curl_setopt($curl, CURLOPT_FILE, $fp);
+    curl_setopt($curl, CURLOPT_FILE, $file);
     curl_setopt($curl, CURLOPT_HEADER, 0);
 
     curl_exec($curl);
     curl_close($curl);
 
-    fclose($fp);
+    fclose($file);
 }
 
 

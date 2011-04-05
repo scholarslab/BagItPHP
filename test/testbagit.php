@@ -443,7 +443,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
         }
         catch (Exception $e)
         {
-            rrmdir($tmp2);
+            rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
@@ -455,18 +455,18 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
 
         // Testing what's in the bag (relativize the paths).
         $stripLen = strlen($bag->bagDirectory) + 1;
-        $ls = $bag->getBagContents();
-        for ($i=0, $lsLen=count($ls); $i<$lsLen; $i++)
+        $files = $bag->getBagContents();
+        for ($i=0, $lsLen=count($files); $i<$lsLen; $i++)
         {
-            $ls[$i] = substr($ls[$i], $stripLen);
+            $files[$i] = substr($files[$i], $stripLen);
         }
-        $this->assertContains('data/imgs/109x109xcoins1-150x150.jpg', $ls);
-        $this->assertContains('data/imgs/109x109xprosody.png', $ls);
-        $this->assertContains('data/imgs/110x108xmetaphor1.png', $ls);
-        $this->assertContains('data/imgs/fellows1-150x150.png', $ls);
-        $this->assertContains('data/imgs/fibtriangle-110x110.jpg', $ls);
-        $this->assertContains('data/imgs/uvalib.png', $ls);
-        $this->assertContains('data/README.txt', $ls);
+        $this->assertContains('data/imgs/109x109xcoins1-150x150.jpg', $files);
+        $this->assertContains('data/imgs/109x109xprosody.png', $files);
+        $this->assertContains('data/imgs/110x108xmetaphor1.png', $files);
+        $this->assertContains('data/imgs/fellows1-150x150.png', $files);
+        $this->assertContains('data/imgs/fibtriangle-110x110.jpg', $files);
+        $this->assertContains('data/imgs/uvalib.png', $files);
+        $this->assertContains('data/README.txt', $files);
 
         // Testing the checksums.
         $this->assertEquals('547b21e9c710f562d448a6cd7d32f8257b04e561', $bag->manifestData['data/imgs/109x109xcoins1-150x150.jpg']);

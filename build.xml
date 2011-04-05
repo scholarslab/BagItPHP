@@ -170,7 +170,7 @@
         <exec executable="phpcs" output="/dev/null">
              <arg line="--report=checkstyle
                         --extensions=php
-                        --ignore=*/tests/*
+                        --ignore=*/test/*
                         --report-file=${build}/logs/checkstyle.xml
                         --standard=PEAR
                         ${basedir}" />
