@@ -147,6 +147,26 @@ function seenAtKey($array, $key, $item) {
     return false;
 }
 
+/**
+ * This copies a URL to a file.
+ *
+ * @param string $url       The URL to pull.
+ * @param string $filename  The file name to write to.
+ */
+function save_url($url, $filename)
+{
+    $curl = curl_init($url);
+    $fp = fopen($filename, 'w');
+
+    curl_setopt($curl, CURLOPT_FILE, $fp);
+    curl_setopt($curl, CURLOPT_HEADER, 0);
+
+    curl_exec($curl);
+    curl_close($curl);
+
+    fclose($fp);
+}
+
 
 /*
  * Local variables:

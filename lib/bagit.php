@@ -460,32 +460,7 @@ class BagIt
         foreach ($this->fetchContents as $fetch) {
             $filename = $this->bagDirectory . '/' . $fetch['filename'];
             if (! file_exists($filename)) {
-                $dirname = dirname($filename);
-                if (! is_dir($dirname)) {
-                    mkdir($dirname, 0777, true);
-                }
-
-                try {
-                    $curl = curl_init($fetch['url']);
-                    $fp = fopen($filename, 'w');
-
-                    curl_setopt($curl, CURLOPT_FILE, $fp);
-                    curl_setopt($curl, CURLOPT_HEADER, 0);
-
-                    curl_exec($curl);
-                    curl_close($curl);
-
-                    fclose($fp);
-                } catch (Exception $e) {
-                    array_push(
-                        $this->bagErrors,
-                        array('fetch', 'URL ' . $fetch['url'] . 
-                          ' could down be downloaded.')
-                    );
-                    if (file_exists($filename)) {
-                        unlink($filename);
-                    }
-                }
+                $this->fetchFile($fetch['url'], $filename);
             }
         }
 
@@ -550,6 +525,35 @@ class BagIt
     //}}}
 
     //{{{ Private Methods
+
+
+    /**
+     * This fetches a single file.
+     *
+     * On errors, this adds an entry to bagErrors.
+     *
+     * @param string $url       The URL to fetch.
+     * @param string $filename  The file name to save to.
+     */
+    private function fetchFile($url, $filename)
+    {
+        $dirname = dirname($filename);
+        if (! is_dir($dirname)) {
+            mkdir($dirname, 0777, true);
+        }
+
+        try {
+            save_url($url, $filename);
+        } catch (Exception $e) {
+            array_push(
+                $this->bagErrors,
+                array('fetch', "URL $url could down be downloaded.")
+            );
+            if (file_exists($filename)) {
+                unlink($filename);
+            }
+        }
+    }
 
     /**
      * This cleans up the manifest files.
