@@ -207,6 +207,8 @@ class BagIt
 
     //}}}
 
+    //{{{ Public Methods
+
     /**
      * Define a new BagIt instance.
      *
@@ -399,54 +401,6 @@ class BagIt
     }
 
     /**
-     * This validates that a file or directory exists.
-     *
-     * @param string $filename The file name to check for.
-     * @param array $errors    The list of errors to add the message to, if the 
-     * file doesn't exist.
-     *
-     * @return boolean True if the file does exist; false otherwise.
-     */
-    private function validateExists($filename, &$errors)
-    {
-        if (! file_exists($filename))
-        {
-            $basename = basename($filename);
-            array_push(
-                $errors,
-                array($basename, "$basename does not exist.")
-            );
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * This validates a file's checksum.
-     *
-     * @param string $filename   The complete filename to check.
-     * @param integer $prefixLen The length of the prefix to strip off to get 
-     * the name of the file relative to the bag directory.
-     * @param errors             The list of errors to add messages to, if the 
-     * file doesn't validate.
-     */
-    private function validateChecksum($filename, $prefixLen, &$errors)
-    {
-        $relname = substr($filename, $prefixLen);
-        $expected = $this->manifestContents[$relname];
-        $actual = $this->calculateChecksum($filename);
-
-        if ($expected === null) {
-            array_push(
-                $errors,
-                array($relname, 'File missing from manifest.')
-            );
-        } else if ($expected != $actual) {
-            array_push($errors, array($relname, 'Checksum mismatch.'));
-        }
-    }
-
-    /**
      * This method is used whenever something is added to or removed from the 
      * bag. It performs these steps:
      *
@@ -467,69 +421,30 @@ class BagIt
         $this->updateManifestFileNames();
 
         // Clean up old manifest files. We'll regenerate them later.
-        $ls = scandir($this->bagDirectory);
-        $dataManifests = filterArrayMatches(
-            '/^manifest-(sha1|md5)\.txt$/',
-            $ls
-        );
-        $tagManifests = filterArrayMatches(
-            '/^tagmanifest-(sha1|md5)\.txt$/',
-            $ls
-        );
-        $oldManifests = array_merge($dataManifests, $tagManifests);
-        foreach ($oldManifests as $manifest) {
-            unlink("{$this->bagDirectory}/{$manifest[0]}");
-        }
+        $this->clearManifests();
 
         // Sanitize files in the data directory.
+        $this->cleanDataFileNames();
+
+        // Update data file checksums.
         $dataFiles = rls($this->dataDirectory);
-        foreach ($dataFiles as $dataFile) {
-            $baseName = basename($dataFile);
-            if ($baseName == '.' || $baseName == '..') {
-                continue;
-            }
+        $this->manifestContents = $this->updateManifest(
+            $dataFiles,
+            $this->manifestFile
+        );
 
-            $cleanName = $this->sanitizeFileName($baseName);
-            if ($cleanName === null) {
-                unlink($dataFile);
-            } else if ($baseName != $cleanName) {
-                $dirName = dirname($dataFile);
-                rename($dataFile, "$dirName/$cleanName");
-            }
-        }
-
-        // Checksum files in the data directory.
-        $stripLen = strlen($this->bagDirectory) + 1;
-        $dataFiles = rls($this->dataDirectory);
-        $csums = array();
-        foreach ($dataFiles as $dataFile) {
-            $hash = $this->calculateChecksum($dataFile);
-            $shortName = substr($dataFile, $stripLen);
-            array_push($csums, "$hash $shortName\n");
-        }
-        $this->writeFile($this->manifestFile, implode('', $csums));
-
-        // Re-load manifestContents.
-        $this->readManifestToArray();
-
-        // Clean out any previous tag manifest contents.
-        $this->tagManifestContents = array();
-        $tagFiles = array('bagit.txt', 'bag-info.txt', 'fetch.txt',
-                          basename($this->manifestFile));
-        foreach ($tagFiles as $tagFile) {
-            $fullPath = "{$this->bagDirectory}/$tagFile";
-            if (! file_exists($fullPath)) {
-                touch($fullPath);
-            }
-            $hash = $this->calculateChecksum($fullPath);
-            $this->tagManifestContents[$tagFile] = $hash;
-        }
-
-        // Write out the tag manifest.
-        $this->writeArrayToManifest('t');
-
-        // And re-read it.
-        $this->readManifestToArray('t');
+        // Update meta-file checksums.
+        $bagdir = $this->bagDirectory;
+        $tagFiles = array(
+            "$bagdir/bagit.txt",
+            "$bagdir/bag-info.txt",
+            "$bagdir/fetch.txt",
+            $this->manifestFile
+        );
+        $this->tagManifestContents = $this->updateManifest(
+            $tagFiles,
+            $this->tagManifestFile
+        );
     }
 
     /**
@@ -631,6 +546,122 @@ class BagIt
 
         $package = $this->compressBag($method);
         rename($package, $destination);
+    }
+    //}}}
+
+    //{{{ Private Methods
+
+    /**
+     * This cleans up the manifest files.
+     */
+    private function clearManifests()
+    {
+        $basenames = array(
+            'manifest-sha1.txt',
+            'manifest-md5.txt',
+            'tagmanifest-sha1.txt',
+            'tagmanifest-md5.txt'
+        );
+
+        foreach ($basenames as $basename)
+        {
+            $fullname = "{$this->bagDirectory}/$basename";
+            if (file_exists($fullname))
+            {
+                unlink($fullname);
+            }
+        }
+
+        $this->manifestContents = array();
+        $this->tagManifestContents = array();
+    }
+
+    /**
+     * This is a facade method that takes a list of files, generates a checksum 
+     * array, and writes it to a file before returning it.
+     *
+     * @param array $files      The list of absolute file names to generate 
+     * checksums for.
+     * @param string $filename  The name of the file to write the checksums out 
+     * to.
+     * @return array            An array mapping relative file names to 
+     * checksum hashes.
+     */
+    private function updateManifest($files, $filename)
+    {
+        $csums = $this->makeChecksumArray($files);
+        $this->writeChecksumArray($csums, $filename);
+        return $csums;
+    }
+
+    /**
+     * This cleans up the file names of all the files in the data/ directory.
+     */
+    private function cleanDataFileNames()
+    {
+        $dataFiles = rls($this->dataDirectory);
+        foreach ($dataFiles as $dataFile) {
+            $baseName = basename($dataFile);
+            if ($baseName == '.' || $baseName == '..') {
+                continue;
+            }
+
+            $cleanName = $this->sanitizeFileName($baseName);
+            if ($cleanName === null) {
+                unlink($dataFile);
+            } else if ($baseName != $cleanName) {
+                $dirName = dirname($dataFile);
+                rename($dataFile, "$dirName/$cleanName");
+            }
+        }
+    }
+
+    /**
+     * This validates that a file or directory exists.
+     *
+     * @param string $filename The file name to check for.
+     * @param array $errors    The list of errors to add the message to, if the 
+     * file doesn't exist.
+     *
+     * @return boolean True if the file does exist; false otherwise.
+     */
+    private function validateExists($filename, &$errors)
+    {
+        if (! file_exists($filename))
+        {
+            $basename = basename($filename);
+            array_push(
+                $errors,
+                array($basename, "$basename does not exist.")
+            );
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * This validates a file's checksum.
+     *
+     * @param string $filename   The complete filename to check.
+     * @param integer $prefixLen The length of the prefix to strip off to get 
+     * the name of the file relative to the bag directory.
+     * @param errors             The list of errors to add messages to, if the 
+     * file doesn't validate.
+     */
+    private function validateChecksum($filename, $prefixLen, &$errors)
+    {
+        $relname = substr($filename, $prefixLen);
+        $expected = $this->manifestContents[$relname];
+        $actual = $this->calculateChecksum($filename);
+
+        if ($expected === null) {
+            array_push(
+                $errors,
+                array($relname, 'File missing from manifest.')
+            );
+        } else if ($expected != $actual) {
+            array_push($errors, array($relname, 'Checksum mismatch.'));
+        }
     }
 
     /**
@@ -805,6 +836,63 @@ class BagIt
     }
 
     /**
+     * This takes a file name and makes it relative to the bag directory.
+     *
+     * This is unsafe, strictly speaking, because it doesn't check that the 
+     * file name passed in is in fact under the bag directory.
+     *
+     * @param string $filename An absolute file name under the bag directory.
+     * @return string The file name relative to the bag directory.
+     */
+    private function makeRelative($filename)
+    {
+        return substr($filename, strlen($this->bagDirectory) + 1);
+    }
+
+    /**
+     * This takes a list of files and generates an array mapping the file names 
+     * (made relative to the data directory) to the hashes.
+     *
+     * @param array $files A list of absolute file names to generate hashes 
+     * for.
+     * @return array A mapping of relative file names to hashes.
+     */
+    private function makeChecksumArray($files)
+    {
+        $csums = array();
+
+        foreach ($files as $file)
+        {
+            if (file_exists($file))
+            {
+                $hash = $this->calculateChecksum($file);
+                $csums[$this->makeRelative($file)] = $hash;
+            }
+        }
+
+        return $csums;
+    }
+
+    /**
+     * This writes a checksum array to a file.
+     *
+     * @param array $csums     The checksum array to write.
+     * @param string $filename The name of the file to write the checksums to.
+     */
+    private function writeChecksumArray($csums, $filename)
+    {
+        ksort($csums);
+        $output = array();
+
+        foreach ($csums as $path => $hash)
+        {
+            array_push($output, "$hash $path\n");
+        }
+
+        $this->writeFile($filename, implode('', $output));
+    }
+
+    /**
      * Create the checksum for a file.
      * 
      * @param string $filename The file to generate a checksum for.
@@ -865,34 +953,6 @@ class BagIt
                 array('manifest', "Error reading $filename.")
             );
         }
-    }
-
-    /**
-     * This writes the manifest information from the internal array into the 
-     * manifest file.
-     *
-     * @param string $mode This is the type of manifest to use. 't' is for the 
-     * tag manifest. The default is 'd'.
-     *
-     * @return void
-     */
-    private function writeArrayToManifest($mode='d') 
-    {
-        $this->updateManifestFileNames();
-
-        if ($mode == 'd') {
-            $filename = $this->manifestFile;
-            $contents = $this->manifestContents;
-        } else if ($mode == 't') {
-            $filename = $this->tagManifestFile;
-            $contents = $this->tagManifestContents;
-        }
-
-        $lines = array();
-        foreach ($contents as $key => $val) {
-            array_push($lines, "$val $key\n");
-        }
-        $this->writeFile($filename, join('', $lines));
     }
 
     /**
@@ -1173,6 +1233,7 @@ class BagIt
 
         return $filename;
     }
+    //}}}
 
 }
 
