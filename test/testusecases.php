@@ -77,9 +77,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase {
         );
 
         // 3. Add fetch entries;
-        $bag->addFetchEntries(
-            array(array('http://www.scholarslab.org/', 'data/index.html'))
-        );
+        $bag->addFetch('http://www.scholarslab.org/', 'data/index.html');
 
         // 4. Update the bag; and
         $bag->update();

@@ -790,9 +790,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             );
             $bag = new BagIt($tmp);
 
-            $bag->addFetchEntries(
-                array(array('http://www.scholarslab.org/',
-                            'data/scholarslab/index.html'))
+            $bag->addFetch(
+                'http://www.scholarslab.org/',
+                'data/scholarslab/index.html'
             );
 
             $this->assertEquals(
@@ -838,10 +838,10 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             );
             $bag = new BagIt($tmp);
 
-            $bag->addFetchEntries(
-                array(array('http://www.scholarslab.org/',
-                            'data/scholarslab/index.html')),
-                false
+            $bag->clearFetch();
+            $bag->addFetch(
+                'http://www.scholarslab.org/',
+                'data/scholarslab/index.html'
             );
 
             $this->assertEquals(

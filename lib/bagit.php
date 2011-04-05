@@ -471,33 +471,28 @@ class BagIt
     }
 
     /**
-     * Writes new entries in 'fetch.txt'.
-     *
-     * @param array   $fetchEntries An array containing the URL and path relative to 
-     * the data directory for file.
-     * @param boolean $append       If false, the current entries in 'fetch.txt' 
-     * will be overwritten. Default is true.
-     *
-     * @return void
+     * This clears the fetch data.
      */
-    function addFetchEntries($fetchEntries, $append=true)
+    function clearFetch()
     {
-        $fetches = array();
-        foreach ($fetchEntries as $fetch) {
-            list($url, $filename) = $fetch;
-            array_push(
-                $fetches,
-                array('url' => $url, 'length' => '-', 'filename' => $filename)
-            );
-        }
+        $this->fetchContents = array();
+        $this->writeFile($this->fetchFile, '');
+    }
 
-        if ($append) {
-            $this->fetchContents = array_merge($this->fetchContents, $fetches);
-        } else {
-            $this->fetchContents = $fetches;
-        }
-
-        $this->writeArrayToFetch();
+    /**
+     * This adds an entry to the fetch data.
+     *
+     * @param string $url       This is the URL to load the file from.
+     * @param string $filename  This is the file name, relative to the bag 
+     * directory, to save the data to.
+     */
+    function addFetch($url, $filename)
+    {
+        array_push(
+            $this->fetchContents,
+            array('url' => $url, 'length' => '-', 'filename' => $filename)
+        );
+        $this->writeFetch();
     }
 
     /**
@@ -785,7 +780,7 @@ class BagIt
 
             if (file_exists("{$this->bagDirectory}/fetch.txt")) {
                 $this->fetchFile = "{$this->bagDirectory}/fetch.txt";
-                $this->readFetchToArray();
+                $this->readFetch();
             }
 
             if (file_exists("{$this->bagDirectory}/bag-info.txt")) {
@@ -831,7 +826,7 @@ class BagIt
 
             $this->fetchFile = $this->bagDirectory . '/fetch.txt';
             touch($this->fetchFile);
-            $this->readFetchToArray();
+            $this->readFetch();
 
             $this->bagInfoFile = $this->bagDirectory . '/bag-info.txt';
             touch($this->bagInfoFile);
@@ -967,7 +962,7 @@ class BagIt
      *
      * @return void
      */
-    private function readFetchToArray() 
+    private function readFetch() 
     {
         $lines = $this->readLines($this->fetchFile);
         $fetch = array();
@@ -999,7 +994,7 @@ class BagIt
      *
      * @return void
      */
-    private function writeArrayToFetch() 
+    private function writeFetch() 
     {
         $lines = array();
 
