@@ -983,11 +983,11 @@ class BagIt
             }
         }
 
-        $lines = $this->readLines($this->fetchFile);
-        $fetch = array();
-
         try
         {
+            $lines = $this->readLines($this->fetchFile);
+            $fetch = array();
+
             foreach ($lines as $line)
             {
                 $fields = preg_split('/\s+/', $line);
@@ -1055,45 +1055,10 @@ class BagIt
             }
         }
 
-        $lines = $this->readLines($this->bagInfoFile);
-        $bagInfo = array();
-
         try
         {
-            $prevKey = null;
-            foreach ($lines as $line)
-            {
-                if (count($line) == 0)
-                {
-                    // Skip.
-                }
-                else if ($line[0] == ' ' || $line[1] == '\t')
-                {
-                    // Continued line.
-                    $val = $bagInfo[$prevKey] . ' ' . trim($line);
-                    $keys = array(
-                        $prevKey,
-                        strtolower($prevKey),
-                        strtoupper($prevKey)
-                    );
-                    foreach ($keys as $pk)
-                    {
-                        $bagInfo[$pk] = $val;
-                    }
-                }
-                else
-                {
-                    list($key, $val) = preg_split('/:\s*/', $line, 2);
-                    $val = trim($val);
-                    $bagInfo[$key] = $val;
-                    $bagInfo[strtolower($key)] = $val;
-                    $bagInfo[strtoupper($key)] = $val;
-                    $prevKey = $key;
-                }
-            }
-
-            $this->bagInfoData = $bagInfo;
-
+            $lines = $this->readLines($this->bagInfoFile);
+            $this->bagInfoData = $this->parseBagInfo($lines);
         }
         catch (Exception $e)
         {
@@ -1102,6 +1067,49 @@ class BagIt
                 array('baginfo', 'Error reading bag info file.')
             );
         }
+    }
+
+    /**
+     * Parse bag info file.
+     *
+     * @param array $lines An array of lines from the file.
+     *
+     * @return array The parsed bag-info data.
+     */
+    private function parseBagInfo($lines)
+    {
+        $bagInfo = array();
+
+        $prevKeys = array('');
+        foreach ($lines as $line)
+        {
+            if (strlen($line) == 0)
+            {
+                // Skip.
+            }
+            else if ($line[0] == ' ' || $line[1] == '\t')
+            {
+                // Continued line.
+                $val = $bagInfo[$prevKeys[0]] . ' ' . trim($line);
+                foreach ($prevKeys as $pk)
+                {
+                    $bagInfo[$pk] = $val;
+                }
+            }
+            else
+            {
+                list($key, $val) = preg_split('/:\s*/', $line, 2);
+                $val = trim($val);
+
+                $prevKeys = array($key, strtolower($key), strtoupper($key));
+                foreach ($prevKeys as $pk)
+                {
+                    $bagInfo[$pk] = $val;
+                }
+            }
+        }
+
+        return $bagInfo;
     }
 
     /**
