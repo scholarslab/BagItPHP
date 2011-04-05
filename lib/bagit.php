@@ -845,34 +845,42 @@ class BagIt
         $this->dataDirectory = $this->bagDirectory . '/data';
         mkdir($this->dataDirectory);
 
-        $versionId = 'BagIt-Version: ' .
-            $this->bagMajorVersion . '.' . $this->bagMinorVersion . "\n";
-        $encoding = "Tag-File-Character-Encoding: {$this->tagFileEncoding}\n";
-
         $this->bagitFile = $this->bagDirectory . '/bagit.txt';
         $this->manifestFile = $this->bagDirectory .
             "/manifest-{$this->hashEncoding}.txt";
 
-        $this->writeFile($this->bagitFile, $versionId . $encoding);
+        $bagItData =
+            "BagIt-Version: " .
+            "{$this->bagMajorVersion}.{$this->bagMinorVersion}\n" .
+            "Tag-File-Character-Encoding: {$this->tagFileEncoding}\n";
+        $this->writeFile($this->bagitFile, $bagItData);
 
         touch($this->manifestFile);
-        $this->readManifestToArray();
+        $this->manifestContents = array();
 
+        $this->createExtendedBag();
+    }
+
+    /**
+     * This creates the files for an extended bag.
+     */
+    private function createExtendedBag()
+    {
         if ($this->extended)
         {
             $this->tagManifestFile = $this->bagDirectory .
                 "/tagmanifest-{$this->hashEncoding}.txt";
 
             touch($this->tagManifestFile);
-            $this->readManifestToArray('t');
+            $this->tagManifestContents = array();
 
             $this->fetchFile = $this->bagDirectory . '/fetch.txt';
             touch($this->fetchFile);
-            $this->readFetch();
+            $this->fetchContents = array();
 
             $this->bagInfoFile = $this->bagDirectory . '/bag-info.txt';
             touch($this->bagInfoFile);
-            $this->readBagInfo();
+            $this->bagInfoContents = array();
         }
     }
 
