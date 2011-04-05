@@ -2,19 +2,19 @@
 /* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
 /**
- * This is a PHP implementation of the {@link 
- * https://wiki.ucop.edu/display/Curation/BagIt BagIt specification}. Really, 
- * it is a port of {@link https://github.com/ahankinson/pybagit/ PyBagIt} for 
+ * This is a PHP implementation of the {@link
+ * https://wiki.ucop.edu/display/Curation/BagIt BagIt specification}. Really,
+ * it is a port of {@link https://github.com/ahankinson/pybagit/ PyBagIt} for
  * PHP.
- * 
- * PHP version 5 
+ *
+ * PHP version 5
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy 
+ * use this file except in compliance with the License. You may obtain a copy
  * of * the License at http://www.apache.org/licenses/LICENSE-2.0 Unless
- * required by applicable law or agreed to in writing, software distributed 
- * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR 
- * CONDITIONS OF ANY KIND, either express or implied. See the License for the 
+ * required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  *
  * @category  FileUtils
@@ -35,7 +35,7 @@ require_once 'bagit_utils.php';
 
 /**
  * This is a class for all bag exceptions.
- * 
+ *
  * @category   FileUtils
  * @package    Bagit
  * @subpackage Exception
@@ -46,7 +46,7 @@ require_once 'bagit_utils.php';
  * @version    0.1
  * @link       https://github.com/erochest/BagItPHP
  */
-class BagItException extends Exception 
+class BagItException extends Exception
 {
 
 }
@@ -54,7 +54,7 @@ class BagItException extends Exception
 
 /**
  * This is the main class for interacting with a bag.
- * 
+ *
  * @category  FileUtils
  * @package   Bagit
  * @author    Eric Rochester <erochest@gmail.com>
@@ -64,143 +64,143 @@ class BagItException extends Exception
  * @version   0.1
  * @link      https://github.com/erochest/BagItPHP
  */
-class BagIt 
+class BagIt
 {
 
     //{{{ properties
-  
+
     /**
-     * The bag as passed into the constructor. This could be a directory or a 
+     * The bag as passed into the constructor. This could be a directory or a
      * file name, and it may not exist.
-     * 
+     *
      * @var string
      */
     var $bag;
 
     /**
      * Absolute path to the bag directory.
-     * 
+     *
      * @var string
      */
     var $bagDirectory;
 
     /**
      * True if the bag is extended.
-     * 
+     *
      * @var boolean
      */
     var $extended;
 
     /**
      * 'sha1' or 'md5'. Default is 'sha1'.
-     * 
+     *
      * @var string
      */
     var $hashEncoding;
 
     /**
      * The major version number declared in 'bagit.txt'. Default is '0'.
-     * 
+     *
      * @var string
      */
     var $bagMajorVersion;
 
     /**
      * The minor version number declared in 'bagit.txt'. Default is '96'.
-     * 
+     *
      * @var string
      */
     var $bagMinorVersion;
 
     /**
      * The tag file encoding declared in 'bagit.txt'. Default is 'utf-8'.
-     * 
+     *
      * @var string
      */
     var $tagFileEncoding;
 
     /**
      * Absolute path to the data directory.
-     * 
+     *
      * @var string
      */
     var $dataDirectory;
 
     /**
      * Absolute path to the bagit file.
-     * 
+     *
      * @var string
      */
     var $bagitFile;
 
     /**
      * Absolute path to the 'manifest-{sha1,md5}.txt' file.
-     * 
+     *
      * @var string
      */
     var $manifestFile;
 
     /**
      * Absolute path to the 'tagmanifest-{sha1,md5}.txt' file or null.
-     * 
+     *
      * @var string
      */
     var $tagManifestFile;
 
     /**
      * Absolute path to the 'fetch.txt' file or null.
-     * 
+     *
      * @var string
      */
     var $fetchFile;
 
     /**
      * Absolute path to the 'bag-info.txt' file or null.
-     * 
+     *
      * @var string
      */
     var $bagInfoFile;
 
     /**
      * A dictionary array containing the manifest file contents.
-     * 
+     *
      * @var array
      */
     var $manifestContents;
 
     /**
      * A dictionary array containing the tagmanifest file contents.
-     * 
+     *
      * @var array
      */
     var $tagManifestContents;
 
     /**
      * A dictionary array containing the 'fetch.txt' file contents.
-     * 
+     *
      * @var array
      */
     var $fetchContents;
 
     /**
      * A dictionary array containing the 'bag-info.txt' file contents.
-     * 
+     *
      * @var array
      */
     var $bagInfoContents;
 
     /**
-     * If the bag came from a compressed file, this contains either 'tgz' or 
+     * If the bag came from a compressed file, this contains either 'tgz' or
      * 'zip' to indicate the file's compression format.
-     * 
+     *
      * @var string
      */
     var $bagCompression;
 
     /**
-     * An array of all bag validation errors. Each entries is a two-element 
+     * An array of all bag validation errors. Each entries is a two-element
      * array containing the path of the file and the error message.
-     * 
+     *
      * @var array
      */
     var $bagErrors;
@@ -212,20 +212,20 @@ class BagIt
     /**
      * Define a new BagIt instance.
      *
-     * @param string  $bag      Either a non-existing folder name (will create 
-     * a new bag here); an existing folder name (this will treat it as a bag 
-     * and create any missing files or folders needed); or an existing 
-     * compressed file (this will un-compress it to a temporary directory and 
+     * @param string  $bag      Either a non-existing folder name (will create
+     * a new bag here); an existing folder name (this will treat it as a bag
+     * and create any missing files or folders needed); or an existing
+     * compressed file (this will un-compress it to a temporary directory and
      * treat it as a bag).
-     * @param boolean $validate This will validate all files in the bag, 
+     * @param boolean $validate This will validate all files in the bag,
      * including running checksums on all of them. Default is false.
-     * @param boolean $extended This will ensure that optional 'bag-info.txt', 
-     * 'fetch.txt', and 'tagmanifest-{sha1,md5}.txt' are created. Default is 
+     * @param boolean $extended This will ensure that optional 'bag-info.txt',
+     * 'fetch.txt', and 'tagmanifest-{sha1,md5}.txt' are created. Default is
      * true.
-     * @param boolean $fetch    If true, it will download all files in 
+     * @param boolean $fetch    If true, it will download all files in
      * 'fetch.txt'. Default is false.
      */
-    public function BagIt($bag, $validate=false, $extended=true, $fetch=false) 
+    public function BagIt($bag, $validate=false, $extended=true, $fetch=false)
     {
         $this->bag = $bag;
         $this->extended = $extended;
@@ -280,10 +280,10 @@ class BagIt
     /**
      * Test if a bag has optional files
      *
-     * @return boolean True if the bag contains the optional files 
+     * @return boolean True if the bag contains the optional files
      * 'bag-info.txt', 'fetch.txt', or 'tagmanifest-{sha1,md5}.txt'.
      */
-    function isExtended() 
+    function isExtended()
     {
         return $this->extended;
     }
@@ -291,10 +291,10 @@ class BagIt
     /**
      * Return the info keys
      *
-     * @return array A dictionary array containing these keys: 'version', 
+     * @return array A dictionary array containing these keys: 'version',
      * 'encoding', 'hash'.
      */
-    function getBagInfo() 
+    function getBagInfo()
     {
         $info = array(
             'version'  => "{$this->bagMajorVersion}.{$this->bagMinorVersion}",
@@ -309,7 +309,7 @@ class BagIt
      *
      * @return string The absolute path to the bag's data directory.
      */
-    function getDataDirectory() 
+    function getDataDirectory()
     {
         return $this->dataDirectory;
     }
@@ -319,7 +319,7 @@ class BagIt
      *
      * @return string The bag's checksum encoding scheme.
      */
-    function getHashEncoding() 
+    function getHashEncoding()
     {
         return $this->hashEncoding;
     }
@@ -327,12 +327,12 @@ class BagIt
     /**
      * Sets the bag's checksum hash algorithm.
      *
-     * @param string $hashAlgorithm The bag's checksum hash algorithm. Must be 
+     * @param string $hashAlgorithm The bag's checksum hash algorithm. Must be
      * either 'sha1' or 'md5'.
      *
      * @return void
      */
-    function setHashEncoding($hashAlgorithm) 
+    function setHashEncoding($hashAlgorithm)
     {
         $hashAlgorithm = strtolower($hashAlgorithm);
         if ($hashAlgorithm != 'md5' && $hashAlgorithm != 'sha1')
@@ -353,7 +353,7 @@ class BagIt
     /**
      * Return an array of all files in the data directory
      *
-     * @return array An array of absolute paths for all of the files in the 
+     * @return array An array of absolute paths for all of the files in the
      * data directory.
      */
     function getBagContents() {
@@ -363,12 +363,12 @@ class BagIt
     /**
      * Return errors for a bag
      *
-     * @param boolean $validate If true, then it will run this->validate() to 
+     * @param boolean $validate If true, then it will run this->validate() to
      * verify the integrity first. Default is false.
      *
      * @return array An array of all bag errors.
      */
-    function getBagErrors($validate=false) 
+    function getBagErrors($validate=false)
     {
         if ($validate)
         {
@@ -379,14 +379,14 @@ class BagIt
 
     /**
      * Runs the bag validator on the contents of the bag. This verifies the
-     * presence of required iles and folders and verifies the checksum for 
+     * presence of required iles and folders and verifies the checksum for
      * each file.
      *
      * For the results of validation, check isValid() and getBagErrors().
      *
      * @return array The list of bag errors.
      */
-    function validate() 
+    function validate()
     {
         $errors = array();
 
@@ -415,7 +415,7 @@ class BagIt
     }
 
     /**
-     * This method is used whenever something is added to or removed from the 
+     * This method is used whenever something is added to or removed from the
      * bag. It performs these steps:
      *
      * <ul>
@@ -430,7 +430,7 @@ class BagIt
      *
      * @return void
      */
-    function update() 
+    function update()
     {
         $this->updateManifestFileNames();
 
@@ -461,12 +461,12 @@ class BagIt
     /**
      * Downloads every entry in 'fetch.txt'.
      *
-     * @param boolean $validate If true, then it also calls update() and 
+     * @param boolean $validate If true, then it also calls update() and
      * validate().
      *
      * @return void
      */
-    function fetch($validate=false) 
+    function fetch($validate=false)
     {
         foreach ($this->fetchContents as $fetch)
         {
@@ -499,7 +499,7 @@ class BagIt
      * This adds an entry to the fetch data.
      *
      * @param string $url       This is the URL to load the file from.
-     * @param string $filename  This is the file name, relative to the bag 
+     * @param string $filename  This is the file name, relative to the bag
      * directory, to save the data to.
      *
      * @return void
@@ -608,9 +608,9 @@ class BagIt
      * This is a facade method that takes a list of files, generates a checksum
      * array, and writes it to a file before returning it.
      *
-     * @param array $files      The list of absolute file names to generate 
+     * @param array $files      The list of absolute file names to generate
      * checksums for.
-     * @param string $filename  The name of the file to write the checksums out 
+     * @param string $filename  The name of the file to write the checksums out
      * to.
      *
      * @return array An array mapping relative file names to checksum hashes.
@@ -655,7 +655,7 @@ class BagIt
      * This validates that a file or directory exists.
      *
      * @param string $filename The file name to check for.
-     * @param array $errors    The list of errors to add the message to, if the 
+     * @param array $errors    The list of errors to add the message to, if the
      * file doesn't exist.
      *
      * @return boolean True if the file does exist; false otherwise.
@@ -679,7 +679,7 @@ class BagIt
      *
      * @param string $filename   The complete filename to check.
      * the name of the file relative to the bag directory.
-     * @param errors             The list of errors to add messages to, if the 
+     * @param errors             The list of errors to add messages to, if the
      * file doesn't validate.
      *
      * @return void
@@ -704,14 +704,14 @@ class BagIt
     }
 
     /**
-     * Read the data in the file and convert it from tagFileEncoding into 
+     * Read the data in the file and convert it from tagFileEncoding into
      * UTF-8.
      *
      * @param string $filename The name of the file to read.
      *
      * @return string The contents of the file as UTF-8.
      */
-    private function readFile($filename) 
+    private function readFile($filename)
     {
         $data = iconv(
             $this->tagFileEncoding,
@@ -729,7 +729,7 @@ class BagIt
      *
      * @return void
      */
-    private function writeFile($filename, $data) 
+    private function writeFile($filename, $data)
     {
         file_put_contents(
             $filename,
@@ -738,14 +738,14 @@ class BagIt
     }
 
     /**
-     * Read the data in the file and convert it from tagFileEncoding into 
+     * Read the data in the file and convert it from tagFileEncoding into
      * UTF-8, then split the lines.
      *
      * @param string $filename The name of the file to read.
      *
      * @return array The lines in the file.
      */
-    private function readLines($filename) 
+    private function readLines($filename)
     {
         $data = $this->readFile($filename);
         $lines = preg_split('/[\n\r]+/', $data, null, PREG_SPLIT_NO_EMPTY);
@@ -757,96 +757,76 @@ class BagIt
      *
      * @return void
      */
-    private function openBag() 
+    private function openBag()
     {
-        if ($this->isCompressed())
-        {
-            $matches = array();
-            $success = preg_match(
-                '/^(.*)\.(zip|tar\.gz|tgz)/',
-                basename($this->bag),
-                $matches
-            );
-            if ($success)
-            {
-                $base = $matches[1];
-                $this->bagDirectory = $this->uncompressBag($base);
-            }
-            else
-            {
-                throw new BagItException(
-                    "Invalid compressed bag name: {$this->bag}."
-                );
-            }
-        }
-        else
-        {
+        $this->bagDirectory = ($this->isCompressed()) ?
+            $this->getCompressedBaseName($this->bag) :
             $this->bagDirectory = realpath($this->bag);
-        }
 
-        try
-        {
-            $this->bagitFile = $this->bagDirectory . '/bagit.txt';
-            $bFileContents = $this->readFile($this->bagitFile);
-
-            $versions = $this->parseVersionString($bFileContents);
-            if ($versions === null)
-            {
-                throw new Exception();
-            }
-            $this->bagMajorVersion = $versions[0];
-            $this->bagMinorVersion = $versions[1];
-
-            $this->tagFileEncoding = $this->parseEncodingString($bFileContents);
-
-        }
-        catch (Exception $e)
-        {
-            array_push(
-                $this->bagErrors,
-                array('bagit', 'Error reading the bagit.txt file.')
-            );
-        }
+        $this->readBagIt($this->bagDirectory . '/bagit.txt');
 
         $ls = scandir($this->bagDirectory);
         if (count($ls) > 0)
         {
-            $manifests = filterArrayMatches(
-                '/^manifest-(sha1|md5)\.txt$/',
-                $ls
-            );
-            if (count($manifests) > 0)
-            {
-                $this->hashEncoding = strtolower($manifests[0][1]);
-                $this->manifestFile = $this->bagDirectory .
-                    '/' . $manifests[0][0];
-                $this->readManifestToArray();
-            }
-
             $this->dataDirectory = "{$this->bagDirectory}/data";
 
-            $manifests = filterArrayMatches(
-                '/^tagmanifest-(sha1|md5)\.txt$/',
-                $ls
+            // Read manifest file.
+            $manifestData = $this->openManifest(
+                array('manifest-sha1.txt', 'manifest-md5.txt')
             );
-            if (count($manifests) > 0)
+            if ($manifestData !== null)
             {
-                $this->tagManifestFile = $this->bagDirectory .
-                    '/' . $manifests[0][0];
-                $this->readManifestToArray('t');
+                list($filename, $hashEncoding, $manifest) = $manifestData;
+                $this->manifestFile = $filename;
+                if ($hashEncoding !== null)
+                {
+                    $this->hashEncoding = $hashEncoding;
+                }
+                $this->manifestContents = $manifest;
             }
 
-            if (file_exists("{$this->bagDirectory}/fetch.txt"))
+            // Read tag manifest file.
+            $manifestData = $this->openManifest(
+                array('tagmanifest-sha1.txt', 'tagmanifest-md5.txt')
+            );
+            if ($manifestData !== null)
             {
-                $this->fetchFile = "{$this->bagDirectory}/fetch.txt";
-                $this->readFetch();
+                list($filename, $hashEncoding, $manifest) = $manifestData;
+                $this->tagManifestFile = $filename;
+                $this->tagManifestContents = $manifest;
             }
 
-            if (file_exists("{$this->bagDirectory}/bag-info.txt"))
-            {
-                $this->bagInfoFile = "{$this->bagDirectory}/bag-info.txt";
-                $this->readBagInfoToArray();
-            }
+            $this->readFetch("{$this->bagDirectory}/fetch.txt");
+            $this->readBagInfo("{$this->bagDirectory}/bag-info.txt");
+        }
+    }
+
+    /**
+     * This returns the base name of a compressed bag.
+     *
+     * @param string $bag The full bag name.
+     *
+     * @return string The bag name without the compressed-file extension. This
+     * is the bag directory.
+     */
+    private function getCompressedBaseName($bag)
+    {
+        $matches = array();
+        $success = preg_match(
+            '/^(.*)\.(zip|tar\.gz|tgz)$/',
+            basename($bag),
+            $matches
+        );
+        if ($success)
+        {
+            $base = $matches[1];
+            return $this->uncompressBag($base);
+        }
+        else
+        {
+            throw new BagItException(
+                "Invalid compressed bag name: $bag."
+            );
         }
     }
 
@@ -855,7 +835,7 @@ class BagIt
      *
      * @return void
      */
-    private function createBag() 
+    private function createBag()
     {
         $cwd = getcwd();
 
@@ -892,14 +872,14 @@ class BagIt
 
             $this->bagInfoFile = $this->bagDirectory . '/bag-info.txt';
             touch($this->bagInfoFile);
-            $this->readBagInfoToArray();
+            $this->readBagInfo();
         }
     }
 
     /**
      * This takes a file name and makes it relative to the bag directory.
      *
-     * This is unsafe, strictly speaking, because it doesn't check that the 
+     * This is unsafe, strictly speaking, because it doesn't check that the
      * file name passed in is in fact under the bag directory.
      *
      * @param string $filename An absolute file name under the bag directory.
@@ -912,10 +892,10 @@ class BagIt
     }
 
     /**
-     * This takes a list of files and generates an array mapping the file names 
+     * This takes a list of files and generates an array mapping the file names
      * (made relative to the data directory) to the hashes.
      *
-     * @param array $files A list of absolute file names to generate hashes 
+     * @param array $files A list of absolute file names to generate hashes
      * for.
      *
      * @return array A mapping of relative file names to hashes.
@@ -959,25 +939,25 @@ class BagIt
 
     /**
      * Create the checksum for a file.
-     * 
+     *
      * @param string $filename The file to generate a checksum for.
      *
      * @return string The checksum.
      */
-    private function calculateChecksum($filename) 
+    private function calculateChecksum($filename)
     {
         return hash_file($this->hashEncoding, $filename);
     }
 
     /**
      * This reads the manifest file into manifestContents.
-     * 
-     * @param string $mode The type of manifest to read. <code>t</code> means 
+     *
+     * @param string $mode The type of manifest to read. <code>t</code> means
      * reading a tagmanifest file. Default is <code>d</code>.
      *
      * @return void
      */
-    private function readManifestToArray($mode='d') 
+    private function readManifestToArray($mode='d')
     {
         if ($this->hashEncoding == 'sha1')
         {
@@ -1037,13 +1017,29 @@ class BagIt
     /**
      * This reads the fetch.txt file into an array list.
      *
-     * This sets $this->fetchContents to a sequential array of arrays with the 
+     * This sets $this->fetchContents to a sequential array of arrays with the
      * keys 'url', 'length', and 'filename'.
+     *
+     * @param string $filename  If given, this tests whether the file exists,
+     * and if it does, it sets the fetchFile parameter before reading the file.
+     * If it is set but doesn't exist, then the method returns without reading
+     * anything.
      *
      * @return void
      */
-    private function readFetch() 
-    {
+    private function readFetch($filename=null) {
+        if ($filename !== null)
+        {
+            if (file_exists($filename))
+            {
+                $this->fetchFile = $filename;
+            }
+            else
+            {
+                return;
+            }
+        }
+
         $lines = $this->readLines($this->fetchFile);
         $fetch = array();
 
@@ -1079,7 +1075,7 @@ class BagIt
      *
      * @return void
      */
-    private function writeFetch() 
+    private function writeFetch()
     {
         $lines = array();
 
@@ -1095,10 +1091,27 @@ class BagIt
     /**
      * This reads the bag-info.txt file into an array dictionary.
      *
+     * @param string $filename  If given, this tests whether the file exists,
+     * and if it does, it sets the bagInfoFile parameter before reading the
+     * file. If it is set but doesn't exist, then the method returns without
+     * reading anything.
+     *
      * @return void
      */
-    private function readBagInfoToArray() 
+    private function readBagInfo($filename=null)
     {
+        if ($filename !== null)
+        {
+            if (file_exists($filename))
+            {
+                $this->bagInfoFile = $filename;
+            }
+            else
+            {
+                return;
+            }
+        }
+
         $lines = $this->readLines($this->bagInfoFile);
         $bagInfo = array();
 
@@ -1153,7 +1166,7 @@ class BagIt
      *
      * @return True if this is a compressed bag.
      */
-    private function isCompressed() 
+    private function isCompressed()
     {
         if (is_dir($this->bag))
         {
@@ -1181,9 +1194,9 @@ class BagIt
      *
      * @return void
      */
-    private function updateManifestFileNames() 
+    private function updateManifestFileNames()
     {
-        $this->manifestFile = $this->bagDirectory . 
+        $this->manifestFile = $this->bagDirectory .
             '/manifest-' . $this->hashEncoding . '.txt';
         $this->tagManifestFile = $this->bagDirectory .
             '/tagmanifest-' . $this->hashEncoding . '.txt';
@@ -1196,7 +1209,7 @@ class BagIt
      *
      * @return The bagDirectory.
      */
-    private function uncompressBag($bagBase) 
+    private function uncompressBag($bagBase)
     {
         $dir = tempnam(sys_get_temp_dir(), 'bagit_');
         unlink($dir);
@@ -1232,7 +1245,7 @@ class BagIt
      *
      * @return string The file name for the file.
      */
-    private function compressBag($method='tgz') 
+    private function compressBag($method='tgz')
     {
         $output = tempnam(sys_get_temp_dir(), 'bagit_');
         unlink($output);
@@ -1268,14 +1281,151 @@ class BagIt
     }
 
     /**
+     * This reads the information from the bag it file.
+     *
+     * This sets the bagMajorVersion, bagMinorVersion, and tagFileEncoding
+     * properties.
+     *
+     * If it encounters an error, it adds it to bagErrors.
+     *
+     * @param string $filename  If given, this tests whether the file exists,
+     * and if it does, it sets the bagitFile parameter before reading the
+     * file. If it is set but doesn't exist, then the method returns without
+     * reading anything.
+     */
+    private function readBagIt($filename=null)
+    {
+        if ($filename !== null)
+        {
+            if (file_exists($filename))
+            {
+                $this->bagitFile = $filename;
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        try
+        {
+            $this->parseBagIt($this->readFile($filename));
+        }
+        catch (Exception $e)
+        {
+            array_push(
+                $this->bagErrors,
+                array('bagit', 'Error reading the bagit.txt file.')
+            );
+        }
+    }
+
+    /**
+     * This parses information from the bagit.txt from the string data read 
+     * from that file.
+     *
+     * @param string $data The data from the bagit.txt file.
+     */
+    private function parseBagIt($data)
+    {
+        $versions = $this->parseVersionString($data);
+        if ($versions === null)
+        {
+            throw new Exception();
+        }
+        $this->bagMajorVersion = $versions[0];
+        $this->bagMinorVersion = $versions[1];
+
+        $this->tagFileEncoding = $this->parseEncodingString($data);
+    }
+
+    /**
+     * This reads a manifest file, checking if it exists first.
+     *
+     * @param array $filenames A list of file names to read. It reads the first
+     * that exists.
+     *
+     * @return array If none of the files passed in exist, this returns
+     * <code>null</code>. Otherwise, it returns an array triple. The first
+     * element is the manifest file name that was read in, and the second
+     * element is the hash encoding from the file name, and the third
+     * element is the manifest data read from the file.
+     */
+    private function openManifest($filenames)
+    {
+        foreach ($filenames as $filename)
+        {
+            $fullname = "{$this->bagDirectory}/$filename";
+            if (file_exists($fullname))
+            {
+                $matches = array();
+                $hashEncoding = null;
+                if (preg_match('/-(sha1|md5)\.txt$/', $filename, $matches))
+                {
+                    $hashEncoding = $matches[1];
+                }
+
+                $manifest = $this->readManifest($fullname, $hashEncoding);
+
+                return array($fullname, $hashEncoding, $manifest);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * This reads the manifest data from a file.
+     *
+     * @param string $filename      The file name to read.
+     * @param string $hashEncoding  The type of hash encoding used in this
+     * file.
+     *
+     * @return array An array mapping file names (relative to the bag
+     * directory) to hashes.
+     */
+    private function readManifest($filename, $hashEncoding)
+    {
+        $manifest = array();
+
+        try
+        {
+            $hashLen = ($hashEncoding == 'sha1') ? 40 : 32;
+            $lines = $this->readLines($filename);
+
+            foreach ($lines as $line)
+            {
+                $hash = trim(substr($line, 0, $hashLen));
+                $payload = trim(substr($line, $hashLen));
+
+                if (strlen($payload) > 0)
+                {
+                    $manifest[$payload] = $hash;
+                }
+            }
+
+        }
+        catch (Exception $e)
+        {
+            $filename = basename($filename);
+            array_push(
+                $this->bagErrors,
+                array('manifest', "Error reading $filename.")
+            );
+        }
+
+        return $manifest;
+    }
+
+    /**
      * This parses the version string from the bagit.txt file.
      *
      * @param string $bagitFileContents The contents of the bagit file.
      *
-     * @return A two-item array containing the version string as integers.
+     * @return array A two-item array containing the version string as
+     * integers.
      */
-    private function parseVersionString($bagitFileContents) 
-    {
+    private function parseVersionString($bagitFileContents) {
         $matches = array();
         $success = preg_match(
             "/BagIt-Version: (\d+)\.(\d+)/i",
@@ -1302,7 +1452,7 @@ class BagIt
      *
      * @param string $bagitFileContents The contents of the bagit file.
      *
-     * @return The encoding.
+     * @return string The encoding.
      */
     private function parseEncodingString($bagitFileContents)
     {
@@ -1328,7 +1478,7 @@ class BagIt
      *
      * @return string The cleaned up file name.
      */
-    private function sanitizeFileName($filename) 
+    private function sanitizeFileName($filename)
     {
         // White space => underscores.
         $filename = preg_replace('/\s+/', '_', $filename);
