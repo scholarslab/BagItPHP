@@ -3,60 +3,74 @@
 require_once 'lib/bagit.php';
 require_once 'lib/bagit_utils.php';
 
-class BagPhpTest extends PHPUnit_Framework_TestCase {
+class BagPhpTest extends PHPUnit_Framework_TestCase
+ {
     var $tmpdir;
     var $bag;
 
-    public function setUp() {
+    public function setUp()
+    {
         $this->tmpdir = tmpdir();
         $this->bag = new BagIt($this->tmpdir);
     }
 
-    public function tearDown() {
+    public function tearDown()
+    {
         rrmdir($this->tmpdir);
     }
 
-    public function testBagDirectory() {
+    public function testBagDirectory()
+    {
         $this->assertEquals($this->tmpdir, $this->bag->bagDirectory);
     }
 
-    public function testExtended() {
+    public function testExtended()
+    {
         $this->assertTrue($this->bag->extended);
 
         $tmp2 = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp2);
             touch($tmp2 . "/bag-info.txt");
             $bag = new BagIt($tmp2, false, false);
             $this->assertFalse($bag->extended);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp2);
     }
 
-    public function testHashEncoding() {
+    public function testHashEncoding()
+    {
         $this->assertEquals('sha1', $this->bag->hashEncoding);
 
         $tmp2 = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp2);
             touch($tmp2 . "/manifest-md5.txt");
             $bag = new BagIt($tmp2);
             $this->assertEquals('md5', $bag->hashEncoding);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp2);
     }
 
-    public function testBagMajorVersion() {
+    public function testBagMajorVersion()
+    {
         $this->assertEquals(0, $this->bag->bagMajorVersion);
 
         $tmp2 = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/bagit.txt",
@@ -65,18 +79,22 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             );
             $bag = new BagIt($tmp2);
             $this->assertEquals(1, $bag->bagMajorVersion);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp2);
     }
 
-    public function testBagMinorVersion() {
+    public function testBagMinorVersion()
+    {
         $this->assertEquals(96, $this->bag->bagMinorVersion);
 
         $tmp2 = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/bagit.txt",
@@ -85,18 +103,22 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             );
             $bag = new BagIt($tmp2);
             $this->assertEquals(3, $bag->bagMinorVersion);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp2);
     }
 
-    public function testTagFileEncoding() {
+    public function testTagFileEncoding()
+    {
         $this->assertEquals('UTF-8', $this->bag->tagFileEncoding);
 
         $tmp2 = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/bagit.txt",
@@ -105,14 +127,17 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             );
             $bag = new BagIt($tmp2);
             $this->assertEquals('ISO-8859-1', $bag->tagFileEncoding);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp2);
     }
 
-    public function testDataDirectory() {
+    public function testDataDirectory()
+    {
         $this->assertEquals(
             $this->tmpdir . "/data",
             $this->bag->dataDirectory
@@ -120,7 +145,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue(is_dir($this->bag->dataDirectory));
     }
 
-    public function testBagitFile() {
+    public function testBagitFile()
+    {
         $this->assertEquals(
             $this->tmpdir . "/bagit.txt",
             $this->bag->bagitFile
@@ -133,7 +159,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         );
     }
 
-    public function testManifestFile() {
+    public function testManifestFile()
+    {
         $this->assertEquals(
             $this->tmpdir . "/manifest-sha1.txt",
             $this->bag->manifestFile
@@ -141,7 +168,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertFileExists($this->bag->manifestFile);
 
         $tmp2 = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp2);
             touch($tmp2 . "/manifest-md5.txt");
             $bag = new BagIt($tmp2);
@@ -149,14 +177,17 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 $tmp2 . "/manifest-md5.txt",
                 $bag->manifestFile
             );
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp2);
     }
 
-    public function testTagManifestFile() {
+    public function testTagManifestFile()
+    {
         $this->assertEquals(
             $this->tmpdir . "/tagmanifest-sha1.txt",
             $this->bag->tagManifestFile
@@ -164,7 +195,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertFileExists($this->bag->manifestFile);
     }
 
-    public function testFetchFile() {
+    public function testFetchFile()
+    {
         $this->assertEquals(
             $this->tmpdir . "/fetch.txt",
             $this->bag->fetchFile
@@ -172,7 +204,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertFileExists($this->bag->fetchFile);
     }
 
-    public function testBagInfoFile() {
+    public function testBagInfoFile()
+    {
         $this->assertEquals(
             $this->tmpdir . "/bag-info.txt",
             $this->bag->bagInfoFile
@@ -180,11 +213,13 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertFileExists($this->bag->bagInfoFile);
     }
 
-    public function testManifestContents() {
+    public function testManifestContents()
+    {
         $this->assertEquals(0, count($this->bag->manifestContents));
 
         $tmp2 = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/manifest-sha1.txt",
@@ -195,18 +230,22 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertNotNull($bag->manifestContents);
             $this->assertArrayHasKey("File-1", $bag->manifestContents);
             $this->assertArrayHasKey("File-2", $bag->manifestContents);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp2);
     }
 
-    public function testTagManifestContents() {
+    public function testTagManifestContents()
+    {
         $this->assertEquals(0, count($this->bag->tagManifestContents));
 
         $tmp2 = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/tagmanifest-sha1.txt",
@@ -217,18 +256,22 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertNotNull($bag->tagManifestContents);
             $this->assertArrayHasKey("File-1", $bag->tagManifestContents);
             $this->assertArrayHasKey("File-2", $bag->tagManifestContents);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp2);
     }
 
-    public function testFetchContents() {
+    public function testFetchContents()
+    {
         $this->assertEquals(0, count($this->bag->fetchContents));
 
         $tmp2 = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/fetch.txt",
@@ -239,18 +282,22 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertNotNull($bag->fetchContents);
             $this->assertEquals("http://www.google.com", $bag->fetchContents[0]['url']);
             $this->assertEquals("http://www.yahoo.com", $bag->fetchContents[1]['url']);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp2);
     }
 
-    public function testBagInfoContents() {
+    public function testBagInfoContents()
+    {
         $this->assertEquals(0, count($this->bag->bagInfoContents));
 
         $tmp2 = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp2);
             file_put_contents(
                 $tmp2 . "/bag-info.txt",
@@ -266,60 +313,74 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertArrayHasKey("Bag-size", $bag->bagInfoContents);
             $this->assertArrayHasKey("BAG-SIZE", $bag->bagInfoContents);
             $this->assertFalse(array_key_exists("bag-date", $bag->bagInfoContents));
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp2);
     }
 
-    public function testBagCompression() {
+    public function testBagCompression()
+    {
         $this->assertNull($this->bag->bagCompression);
     }
 
-    public function testBagErrors() {
+    public function testBagErrors()
+    {
         $this->assertInternalType('array', $this->bag->bagErrors);
         $this->assertEquals(0, count($this->bag->bagErrors));
     }
 
-    public function testConstructorValidate() {
+    public function testConstructorValidate()
+    {
         $this->assertTrue($this->bag->isValid());
         $this->assertEquals(0, count($this->bag->bagErrors));
 
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             $bag = new BagIt($tmp, true);
             $this->assertFalse($bag->isValid());
             $this->assertGreaterThan(0, count($bag->bagErrors));
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testConstructorExtended() {
+    public function testConstructorExtended()
+    {
         $this->assertFileExists($this->tmpdir . '/bag-info.txt');
         $this->assertFileExists($this->tmpdir . '/fetch.txt');
         $this->assertFileExists($this->tmpdir . '/tagmanifest-sha1.txt');
 
         $tmp = tmpdir();
-        try {
+        try
+        {
             $bag = new BagIt($tmp, false, false);
             $this->assertFalse(is_file($tmp . '/bag-info.txt'));
             $this->assertFalse(is_file($tmp . '/fetch.txt'));
             $this->assertFalse(is_file($tmp . '/tagmanifest-sha1.txt'));
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testConstructorFetch() {
+    public function testConstructorFetch()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/fetch.txt",
@@ -333,14 +394,17 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertFalse(
                 is_file($bag->dataDirectory . '/yahoo/index.html')
             );
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
 
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/fetch.txt",
@@ -350,18 +414,22 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $bag = new BagIt($tmp, false, true, true);
             $this->assertFileExists($bag->dataDirectory . '/google/index.html');
             $this->assertFileExists($bag->dataDirectory . '/yahoo/index.html');
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testConstructorInvalidBagitFile() {
+    public function testConstructorInvalidBagitFile()
+    {
         $this->assertEquals(0, $this->bag->bagMajorVersion);
 
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/bagit.txt",
@@ -372,20 +440,24 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertFalse($bag->isValid());
             $bagErrors = $bag->getBagErrors();
             $this->assertTrue(seenAtKey($bagErrors, 0, 'bagit'));
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp2);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    private function _testSampleBag($bag) {
+    private function _testSampleBag($bag)
+    {
         $this->assertTrue($bag->isValid());
 
         // Testing what's in the bag (relativize the paths).
         $stripLen = strlen($bag->bagDirectory) + 1;
         $ls = $bag->getBagContents();
-        for ($i=0, $lsLen=count($ls); $i<$lsLen; $i++) {
+        for ($i=0, $lsLen=count($ls); $i<$lsLen; $i++)
+        {
             $ls[$i] = substr($ls[$i], $stripLen);
         }
         $this->assertContains('data/imgs/109x109xcoins1-150x150.jpg', $ls);
@@ -410,7 +482,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals('data/index.html', $bag->fetchContents[0]['filename']);
     }
 
-    public function testConstructorDir() {
+    public function testConstructorDir()
+    {
         $bagDir = __DIR__ . '/TestBag';
         $bag = new BagIt($bagDir);
 
@@ -418,7 +491,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->_testSampleBag($bag);
     }
 
-    public function testConstructorZip() {
+    public function testConstructorZip()
+    {
         $bagZip = __DIR__ . '/TestBag.zip';
         $bag = new BagIt($bagZip);
 
@@ -426,7 +500,8 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->_testSampleBag($bag);
     }
 
-    public function testConstructorTGz() {
+    public function testConstructorTGz()
+    {
         $bagTar = __DIR__ . '/TestBag.tgz';
         $bag = new BagIt($bagTar);
 
@@ -434,25 +509,31 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->_testSampleBag($bag);
     }
 
-    public function testIsValid() {
+    public function testIsValid()
+    {
         $this->assertTrue($this->bag->isValid());
     }
 
-    public function testIsExtended() {
+    public function testIsExtended()
+    {
         $this->assertTrue($this->bag->isExtended());
 
         $tmp = tmpdir();
-        try {
+        try
+        {
             $bag = new BagIt($tmp, false, false);
             $this->assertFalse($bag->isExtended());
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
 
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/bag-info.txt",
@@ -462,14 +543,17 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             );
             $bag = new BagIt($tmp, false, false);
             $this->assertFalse($bag->isExtended());
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testGetBagInfo() {
+    public function testGetBagInfo()
+    {
         $bagInfo = $this->bag->getBagInfo();
 
         $this->assertInternalType('array', $bagInfo);
@@ -483,22 +567,26 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals('sha1', $bagInfo['hash']);
     }
 
-    public function testGetDataDirectory() {
+    public function testGetDataDirectory()
+    {
         $dataDir = $this->bag->getDataDirectory();
         $this->assertStringStartsWith($this->tmpdir, $dataDir);
     }
 
-    public function testGetHashEncoding() {
+    public function testGetHashEncoding()
+    {
         $hash = $this->bag->getHashEncoding();
         $this->assertEquals('sha1', $hash);
     }
 
-    public function testSetHashEncodingMD5() {
+    public function testSetHashEncodingMD5()
+    {
         $this->bag->setHashEncoding('md5');
         $this->assertEquals('md5', $this->bag->getHashEncoding());
     }
 
-    public function testSetHashEncodingSHA1() {
+    public function testSetHashEncodingSHA1()
+    {
         $this->bag->setHashEncoding('md5');
         $this->bag->setHashEncoding('sha1');
         $this->assertEquals('sha1', $this->bag->getHashEncoding());
@@ -507,18 +595,21 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
     /**
      * @expectedException Exception
      */
-    public function testSetHashEncodingERR() {
+    public function testSetHashEncodingERR()
+    {
         $this->bag->setHashEncoding('err');
     }
 
-    public function testGetBagContents() {
+    public function testGetBagContents()
+    {
         $bagContents = $this->bag->getBagContents();
 
         $this->assertInternalType('array', $bagContents);
         $this->assertEquals(0, count($bagContents));
 
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             mkdir("$tmp/data");
             file_put_contents(
@@ -532,14 +623,17 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $bagContents = $bag->getBagContents();
             $this->assertEquals(1, count($bagContents));
             $this->assertEquals($tmp . '/data/something.txt', $bagContents[0]);
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testGetBagErrors() {
+    public function testGetBagErrors()
+    {
         $bagErrors = $this->bag->getBagErrors();
         $this->assertInternalType('array', $bagErrors);
         $this->assertEquals(0, count($bagErrors));
@@ -549,14 +643,16 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertGreaterThan(0, count($this->bag->getBagErrors()));
     }
 
-    public function testGetBagErrorsValidate() {
+    public function testGetBagErrorsValidate()
+    {
         rrmdir($this->bag->dataDirectory);
         $bagErrors = $this->bag->getBagErrors(true);
         $this->assertInternalType('array', $bagErrors);
         $this->assertGreaterThan(0, count($bagErrors));
     }
 
-    public function testValidateMissingBagFile() {
+    public function testValidateMissingBagFile()
+    {
         unlink($this->bag->bagitFile);
 
         $this->bag->validate();
@@ -566,9 +662,11 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue(seenAtKey($bagErrors, 0, 'bagit.txt'));
     }
 
-    public function testValidateChecksum() {
+    public function testValidateChecksum()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/manifest-sha1.txt",
@@ -583,16 +681,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertFalse($bag->isValid());
             $this->assertTrue(seenAtKey($bagErrors, 0, 'data/missing.txt'));
             $this->assertTrue(seenAtKey($bagErrors, 1, 'Checksum mismatch.'));
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testUpdateCreateMissing() {
+    public function testUpdateCreateMissing()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             $bag = new BagIt($tmp);
             $bag->update();
 
@@ -600,16 +702,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertFileExists($tmp . '/manifest-sha1.txt');
             $this->assertTrue(is_dir($tmp . '/data'));
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testUpdateSanitize() {
+    public function testUpdateSanitize()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             mkdir($tmp . '/data');
             touch($tmp . '/data/has space');
@@ -632,16 +738,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertFalse(is_file($tmp . '/data/quoted "yep" quoted'));
             $this->assertFileExists($tmp . '/data/quoted_yep_quoted');
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testUpdateChecksums() {
+    public function testUpdateChecksums()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/manifest-sha1.txt",
@@ -664,16 +774,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 $bag->manifestContents['data/missing.txt']
             );
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testUpdateNewFiles() {
+    public function testUpdateNewFiles()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
@@ -692,16 +806,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 $bag->manifestContents['data/missing.txt']
             );
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testUpdateDeletedFiles() {
+    public function testUpdateDeletedFiles()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             file_put_contents(
                 $tmp . "/manifest-sha1.txt",
@@ -719,16 +837,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 array_key_exists('data/missing.txt', $bag->manifestContents)
             );
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testUpdateExtended() {
+    public function testUpdateExtended()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             $bag = new BagIt($tmp);
             $bag->update();
 
@@ -736,16 +858,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertFileExists($tmp . '/tagmanifest-sha1.txt');
             $this->assertFileExists($tmp . '/fetch.txt');
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testFetch() {
+    public function testFetch()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
@@ -767,16 +893,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
             $this->assertFileExists($tmp . '/data/google/index.html');
             $this->assertFileExists($tmp . '/data/yahoo/index.html');
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testAddFetchEntries() {
+    public function testAddFetchEntries()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
@@ -815,16 +945,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 $bag->fetchContents[2]['url']
             );
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testAddFetchEntriesReplace() {
+    public function testAddFetchEntriesReplace()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
@@ -855,16 +989,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
                 $bag->fetchContents[0]['url']
             );
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testPackageZip() {
+    public function testPackageZip()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
@@ -888,16 +1026,20 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
             // TODO: Test the contents of the package.
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
         rrmdir($tmp);
     }
 
-    public function testPackageTGz() {
+    public function testPackageTGz()
+    {
         $tmp = tmpdir();
-        try {
+        try
+        {
             mkdir($tmp);
             mkdir($tmp . '/data');
             file_put_contents(
@@ -923,7 +1065,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase {
 
             // TODO: Test the contents of the package.
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             rrmdir($tmp);
             throw $e;
         }
