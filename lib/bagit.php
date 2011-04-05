@@ -166,28 +166,28 @@ class BagIt
      *
      * @var array
      */
-    var $manifestContents;
+    var $manifestData;
 
     /**
      * A dictionary array containing the tagmanifest file contents.
      *
      * @var array
      */
-    var $tagManifestContents;
+    var $tagManifestData;
 
     /**
      * A dictionary array containing the 'fetch.txt' file contents.
      *
      * @var array
      */
-    var $fetchContents;
+    var $fetchData;
 
     /**
      * A dictionary array containing the 'bag-info.txt' file contents.
      *
      * @var array
      */
-    var $bagInfoContents;
+    var $bagInfoData;
 
     /**
      * If the bag came from a compressed file, this contains either 'tgz' or
@@ -240,10 +240,10 @@ class BagIt
         $this->tagManifestFile = null;
         $this->fetchFile = null;
         $this->bagInfoFile = null;
-        $this->manifestContents = null;
-        $this->tagManifestContents = null;
-        $this->fetchContents = null;
-        $this->bagInfoContents = null;
+        $this->manifestData = null;
+        $this->tagManifestData = null;
+        $this->fetchData = null;
+        $this->bagInfoData = null;
         $this->bagCompression = null;
         $this->bagErrors = array();
 
@@ -439,7 +439,7 @@ class BagIt
 
         // Update data file checksums.
         $dataFiles = rls($this->dataDirectory);
-        $this->manifestContents = $this->updateManifest(
+        $this->manifestData = $this->updateManifest(
             $dataFiles,
             $this->manifestFile
         );
@@ -452,7 +452,7 @@ class BagIt
             "$bagdir/fetch.txt",
             $this->manifestFile
         );
-        $this->tagManifestContents = $this->updateManifest(
+        $this->tagManifestData = $this->updateManifest(
             $tagFiles,
             $this->tagManifestFile
         );
@@ -468,7 +468,7 @@ class BagIt
      */
     function fetch($validate=false)
     {
-        foreach ($this->fetchContents as $fetch)
+        foreach ($this->fetchData as $fetch)
         {
             $filename = $this->bagDirectory . '/' . $fetch['filename'];
             if (! file_exists($filename))
@@ -491,7 +491,7 @@ class BagIt
      */
     function clearFetch()
     {
-        $this->fetchContents = array();
+        $this->fetchData = array();
         $this->writeFile($this->fetchFile, '');
     }
 
@@ -507,7 +507,7 @@ class BagIt
     function addFetch($url, $filename)
     {
         array_push(
-            $this->fetchContents,
+            $this->fetchData,
             array('url' => $url, 'length' => '-', 'filename' => $filename)
         );
         $this->writeFetch();
@@ -600,8 +600,8 @@ class BagIt
             }
         }
 
-        $this->manifestContents = array();
-        $this->tagManifestContents = array();
+        $this->manifestData = array();
+        $this->tagManifestData = array();
     }
 
     /**
@@ -687,7 +687,7 @@ class BagIt
     private function validateChecksum($filename, &$errors)
     {
         $relname = $this->makeRelative($filename);
-        $expected = $this->manifestContents[$relname];
+        $expected = $this->manifestData[$relname];
         $actual = $this->calculateChecksum($filename);
 
         if ($expected === null)
@@ -782,7 +782,7 @@ class BagIt
                 {
                     $this->hashEncoding = $hashEncoding;
                 }
-                $this->manifestContents = $manifest;
+                $this->manifestData = $manifest;
             }
 
             // Read tag manifest file.
@@ -793,7 +793,7 @@ class BagIt
             {
                 list($filename, $hashEncoding, $manifest) = $manifestData;
                 $this->tagManifestFile = $filename;
-                $this->tagManifestContents = $manifest;
+                $this->tagManifestData = $manifest;
             }
 
             $this->readFetch("{$this->bagDirectory}/fetch.txt");
@@ -856,7 +856,7 @@ class BagIt
         $this->writeFile($this->bagitFile, $bagItData);
 
         touch($this->manifestFile);
-        $this->manifestContents = array();
+        $this->manifestData = array();
 
         $this->createExtendedBag();
     }
@@ -872,15 +872,15 @@ class BagIt
                 "/tagmanifest-{$this->hashEncoding}.txt";
 
             touch($this->tagManifestFile);
-            $this->tagManifestContents = array();
+            $this->tagManifestData = array();
 
             $this->fetchFile = $this->bagDirectory . '/fetch.txt';
             touch($this->fetchFile);
-            $this->fetchContents = array();
+            $this->fetchData = array();
 
             $this->bagInfoFile = $this->bagDirectory . '/bag-info.txt';
             touch($this->bagInfoFile);
-            $this->bagInfoContents = array();
+            $this->bagInfoData = array();
         }
     }
 
@@ -958,7 +958,7 @@ class BagIt
     }
 
     /**
-     * This reads the manifest file into manifestContents.
+     * This reads the manifest file into manifestData.
      *
      * @param string $mode The type of manifest to read. <code>t</code> means
      * reading a tagmanifest file. Default is <code>d</code>.
@@ -1005,11 +1005,11 @@ class BagIt
 
             if ($mode == 'd')
             {
-                $this->manifestContents = $manifest;
+                $this->manifestData = $manifest;
             }
             else
             {
-                $this->tagManifestContents = $manifest;
+                $this->tagManifestData = $manifest;
             }
 
         }
@@ -1025,7 +1025,7 @@ class BagIt
     /**
      * This reads the fetch.txt file into an array list.
      *
-     * This sets $this->fetchContents to a sequential array of arrays with the
+     * This sets $this->fetchData to a sequential array of arrays with the
      * keys 'url', 'length', and 'filename'.
      *
      * @param string $filename  If given, this tests whether the file exists,
@@ -1066,7 +1066,7 @@ class BagIt
                     );
                 }
             }
-            $this->fetchContents = $fetch;
+            $this->fetchData = $fetch;
 
         }
         catch (Exception $e)
@@ -1079,7 +1079,7 @@ class BagIt
     }
 
     /**
-     * This writes the data in fetchContents into fetchFile.
+     * This writes the data in fetchData into fetchFile.
      *
      * @return void
      */
@@ -1087,7 +1087,7 @@ class BagIt
     {
         $lines = array();
 
-        foreach ($this->fetchContents as $fetch)
+        foreach ($this->fetchData as $fetch)
         {
             $data = array($fetch['url'], $fetch['length'], $fetch['filename']);
             array_push($lines, join(' ', $data) . "\n");
@@ -1157,7 +1157,7 @@ class BagIt
                 }
             }
 
-            $this->bagInfoContents = $bagInfo;
+            $this->bagInfoData = $bagInfo;
 
         }
         catch (Exception $e)
@@ -1428,16 +1428,16 @@ class BagIt
     /**
      * This parses the version string from the bagit.txt file.
      *
-     * @param string $bagitFileContents The contents of the bagit file.
+     * @param string $bagitFileData The contents of the bagit file.
      *
      * @return array A two-item array containing the version string as
      * integers.
      */
-    private function parseVersionString($bagitFileContents) {
+    private function parseVersionString($bagitFileData) {
         $matches = array();
         $success = preg_match(
             "/BagIt-Version: (\d+)\.(\d+)/i",
-            $bagitFileContents,
+            $bagitFileData,
             $matches
         );
 
@@ -1458,16 +1458,16 @@ class BagIt
     /**
      * This parses the encoding string from the bagit.txt file.
      *
-     * @param string $bagitFileContents The contents of the bagit file.
+     * @param string $bagitFileData The contents of the bagit file.
      *
      * @return string The encoding.
      */
-    private function parseEncodingString($bagitFileContents)
+    private function parseEncodingString($bagitFileData)
     {
         $matches = array();
         $success = preg_match(
             '/Tag-File-Character-Encoding: (.*)/i',
-            $bagitFileContents,
+            $bagitFileData,
             $matches
         );
 

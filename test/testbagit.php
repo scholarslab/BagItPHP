@@ -213,9 +213,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
         $this->assertFileExists($this->bag->bagInfoFile);
     }
 
-    public function testManifestContents()
+    public function testManifestData()
     {
-        $this->assertEquals(0, count($this->bag->manifestContents));
+        $this->assertEquals(0, count($this->bag->manifestData));
 
         $tmp2 = tmpdir();
         try
@@ -227,9 +227,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
                 "0123456789012345678901234567890123456789 File-2\n"
             );
             $bag = new BagIt($tmp2);
-            $this->assertNotNull($bag->manifestContents);
-            $this->assertArrayHasKey("File-1", $bag->manifestContents);
-            $this->assertArrayHasKey("File-2", $bag->manifestContents);
+            $this->assertNotNull($bag->manifestData);
+            $this->assertArrayHasKey("File-1", $bag->manifestData);
+            $this->assertArrayHasKey("File-2", $bag->manifestData);
         }
         catch (Exception $e)
         {
@@ -239,9 +239,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
         rrmdir($tmp2);
     }
 
-    public function testTagManifestContents()
+    public function testTagManifestData()
     {
-        $this->assertEquals(0, count($this->bag->tagManifestContents));
+        $this->assertEquals(0, count($this->bag->tagManifestData));
 
         $tmp2 = tmpdir();
         try
@@ -253,9 +253,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
                 "0123456789012345678901234567890123456789 File-2\n"
             );
             $bag = new BagIt($tmp2);
-            $this->assertNotNull($bag->tagManifestContents);
-            $this->assertArrayHasKey("File-1", $bag->tagManifestContents);
-            $this->assertArrayHasKey("File-2", $bag->tagManifestContents);
+            $this->assertNotNull($bag->tagManifestData);
+            $this->assertArrayHasKey("File-1", $bag->tagManifestData);
+            $this->assertArrayHasKey("File-2", $bag->tagManifestData);
         }
         catch (Exception $e)
         {
@@ -265,9 +265,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
         rrmdir($tmp2);
     }
 
-    public function testFetchContents()
+    public function testFetchData()
     {
-        $this->assertEquals(0, count($this->bag->fetchContents));
+        $this->assertEquals(0, count($this->bag->fetchData));
 
         $tmp2 = tmpdir();
         try
@@ -279,9 +279,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
                 "http://www.yahoo.com - yahoo/index.html\n"
             );
             $bag = new BagIt($tmp2);
-            $this->assertNotNull($bag->fetchContents);
-            $this->assertEquals("http://www.google.com", $bag->fetchContents[0]['url']);
-            $this->assertEquals("http://www.yahoo.com", $bag->fetchContents[1]['url']);
+            $this->assertNotNull($bag->fetchData);
+            $this->assertEquals("http://www.google.com", $bag->fetchData[0]['url']);
+            $this->assertEquals("http://www.yahoo.com", $bag->fetchData[1]['url']);
         }
         catch (Exception $e)
         {
@@ -291,9 +291,9 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
         rrmdir($tmp2);
     }
 
-    public function testBagInfoContents()
+    public function testBagInfoData()
     {
-        $this->assertEquals(0, count($this->bag->bagInfoContents));
+        $this->assertEquals(0, count($this->bag->bagInfoData));
 
         $tmp2 = tmpdir();
         try
@@ -306,13 +306,13 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
                 "Bag-size: very, very small\n"
             );
             $bag = new BagIt($tmp2);
-            $this->assertNotNull($bag->bagInfoContents);
-            $this->assertArrayHasKey("source-organization", $bag->bagInfoContents);
-            $this->assertArrayHasKey("contact-name", $bag->bagInfoContents);
-            $this->assertArrayHasKey("bag-size", $bag->bagInfoContents);
-            $this->assertArrayHasKey("Bag-size", $bag->bagInfoContents);
-            $this->assertArrayHasKey("BAG-SIZE", $bag->bagInfoContents);
-            $this->assertFalse(array_key_exists("bag-date", $bag->bagInfoContents));
+            $this->assertNotNull($bag->bagInfoData);
+            $this->assertArrayHasKey("source-organization", $bag->bagInfoData);
+            $this->assertArrayHasKey("contact-name", $bag->bagInfoData);
+            $this->assertArrayHasKey("bag-size", $bag->bagInfoData);
+            $this->assertArrayHasKey("Bag-size", $bag->bagInfoData);
+            $this->assertArrayHasKey("BAG-SIZE", $bag->bagInfoData);
+            $this->assertFalse(array_key_exists("bag-date", $bag->bagInfoData));
         }
         catch (Exception $e)
         {
@@ -469,17 +469,17 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
         $this->assertContains('data/README.txt', $ls);
 
         // Testing the checksums.
-        $this->assertEquals('547b21e9c710f562d448a6cd7d32f8257b04e561', $bag->manifestContents['data/imgs/109x109xcoins1-150x150.jpg']);
-        $this->assertEquals('fba552acae866d24fb143fef0ddb24efc49b097a', $bag->manifestContents['data/imgs/109x109xprosody.png']);
-        $this->assertEquals('4beed314513ad81e1f5fad42672a3b1bd3a018ea', $bag->manifestContents['data/imgs/110x108xmetaphor1.png']);
-        $this->assertEquals('4372383348c55775966bb1deeeb2b758b197e2a1', $bag->manifestContents['data/imgs/fellows1-150x150.png']);
-        $this->assertEquals('b8593e2b3c2fa3756d2b206a90c7259967ff6650', $bag->manifestContents['data/imgs/fibtriangle-110x110.jpg']);
-        $this->assertEquals('aec60202453733a976433833c9d408a449f136b3', $bag->manifestContents['data/imgs/uvalib.png']);
-        $this->assertEquals('0de174b95ebacc2d91b0839cb2874b2e8f604b98', $bag->manifestContents['data/README.txt']);
+        $this->assertEquals('547b21e9c710f562d448a6cd7d32f8257b04e561', $bag->manifestData['data/imgs/109x109xcoins1-150x150.jpg']);
+        $this->assertEquals('fba552acae866d24fb143fef0ddb24efc49b097a', $bag->manifestData['data/imgs/109x109xprosody.png']);
+        $this->assertEquals('4beed314513ad81e1f5fad42672a3b1bd3a018ea', $bag->manifestData['data/imgs/110x108xmetaphor1.png']);
+        $this->assertEquals('4372383348c55775966bb1deeeb2b758b197e2a1', $bag->manifestData['data/imgs/fellows1-150x150.png']);
+        $this->assertEquals('b8593e2b3c2fa3756d2b206a90c7259967ff6650', $bag->manifestData['data/imgs/fibtriangle-110x110.jpg']);
+        $this->assertEquals('aec60202453733a976433833c9d408a449f136b3', $bag->manifestData['data/imgs/uvalib.png']);
+        $this->assertEquals('0de174b95ebacc2d91b0839cb2874b2e8f604b98', $bag->manifestData['data/README.txt']);
 
         // Testing the fetch file.
-        $this->assertEquals('http://www.scholarslab.org', $bag->fetchContents[0]['url']);
-        $this->assertEquals('data/index.html', $bag->fetchContents[0]['filename']);
+        $this->assertEquals('http://www.scholarslab.org', $bag->fetchData[0]['url']);
+        $this->assertEquals('data/index.html', $bag->fetchData[0]['filename']);
     }
 
     public function testConstructorDir()
@@ -771,7 +771,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
             );
             $this->assertEquals(
                 'a5c44171ca6618c6ee24c3f3f3019df8df09a2e0',
-                $bag->manifestContents['data/missing.txt']
+                $bag->manifestData['data/missing.txt']
             );
 
         }
@@ -803,7 +803,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
             );
             $this->assertEquals(
                 'a5c44171ca6618c6ee24c3f3f3019df8df09a2e0',
-                $bag->manifestContents['data/missing.txt']
+                $bag->manifestData['data/missing.txt']
             );
 
         }
@@ -834,7 +834,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
                 file_get_contents($tmp . '/manifest-sha1.txt')
             );
             $this->assertFalse(
-                array_key_exists('data/missing.txt', $bag->manifestContents)
+                array_key_exists('data/missing.txt', $bag->manifestData)
             );
 
         }
@@ -934,15 +934,15 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
 
             $this->assertEquals(
                 'http://www.google.com',
-                $bag->fetchContents[0]['url']
+                $bag->fetchData[0]['url']
             );
             $this->assertEquals(
                 'http://www.yahoo.com',
-                $bag->fetchContents[1]['url']
+                $bag->fetchData[1]['url']
             );
             $this->assertEquals(
                 'http://www.scholarslab.org/',
-                $bag->fetchContents[2]['url']
+                $bag->fetchData[2]['url']
             );
 
         }
@@ -983,10 +983,10 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
                 file_get_contents($tmp . '/fetch.txt')
             );
 
-            $this->assertEquals(1, count($bag->fetchContents));
+            $this->assertEquals(1, count($bag->fetchData));
             $this->assertEquals(
                 'http://www.scholarslab.org/',
-                $bag->fetchContents[0]['url']
+                $bag->fetchData[0]['url']
             );
 
         }
