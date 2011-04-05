@@ -514,6 +514,28 @@ class BagIt
     }
 
     /**
+     * This copies the file specified into the bag at the place given.
+     *
+     * @param string $src   The file name for the source file.
+     * @param string $dest  The file name for the destination file. This should 
+     * be relative to the bag directory.
+     *
+     * @return void
+     */
+    function addFile($src, $dest)
+    {
+        $fulldest = "{$this->bagDirectory}/$dest";
+        $dirname = dirname($fulldest);
+        if (! is_dir($dirname))
+        {
+            mkdir($dirname, 0777, true);
+        }
+
+        copy($src, $fulldest);
+    }
+
+
+    /**
      * Compresses the bag into a file.
      *
      * @param string $destination The file to put the bag into.

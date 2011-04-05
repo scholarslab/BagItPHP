@@ -65,16 +65,11 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
 
         // 2. Add files to the bag;
         $srcdir = __DIR__ . '/TestBag/data';
-        copy("$srcdir/README.txt", "{$bag->dataDirectory}/README.txt");
-
-        mkdir("{$bag->dataDirectory}/payloads");
-        copy(
-            "$srcdir/imgs/uvalib.png",
-            "{$bag->dataDirectory}/payloads/uvalib.png"
-        );
-        copy(
+        $bag->addFile("$srcdir/README.txt", 'data/README.txt');
+        $bag->addFile("$srcdir/imgs/uvalib.png", 'data/payloads/uvalib.png');
+        $bag->addFile(
             "$srcdir/imgs/fibtriangle-110x110.jpg",
-            "{$bag->dataDirectory}/payloads/fibtri.jpg"
+            'data/payloads/fibtri.jpg'
         );
 
         // 3. Add fetch entries;

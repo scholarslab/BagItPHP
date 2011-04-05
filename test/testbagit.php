@@ -998,6 +998,40 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
         rrmdir($tmp);
     }
 
+    public function testAddFile()
+    {
+        $srcdir = __DIR__ . '/TestBag/data';
+
+        $this->bag->addFile("$srcdir/README.txt", 'data/README.txt');
+
+        $this->assertFileExists(
+            "{$this->bag->dataDirectory}/README.txt"
+        );
+        $this->assertFileEquals(
+            "$srcdir/README.txt",
+            "{$this->bag->dataDirectory}/README.txt"
+        );
+
+        $this->bag->addFile("$srcdir/imgs/uvalib.png", "data/pics/uvalib.png");
+
+        $this->assertFileExists(
+            "{$this->bag->dataDirectory}/pics/uvalib.png"
+        );
+        $this->assertFileEquals(
+            "$srcdir/imgs/uvalib.png",
+            "{$this->bag->dataDirectory}/pics/uvalib.png"
+        );
+    }
+
+    /**
+     * @expectedException Exception
+     */
+    public function testAddFileMissing()
+    {
+        $srcdir = __DIR__ . '/TestBag/data';
+        $this->bag->addFile("$srcdir/missing.txt", 'data/missing.txt');
+    }
+
     public function testPackageZip()
     {
         $tmp = tmpdir();
