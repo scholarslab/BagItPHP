@@ -407,7 +407,7 @@ class BagIt
     function clearFetch()
     {
         $this->fetchData = array();
-        $this->_writeFile($this->fetchFile, '');
+        writeFileText($this->fetchFile, $this->tagFileEncoding, '');
     }
 
     /**
@@ -586,58 +586,6 @@ class BagIt
     }
 
     /**
-     * Read the data in the file and convert it from tagFileEncoding into
-     * UTF-8.
-     *
-     * @param string $filename The name of the file to read.
-     *
-     * @return string The contents of the file as UTF-8.
-     */
-    private function _readFile($filename)
-    {
-        // XXX (move to utils)
-        $data = iconv(
-            $this->tagFileEncoding,
-            'UTF-8',
-            file_get_contents($filename)
-        );
-        return $data;
-    }
-
-    /**
-     * Write the data in the file, converting it from UTF-8 to tagFileEncoding.
-     *
-     * @param string $filename The name of the file to write to.
-     * @param string $data     The data to write.
-     *
-     * @return void
-     */
-    private function _writeFile($filename, $data)
-    {
-        // XXX (move to utils)
-        file_put_contents(
-            $filename,
-            iconv('UTF-8', $this->tagFileEncoding, $data)
-        );
-    }
-
-    /**
-     * Read the data in the file and convert it from tagFileEncoding into
-     * UTF-8, then split the lines.
-     *
-     * @param string $filename The name of the file to read.
-     *
-     * @return array The lines in the file.
-     */
-    private function _readLines($filename)
-    {
-        // XXX (move to utils)
-        $data = $this->_readFile($filename);
-        $lines = preg_split('/[\n\r]+/', $data, null, PREG_SPLIT_NO_EMPTY);
-        return $lines;
-    }
-
-    /**
      * Open an existing bag. This expects $bag to be set.
      *
      * @return void
@@ -738,7 +686,7 @@ class BagIt
         $bagItData
             = "BagIt-Version: $major.$minor\n" .
               "Tag-File-Character-Encoding: {$this->tagFileEncoding}\n";
-        $this->_writeFile($this->bagitFile, $bagItData);
+        writeFileText($this->bagitFile, $this->tagFileEncoding, $bagItData);
 
         $this->_createExtendedBag();
     }
@@ -792,7 +740,7 @@ class BagIt
         }
 
         try {
-            $lines = $this->_readLines($this->fetchFile);
+            $lines = readLines($this->fetchFile, $this->tagFileEncoding);
             $fetch = array();
 
             foreach ($lines as $line) {
@@ -830,7 +778,11 @@ class BagIt
             array_push($lines, join(' ', $data) . "\n");
         }
 
-        $this->_writeFile($this->fetchFile, join('', $lines));
+        writeFileText(
+            $this->fetchFile,
+            $this->tagFileEncoding,
+            join('', $lines)
+        );
     }
 
     /**
@@ -854,7 +806,7 @@ class BagIt
         }
 
         try {
-            $lines = $this->_readLines($this->bagInfoFile);
+            $lines = readLines($this->bagInfoFile, $this->tagFileEncoding);
             $this->bagInfoData = $this->_parseBagInfo($lines);
         } catch (Exception $exc) {
             array_push(
@@ -1015,7 +967,7 @@ class BagIt
         }
 
         try {
-            $this->_parseBagIt($this->_readFile($filename));
+            $this->_parseBagIt(readFileText($filename, $this->tagFileEncoding));
         } catch (Exception $exc) {
             array_push(
                 $this->bagErrors,
