@@ -113,12 +113,13 @@
     </target>
 
     <target name="phpunit" description="Run unit tests on current plugin">
-        <exec executable="phpunit" failonerror="true">
+      <!-- <exec executable="phpunit" failonerror="true">
             <arg line="test/testbagit.php" />
         </exec>
         <exec executable="phpunit" failonerror="true">
             <arg line="test/testusecases.php" />
-        </exec>
+        </exec> -->
+        <exec executable="phpunit" />
     </target>
 
     <target name="pdepend" depends="setup" description="Create PHP_Depend Static Code Analysis report">
