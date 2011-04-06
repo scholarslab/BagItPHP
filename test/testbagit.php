@@ -118,13 +118,9 @@ class BagItTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('BagItManifest', $this->bag->tagManifest);
     }
 
-    public function testFetchFile()
+    public function testFetch()
     {
-        $this->assertEquals(
-            $this->tmpdir . "/fetch.txt",
-            $this->bag->fetchFile
-        );
-        $this->assertFileExists($this->bag->fetchFile);
+        $this->assertInstanceOf('BagItFetch', $this->bag->fetch);
     }
 
     public function testBagInfoFile()
@@ -134,32 +130,6 @@ class BagItTest extends PHPUnit_Framework_TestCase
             $this->bag->bagInfoFile
         );
         $this->assertFileExists($this->bag->bagInfoFile);
-    }
-
-    public function testFetchData()
-    {
-        $this->assertEquals(0, count($this->bag->fetchData));
-
-        $tmp2 = tmpdir();
-        try
-        {
-            mkdir($tmp2);
-            file_put_contents(
-                $tmp2 . "/fetch.txt",
-                "http://www.google.com - google/index.html\n" .
-                "http://www.yahoo.com - yahoo/index.html\n"
-            );
-            $bag = new BagIt($tmp2);
-            $this->assertNotNull($bag->fetchData);
-            $this->assertEquals("http://www.google.com", $bag->fetchData[0]['url']);
-            $this->assertEquals("http://www.yahoo.com", $bag->fetchData[1]['url']);
-        }
-        catch (Exception $e)
-        {
-            rrmdir($tmp2);
-            throw $e;
-        }
-        rrmdir($tmp2);
     }
 
     public function testBagInfoData()
@@ -349,8 +319,9 @@ class BagItTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('0de174b95ebacc2d91b0839cb2874b2e8f604b98', $bag->manifest->data['data/README.txt']);
 
         // Testing the fetch file.
-        $this->assertEquals('http://www.scholarslab.org', $bag->fetchData[0]['url']);
-        $this->assertEquals('data/index.html', $bag->fetchData[0]['filename']);
+        $data = $bag->fetch->getData();
+        $this->assertEquals('http://www.scholarslab.org', $data[0]['url']);
+        $this->assertEquals('data/index.html', $data[0]['filename']);
     }
 
     public function testConstructorDir()
@@ -728,137 +699,6 @@ class BagItTest extends PHPUnit_Framework_TestCase
             $this->assertFileExists($tmp . '/bag-info.txt');
             $this->assertFileExists($tmp . '/tagmanifest-sha1.txt');
             $this->assertFileExists($tmp . '/fetch.txt');
-
-        }
-        catch (Exception $e)
-        {
-            rrmdir($tmp);
-            throw $e;
-        }
-        rrmdir($tmp);
-    }
-
-    public function testFetch()
-    {
-        $tmp = tmpdir();
-        try
-        {
-            mkdir($tmp);
-            mkdir($tmp . '/data');
-            file_put_contents(
-                $tmp . '/data/missing.txt',
-                'This space intentionally left blank.\n'
-            );
-            file_put_contents(
-                $tmp . "/fetch.txt",
-                "http://www.google.com - data/google/index.html\n" .
-                "http://www.yahoo.com - data/yahoo/index.html\n"
-            );
-            $bag = new BagIt($tmp);
-
-            $this->assertFalse(is_file($tmp . '/data/google/index.html'));
-            $this->assertFalse(is_file($tmp . '/data/yahoo/index.html'));
-
-            $bag->fetch();
-
-            $this->assertFileExists($tmp . '/data/google/index.html');
-            $this->assertFileExists($tmp . '/data/yahoo/index.html');
-
-        }
-        catch (Exception $e)
-        {
-            rrmdir($tmp);
-            throw $e;
-        }
-        rrmdir($tmp);
-    }
-
-    public function testAddFetchEntries()
-    {
-        $tmp = tmpdir();
-        try
-        {
-            mkdir($tmp);
-            mkdir($tmp . '/data');
-            file_put_contents(
-                $tmp . '/data/missing.txt',
-                'This space intentionally left blank.\n'
-            );
-            file_put_contents(
-                $tmp . "/fetch.txt",
-                "http://www.google.com - data/google/index.html\n" .
-                "http://www.yahoo.com - data/yahoo/index.html\n"
-            );
-            $bag = new BagIt($tmp);
-
-            $bag->addFetch(
-                'http://www.scholarslab.org/',
-                'data/scholarslab/index.html'
-            );
-
-            $this->assertEquals(
-                "http://www.google.com - data/google/index.html\n" .
-                "http://www.yahoo.com - data/yahoo/index.html\n" .
-                "http://www.scholarslab.org/ - data/scholarslab/index.html\n",
-                file_get_contents($tmp . '/fetch.txt')
-            );
-
-            $this->assertEquals(
-                'http://www.google.com',
-                $bag->fetchData[0]['url']
-            );
-            $this->assertEquals(
-                'http://www.yahoo.com',
-                $bag->fetchData[1]['url']
-            );
-            $this->assertEquals(
-                'http://www.scholarslab.org/',
-                $bag->fetchData[2]['url']
-            );
-
-        }
-        catch (Exception $e)
-        {
-            rrmdir($tmp);
-            throw $e;
-        }
-        rrmdir($tmp);
-    }
-
-    public function testAddFetchEntriesReplace()
-    {
-        $tmp = tmpdir();
-        try
-        {
-            mkdir($tmp);
-            mkdir($tmp . '/data');
-            file_put_contents(
-                $tmp . '/data/missing.txt',
-                'This space intentionally left blank.\n'
-            );
-            file_put_contents(
-                $tmp . "/fetch.txt",
-                "http://www.google.com - data/google/index.html\n" .
-                "http://www.yahoo.com - data/yahoo/index.html\n"
-            );
-            $bag = new BagIt($tmp);
-
-            $bag->clearFetch();
-            $bag->addFetch(
-                'http://www.scholarslab.org/',
-                'data/scholarslab/index.html'
-            );
-
-            $this->assertEquals(
-                "http://www.scholarslab.org/ - data/scholarslab/index.html\n",
-                file_get_contents($tmp . '/fetch.txt')
-            );
-
-            $this->assertEquals(1, count($bag->fetchData));
-            $this->assertEquals(
-                'http://www.scholarslab.org/',
-                $bag->fetchData[0]['url']
-            );
 
         }
         catch (Exception $e)

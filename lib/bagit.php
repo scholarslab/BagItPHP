@@ -30,6 +30,8 @@
 
 
 require_once 'Archive/Tar.php';
+require_once 'bagit_fetch.php';
+require_once 'bagit_manifest.php';
 require_once 'bagit_utils.php';
 
 
@@ -127,11 +129,11 @@ class BagIt
     var $tagManifest;
 
     /**
-     * Absolute path to the 'fetch.txt' file or null.
+     * Information about files that need to be downloaded, listed in fetch.txt.
      *
-     * @var string
+     * @var BagItFetch
      */
-    var $fetchFile;
+    var $fetch;
 
     /**
      * Absolute path to the 'bag-info.txt' file or null.
@@ -139,13 +141,6 @@ class BagIt
      * @var string
      */
     var $bagInfoFile;
-
-    /**
-     * A dictionary array containing the 'fetch.txt' file contents.
-     *
-     * @var array
-     */
-    var $fetchData;
 
     /**
      * A dictionary array containing the 'bag-info.txt' file contents.
@@ -201,9 +196,8 @@ class BagIt
         $this->bagitFile = null;
         $this->manifest = null;
         $this->tagManifest = null;
-        $this->fetchFile = null;
+        $this->fetch = null;
         $this->bagInfoFile = null;
-        $this->fetchData = null;
         $this->bagInfoData = null;
         $this->bagCompression = null;
         $this->bagErrors = array();
@@ -215,7 +209,7 @@ class BagIt
         }
 
         if ($fetch) {
-            $this->fetch();
+            $this->fetch->download();
         }
 
         if ($validate) {
@@ -377,58 +371,6 @@ class BagIt
     }
 
     /**
-     * Downloads every entry in 'fetch.txt'.
-     *
-     * @param boolean $validate If true, then it also calls update() and
-     * validate().
-     *
-     * @return void
-     */
-    function fetch($validate=false)
-    {
-        foreach ($this->fetchData as $fetch) {
-            $filename = $this->bagDirectory . '/' . $fetch['filename'];
-            if (! file_exists($filename)) {
-                $this->_fetchFile($fetch['url'], $filename);
-            }
-        }
-
-        if ($validate) {
-            $this->update();
-            $this->validate();
-        }
-    }
-
-    /**
-     * This clears the fetch data.
-     *
-     * @return void
-     */
-    function clearFetch()
-    {
-        $this->fetchData = array();
-        writeFileText($this->fetchFile, $this->tagFileEncoding, '');
-    }
-
-    /**
-     * This adds an entry to the fetch data.
-     *
-     * @param string $url      This is the URL to load the file from.
-     * @param string $filename This is the file name, relative to the bag
-     * directory, to save the data to.
-     *
-     * @return void
-     */
-    function addFetch($url, $filename)
-    {
-        array_push(
-            $this->fetchData,
-            array('url' => $url, 'length' => '-', 'filename' => $filename)
-        );
-        $this->_writeFetch();
-    }
-
-    /**
      * This copies the file specified into the bag at the place given.
      *
      * @param string $src  The file name for the source file.
@@ -475,37 +417,6 @@ class BagIt
 
     //{{{ Private Methods
 
-
-    /**
-     * This fetches a single file.
-     *
-     * On errors, this adds an entry to bagErrors.
-     *
-     * @param string $url      The URL to fetch.
-     * @param string $filename The file name to save to.
-     *
-     * @return void
-     */
-    private function _fetchFile($url, $filename)
-    {
-        $dirname = dirname($filename);
-        if (! is_dir($dirname)) {
-            mkdir($dirname, 0777, true);
-        }
-
-        try {
-            saveUrl($url, $filename);
-        } catch (Exception $exc) {
-            array_push(
-                $this->bagErrors,
-                array('fetch', "URL $url could down be downloaded.")
-            );
-            if (file_exists($filename)) {
-                unlink($filename);
-            }
-        }
-    }
-
     /**
      * This cleans up the manifest files.
      *
@@ -532,7 +443,7 @@ class BagIt
             $tagFiles = array(
                 "$bagdir/bagit.txt",
                 "$bagdir/bag-info.txt",
-                "$bagdir/fetch.txt",
+                $this->fetch->fileName,
                 $this->manifest->getFileName()
             );
             $this->tagManifest->update($tagFiles);
@@ -630,7 +541,18 @@ class BagIt
                     $this->tagFileEncoding
                 );
 
-                $this->_readFetch("{$this->bagDirectory}/fetch.txt");
+                try {
+                    $this->fetch = new BagItFetch(
+                        "{$this->bagDirectory}/fetch.txt",
+                        $this->tagFileEncoding
+                    );
+                } catch (Exception $exc) {
+                    array_push(
+                        $this->bagErrors,
+                        array('fetch', 'Error reading fetch file.')
+                    );
+                }
+
                 $this->_readBagInfo("{$this->bagDirectory}/bag-info.txt");
             }
         }
@@ -706,83 +628,13 @@ class BagIt
                 $this->tagFileEncoding
             );
 
-            $this->fetchFile = $this->bagDirectory . '/fetch.txt';
-            touch($this->fetchFile);
-            $this->fetchData = array();
+            $fetchFile = $this->bagDirectory . '/fetch.txt';
+            $this->fetch = new BagItFetch($fetchFile, $this->tagFileEncoding);
 
             $this->bagInfoFile = $this->bagDirectory . '/bag-info.txt';
             touch($this->bagInfoFile);
             $this->bagInfoData = array();
         }
-    }
-
-    /**
-     * This reads the fetch.txt file into an array list.
-     *
-     * This sets $this->fetchData to a sequential array of arrays with the
-     * keys 'url', 'length', and 'filename'.
-     *
-     * @param string $filename If given, this tests whether the file exists,
-     * and if it does, it sets the fetchFile parameter before reading the file.
-     * If it is set but doesn't exist, then the method returns without reading
-     * anything.
-     *
-     * @return void
-     */
-    private function _readFetch($filename=null)
-    {
-        if ($filename !== null) {
-            if (file_exists($filename)) {
-                $this->fetchFile = $filename;
-            } else {
-                return;
-            }
-        }
-
-        try {
-            $lines = readLines($this->fetchFile, $this->tagFileEncoding);
-            $fetch = array();
-
-            foreach ($lines as $line) {
-                $fields = preg_split('/\s+/', $line);
-                if (count($fields) == 3) {
-                    array_push(
-                        $fetch,
-                        array('url' => $fields[0],
-                              'length' => $fields[1],
-                              'filename' => $fields[2])
-                    );
-                }
-            }
-            $this->fetchData = $fetch;
-
-        } catch (Exception $exc) {
-            array_push(
-                $this->bagErrors,
-                array('fetch', 'Error reading fetch file.')
-            );
-        }
-    }
-
-    /**
-     * This writes the data in fetchData into fetchFile.
-     *
-     * @return void
-     */
-    private function _writeFetch()
-    {
-        $lines = array();
-
-        foreach ($this->fetchData as $fetch) {
-            $data = array($fetch['url'], $fetch['length'], $fetch['filename']);
-            array_push($lines, join(' ', $data) . "\n");
-        }
-
-        writeFileText(
-            $this->fetchFile,
-            $this->tagFileEncoding,
-            join('', $lines)
-        );
     }
 
     /**

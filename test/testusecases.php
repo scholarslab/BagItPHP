@@ -73,7 +73,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
         );
 
         // 3. Add fetch entries;
-        $bag->addFetch('http://www.scholarslab.org/', 'data/index.html');
+        $bag->fetch->add('http://www.scholarslab.org/', 'data/index.html');
 
         // 4. Update the bag; and
         $bag->update();
@@ -98,7 +98,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(0, count($dest->bagErrors));
 
         // Now, check that the file was fetched.
-        $dest->fetch();
+        $dest->fetch->download();
         $this->assertFileExists("{$dest->bagDirectory}/data/index.html");
 
     }
@@ -140,7 +140,9 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(0, count($bag->getBagErrors()));
 
         // 3. Fetch on-line items in the bag;
-        $bag->fetch(true);
+        $bag->fetch->download();
+        $bag->update();
+        $bag->validate();
         $this->assertEquals(8, count($bag->getBagContents()));
 
         // 4. Validate the bag's contents; and
