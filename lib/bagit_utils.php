@@ -186,6 +186,70 @@ function saveUrl($url, $filename)
     fclose($file);
 }
 
+/**
+ * This returns the first file name that exists, or the default if none do.
+ *
+ * @param array  $fileNames A list of file names to test for.
+ * @param string $default   The default value to return. Defaults to null.
+ *
+ * @return string The name of the first existing file.
+ */
+function findFirstExisting($fileNames, $default=null)
+{
+    foreach ($fileNames as $fileName) {
+        if (file_exists($fileName)) {
+            return $fileName;
+        }
+    }
+    return $default;
+}
+
+/**
+ * This reads the data in $fileName and converts it from $fileEncoding to 
+ * UTF-8.
+ *
+ * @param string $fileName     The file name to read.
+ * @param string $fileEncoding The encoding that the text in the file is stored 
+ * in.
+ *
+ * @return string The data in $fileName in UTF-8.
+ */
+function readFileText($fileName, $fileEncoding)
+{
+    $data = iconv($fileEncoding, 'UTF-8', file_get_contents($fileName));
+    return $data;
+}
+
+/**
+ * This reads the data in $fileName, converts it from $fileEncoding to UTF-8, 
+ * and splits it into lines.
+ *
+ * @param string $fileName     The file name to read.
+ * @param string $fileEncoding The encoding to that the text in file is stored 
+ * in.
+ *
+ * @return array The lines of data in the file.
+ */
+function readLines($fileName, $fileEncoding) {
+    $data = readFileText($fileName, $fileEncoding);
+    $lines = preg_split('/[\n\r]+/', $data, null, PREG_SPLIT_NO_EMPTY);
+    return $lines;
+}
+
+/**
+ * Write the data in the file, converting it from UTF-8 to tagFileEncoding.
+ *
+ * @param string $fileName     The name of the file to write to.
+ * @param string $fileEncoding The encoding that the text in the file is stored 
+ * in.
+ * @param string $data         The data to write.
+ *
+ * @return void
+ */
+function writeFileText($fileName, $fileEncoding, $data)
+{
+    file_put_contents($fileName, iconv('UTF-8', $fileEncoding, $data));
+}
 
 /*
  * Local variables:

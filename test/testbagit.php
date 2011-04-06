@@ -3,7 +3,7 @@
 require_once 'lib/bagit.php';
 require_once 'lib/bagit_utils.php';
 
-class BagPhpTest extends PHPUnit_Framework_TestCase
+class BagItTest extends PHPUnit_Framework_TestCase
  {
     var $tmpdir;
     var $bag;
@@ -35,26 +35,6 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
             touch($tmp2 . "/bag-info.txt");
             $bag = new BagIt($tmp2, false, false);
             $this->assertFalse($bag->extended);
-        }
-        catch (Exception $e)
-        {
-            rrmdir($tmp2);
-            throw $e;
-        }
-        rrmdir($tmp2);
-    }
-
-    public function testHashEncoding()
-    {
-        $this->assertEquals('sha1', $this->bag->hashEncoding);
-
-        $tmp2 = tmpdir();
-        try
-        {
-            mkdir($tmp2);
-            touch($tmp2 . "/manifest-md5.txt");
-            $bag = new BagIt($tmp2);
-            $this->assertEquals('md5', $bag->hashEncoding);
         }
         catch (Exception $e)
         {
@@ -159,40 +139,14 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    public function testManifestFile()
+    public function testManifest()
     {
-        $this->assertEquals(
-            $this->tmpdir . "/manifest-sha1.txt",
-            $this->bag->manifestFile
-        );
-        $this->assertFileExists($this->bag->manifestFile);
-
-        $tmp2 = tmpdir();
-        try
-        {
-            mkdir($tmp2);
-            touch($tmp2 . "/manifest-md5.txt");
-            $bag = new BagIt($tmp2);
-            $this->assertEquals(
-                $tmp2 . "/manifest-md5.txt",
-                $bag->manifestFile
-            );
-        }
-        catch (Exception $e)
-        {
-            rrmdir($tmp2);
-            throw $e;
-        }
-        rrmdir($tmp2);
+        $this->assertInstanceOf('BagItManifest', $this->bag->manifest);
     }
 
-    public function testTagManifestFile()
+    public function testTagManifest()
     {
-        $this->assertEquals(
-            $this->tmpdir . "/tagmanifest-sha1.txt",
-            $this->bag->tagManifestFile
-        );
-        $this->assertFileExists($this->bag->manifestFile);
+        $this->assertInstanceOf('BagItManifest', $this->bag->tagManifest);
     }
 
     public function testFetchFile()
@@ -211,58 +165,6 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
             $this->bag->bagInfoFile
         );
         $this->assertFileExists($this->bag->bagInfoFile);
-    }
-
-    public function testManifestData()
-    {
-        $this->assertEquals(0, count($this->bag->manifestData));
-
-        $tmp2 = tmpdir();
-        try
-        {
-            mkdir($tmp2);
-            file_put_contents(
-                $tmp2 . "/manifest-sha1.txt",
-                "0123456789012345678901234567890123456789 File-1\n" .
-                "0123456789012345678901234567890123456789 File-2\n"
-            );
-            $bag = new BagIt($tmp2);
-            $this->assertNotNull($bag->manifestData);
-            $this->assertArrayHasKey("File-1", $bag->manifestData);
-            $this->assertArrayHasKey("File-2", $bag->manifestData);
-        }
-        catch (Exception $e)
-        {
-            rrmdir($tmp2);
-            throw $e;
-        }
-        rrmdir($tmp2);
-    }
-
-    public function testTagManifestData()
-    {
-        $this->assertEquals(0, count($this->bag->tagManifestData));
-
-        $tmp2 = tmpdir();
-        try
-        {
-            mkdir($tmp2);
-            file_put_contents(
-                $tmp2 . "/tagmanifest-sha1.txt",
-                "0123456789012345678901234567890123456789 File-1\n" .
-                "0123456789012345678901234567890123456789 File-2\n"
-            );
-            $bag = new BagIt($tmp2);
-            $this->assertNotNull($bag->tagManifestData);
-            $this->assertArrayHasKey("File-1", $bag->tagManifestData);
-            $this->assertArrayHasKey("File-2", $bag->tagManifestData);
-        }
-        catch (Exception $e)
-        {
-            rrmdir($tmp2);
-            throw $e;
-        }
-        rrmdir($tmp2);
     }
 
     public function testFetchData()
@@ -469,13 +371,13 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
         $this->assertContains('data/README.txt', $files);
 
         // Testing the checksums.
-        $this->assertEquals('547b21e9c710f562d448a6cd7d32f8257b04e561', $bag->manifestData['data/imgs/109x109xcoins1-150x150.jpg']);
-        $this->assertEquals('fba552acae866d24fb143fef0ddb24efc49b097a', $bag->manifestData['data/imgs/109x109xprosody.png']);
-        $this->assertEquals('4beed314513ad81e1f5fad42672a3b1bd3a018ea', $bag->manifestData['data/imgs/110x108xmetaphor1.png']);
-        $this->assertEquals('4372383348c55775966bb1deeeb2b758b197e2a1', $bag->manifestData['data/imgs/fellows1-150x150.png']);
-        $this->assertEquals('b8593e2b3c2fa3756d2b206a90c7259967ff6650', $bag->manifestData['data/imgs/fibtriangle-110x110.jpg']);
-        $this->assertEquals('aec60202453733a976433833c9d408a449f136b3', $bag->manifestData['data/imgs/uvalib.png']);
-        $this->assertEquals('0de174b95ebacc2d91b0839cb2874b2e8f604b98', $bag->manifestData['data/README.txt']);
+        $this->assertEquals('547b21e9c710f562d448a6cd7d32f8257b04e561', $bag->manifest->data['data/imgs/109x109xcoins1-150x150.jpg']);
+        $this->assertEquals('fba552acae866d24fb143fef0ddb24efc49b097a', $bag->manifest->data['data/imgs/109x109xprosody.png']);
+        $this->assertEquals('4beed314513ad81e1f5fad42672a3b1bd3a018ea', $bag->manifest->data['data/imgs/110x108xmetaphor1.png']);
+        $this->assertEquals('4372383348c55775966bb1deeeb2b758b197e2a1', $bag->manifest->data['data/imgs/fellows1-150x150.png']);
+        $this->assertEquals('b8593e2b3c2fa3756d2b206a90c7259967ff6650', $bag->manifest->data['data/imgs/fibtriangle-110x110.jpg']);
+        $this->assertEquals('aec60202453733a976433833c9d408a449f136b3', $bag->manifest->data['data/imgs/uvalib.png']);
+        $this->assertEquals('0de174b95ebacc2d91b0839cb2874b2e8f604b98', $bag->manifest->data['data/README.txt']);
 
         // Testing the fetch file.
         $this->assertEquals('http://www.scholarslab.org', $bag->fetchData[0]['url']);
@@ -771,7 +673,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
             );
             $this->assertEquals(
                 'a5c44171ca6618c6ee24c3f3f3019df8df09a2e0',
-                $bag->manifestData['data/missing.txt']
+                $bag->manifest->data['data/missing.txt']
             );
 
         }
@@ -803,7 +705,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
             );
             $this->assertEquals(
                 'a5c44171ca6618c6ee24c3f3f3019df8df09a2e0',
-                $bag->manifestData['data/missing.txt']
+                $bag->manifest->data['data/missing.txt']
             );
 
         }
@@ -834,7 +736,7 @@ class BagPhpTest extends PHPUnit_Framework_TestCase
                 file_get_contents($tmp . '/manifest-sha1.txt')
             );
             $this->assertFalse(
-                array_key_exists('data/missing.txt', $bag->manifestData)
+                array_key_exists('data/missing.txt', $bag->manifest->data)
             );
 
         }

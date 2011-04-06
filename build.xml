@@ -117,6 +117,9 @@
             <arg line="test/testbagit.php" />
         </exec>
         <exec executable="phpunit" failonerror="true">
+            <arg line="test/testmanifest.php" />
+        </exec>
+        <exec executable="phpunit" failonerror="true">
             <arg line="test/testusecases.php" />
         </exec> -->
         <exec executable="phpunit" />

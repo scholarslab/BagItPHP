@@ -92,13 +92,6 @@ class BagIt
     var $extended;
 
     /**
-     * 'sha1' or 'md5'. Default is 'sha1'.
-     *
-     * @var string
-     */
-    var $hashEncoding;
-
-    /**
      * The major version number declared in 'bagit.txt'. Default is '0'.
      *
      * @var string
@@ -134,18 +127,18 @@ class BagIt
     var $bagitFile;
 
     /**
-     * Absolute path to the 'manifest-{sha1,md5}.txt' file.
+     * Information about the 'manifest-(sha1|md5).txt'.
      *
-     * @var string
+     * @var BagItManifest
      */
-    var $manifestFile;
+    var $manifest;
 
     /**
-     * Absolute path to the 'tagmanifest-{sha1,md5}.txt' file or null.
+     * Information about the 'tagmanifest-{sha1,md5}.txt' or null.
      *
-     * @var string
+     * @var BagItManifest
      */
-    var $tagManifestFile;
+    var $tagManifest;
 
     /**
      * Absolute path to the 'fetch.txt' file or null.
@@ -160,20 +153,6 @@ class BagIt
      * @var string
      */
     var $bagInfoFile;
-
-    /**
-     * A dictionary array containing the manifest file contents.
-     *
-     * @var array
-     */
-    var $manifestData;
-
-    /**
-     * A dictionary array containing the tagmanifest file contents.
-     *
-     * @var array
-     */
-    var $tagManifestData;
 
     /**
      * A dictionary array containing the 'fetch.txt' file contents.
@@ -230,19 +209,16 @@ class BagIt
     ) {
         $this->bag = $bag;
         $this->extended = $extended;
-        $this->hashEncoding = 'sha1';
         $this->bagMajorVersion = 0;
         $this->bagMinorVersion = 96;
         $this->tagFileEncoding = 'UTF-8';
         $this->dataDirectory = null;
         $this->bagDirectory = null;
         $this->bagitFile = null;
-        $this->manifestFile = null;
-        $this->tagManifestFile = null;
+        $this->manifest = null;
+        $this->tagManifest = null;
         $this->fetchFile = null;
         $this->bagInfoFile = null;
-        $this->manifestData = null;
-        $this->tagManifestData = null;
         $this->fetchData = null;
         $this->bagInfoData = null;
         $this->bagCompression = null;
@@ -295,7 +271,7 @@ class BagIt
         $info = array(
             'version'  => "{$this->bagMajorVersion}.{$this->bagMinorVersion}",
             'encoding' => $this->tagFileEncoding,
-            'hash'     => $this->hashEncoding
+            'hash'     => $this->getHashEncoding()
         );
         return $info;
     }
@@ -317,7 +293,7 @@ class BagIt
      */
     function getHashEncoding()
     {
-        return $this->hashEncoding;
+        return $this->manifest->getHashEncoding();
     }
 
     /**
@@ -335,12 +311,9 @@ class BagIt
             throw new Exception("Invalid hash algorithim: '$hashAlgorithm'.");
         }
 
-        $this->hashEncoding = $hashAlgorithm;
-        $this->manifestFile = $this->bagDirectory .
-            '/manifest-' . $hashAlgorithm . '.txt';
-        if ($this->tagManifestFile != null) {
-            $this->tagManifestFile = $this->bagDirectory .
-                '/tagManifest-' . $hashAlgorithm . '.txt';
+        $this->manifest->setHashEncoding($hashAlgorithm);
+        if ($this->tagManifest !== null) {
+            $this->manifest->setHashEncoding($hashAlgorithm);
         }
     }
 
@@ -386,18 +359,7 @@ class BagIt
 
         $this->_validateExists($this->bagitFile, $errors);
         $this->_validateExists($this->dataDirectory, $errors);
-        $this->_validateExists($this->manifestFile, $errors);
-
-        if (is_dir($this->dataDirectory) && file_exists($this->manifestFile)) {
-            foreach ($this->getBagContents() as $filename) {
-                $this->_validateChecksum($filename, $errors);
-            }
-        } else {
-            array_push(
-                $errors,
-                array('checksum verification', 'Unable to verify manifest.')
-            );
-        }
+        $this->manifest->validate($errors);
 
         $this->bagErrors = $errors;
         return $this->bagErrors;
@@ -421,30 +383,10 @@ class BagIt
      */
     function update()
     {
-        $this->_updateManifestFileNames();
-
         $this->_clearManifests();
         $this->_cleanDataFileNames();
 
-        // Update data file checksums.
-        $dataFiles = rls($this->dataDirectory);
-        $this->manifestData = $this->_updateManifest(
-            $dataFiles,
-            $this->manifestFile
-        );
-
-        // Update meta-file checksums.
-        $bagdir = $this->bagDirectory;
-        $tagFiles = array(
-            "$bagdir/bagit.txt",
-            "$bagdir/bag-info.txt",
-            "$bagdir/fetch.txt",
-            $this->manifestFile
-        );
-        $this->tagManifestData = $this->_updateManifest(
-            $tagFiles,
-            $this->tagManifestFile
-        );
+        $this->_updateManifests();
     }
 
     /**
@@ -584,40 +526,30 @@ class BagIt
      */
     private function _clearManifests()
     {
-        $basenames = array(
-            'manifest-sha1.txt',
-            'manifest-md5.txt',
-            'tagmanifest-sha1.txt',
-            'tagmanifest-md5.txt'
-        );
-
-        foreach ($basenames as $basename) {
-            $fullname = "{$this->bagDirectory}/$basename";
-            if (file_exists($fullname)) {
-                unlink($fullname);
-            }
+        $this->manifest->clear();
+        if ($this->tagManifest !== null) {
+            $this->tagManifest->clear();
         }
-
-        $this->manifestData = array();
-        $this->tagManifestData = array();
     }
 
     /**
-     * This is a facade method that takes a list of files, generates a checksum
-     * array, and writes it to a file before returning it.
+     * This updates the manifests' data.
      *
-     * @param array  $files    The list of absolute file names to generate
-     * checksums for.
-     * @param string $filename The name of the file to write the checksums out
-     * to.
-     *
-     * @return array An array mapping relative file names to checksum hashes.
+     * @return void
      */
-    private function _updateManifest($files, $filename)
+    private function _updateManifests()
     {
-        $csums = $this->_makeChecksumArray($files);
-        $this->_writeChecksumArray($csums, $filename);
-        return $csums;
+        $this->manifest->update(rls($this->dataDirectory));
+        if ($this->tagManifest !== null) {
+            $bagdir = $this->bagDirectory;
+            $tagFiles = array(
+                "$bagdir/bagit.txt",
+                "$bagdir/bag-info.txt",
+                "$bagdir/fetch.txt",
+                $this->manifest->getFileName()
+            );
+            $this->tagManifest->update($tagFiles);
+        }
     }
 
     /**
@@ -667,32 +599,6 @@ class BagIt
     }
 
     /**
-     * This validates a file's checksum.
-     *
-     * @param string $filename The complete filename to check.
-     * the name of the file relative to the bag directory.
-     * @param array  &$errors  The list of errors to add messages to, if the
-     * file doesn't validate.
-     *
-     * @return void
-     */
-    private function _validateChecksum($filename, &$errors)
-    {
-        $relname = $this->_makeRelative($filename);
-        $expected = $this->manifestData[$relname];
-        $actual = $this->_calculateChecksum($filename);
-
-        if ($expected === null) {
-            array_push(
-                $errors,
-                array($relname, 'File missing from manifest.')
-            );
-        } else if ($expected != $actual) {
-            array_push($errors, array($relname, 'Checksum mismatch.'));
-        }
-    }
-
-    /**
      * Read the data in the file and convert it from tagFileEncoding into
      * UTF-8.
      *
@@ -702,6 +608,7 @@ class BagIt
      */
     private function _readFile($filename)
     {
+        // XXX (move to utils)
         $data = iconv(
             $this->tagFileEncoding,
             'UTF-8',
@@ -720,6 +627,7 @@ class BagIt
      */
     private function _writeFile($filename, $data)
     {
+        // XXX (move to utils)
         file_put_contents(
             $filename,
             iconv('UTF-8', $this->tagFileEncoding, $data)
@@ -736,6 +644,7 @@ class BagIt
      */
     private function _readLines($filename)
     {
+        // XXX (move to utils)
         $data = $this->_readFile($filename);
         $lines = preg_split('/[\n\r]+/', $data, null, PREG_SPLIT_NO_EMPTY);
         return $lines;
@@ -758,31 +667,39 @@ class BagIt
         if (count($files) > 0) {
             $this->dataDirectory = "{$this->bagDirectory}/data";
 
-            // Read manifest file.
-            $manifestData = $this->_openManifest(
-                array('manifest-sha1.txt', 'manifest-md5.txt')
+            $bagdir = $this->bagDirectory;
+            $manifestFile = findFirstExisting(
+                array("$bagdir/manifest-sha1.txt", "$bagdir/manifest-md5.txt"),
+                "$bagdir/manifest-sha1.txt"
             );
-            if ($manifestData !== null) {
-                list($filename, $hashEncoding, $manifest) = $manifestData;
-                $this->manifestFile = $filename;
-                if ($hashEncoding !== null) {
-                    $this->hashEncoding = $hashEncoding;
-                }
-                $this->manifestData = $manifest;
+            try {
+                $this->manifest = new BagItManifest(
+                    $manifestFile,
+                    $this->bagDirectory . '/',
+                    $this->tagFileEncoding
+                );
+            } catch (Exception $exc) {
+                array_push(
+                    $this->bagErrors,
+                    array('manifest', "Error reading $manifestFile.")
+                );
             }
 
-            // Read tag manifest file.
-            $manifestData = $this->_openManifest(
-                array('tagmanifest-sha1.txt', 'tagmanifest-md5.txt')
-            );
-            if ($manifestData !== null) {
-                list($filename, $hashEncoding, $manifest) = $manifestData;
-                $this->tagManifestFile = $filename;
-                $this->tagManifestData = $manifest;
-            }
+            if ($this->isExtended()) {
+                $manifestFile = findFirstExisting(
+                    array("$bagdir/tagmanifest-sha1.txt",
+                    "$bagdir/tagmanifest-md5.txt"),
+                    "$bagdir/tagmanifest-sha1.txt"
+                );
+                $this->tagManifest = new BagItManifest(
+                    $manifestFile,
+                    $this->bagDirectory . '/',
+                    $this->tagFileEncoding
+                );
 
-            $this->_readFetch("{$this->bagDirectory}/fetch.txt");
-            $this->_readBagInfo("{$this->bagDirectory}/bag-info.txt");
+                $this->_readFetch("{$this->bagDirectory}/fetch.txt");
+                $this->_readBagInfo("{$this->bagDirectory}/bag-info.txt");
+            }
         }
     }
 
@@ -826,17 +743,17 @@ class BagIt
         mkdir($this->dataDirectory);
 
         $this->bagitFile = $this->bagDirectory . '/bagit.txt';
-        $this->manifestFile = $this->bagDirectory .
-            "/manifest-{$this->hashEncoding}.txt";
+        $this->manifest = new BagItManifest(
+            "{$this->bagDirectory}/manifest-sha1.txt",
+            $this->bagDirectory . '/',
+            $this->tagFileEncoding
+        );
 
         $bagItData
             = "BagIt-Version: " .
               "{$this->bagMajorVersion}.{$this->bagMinorVersion}\n" .
               "Tag-File-Character-Encoding: {$this->tagFileEncoding}\n";
         $this->_writeFile($this->bagitFile, $bagItData);
-
-        touch($this->manifestFile);
-        $this->manifestData = array();
 
         $this->_createExtendedBag();
     }
@@ -849,11 +766,12 @@ class BagIt
     private function _createExtendedBag()
     {
         if ($this->extended) {
-            $this->tagManifestFile = $this->bagDirectory .
-                "/tagmanifest-{$this->hashEncoding}.txt";
-
-            touch($this->tagManifestFile);
-            $this->tagManifestData = array();
+            $hashEncoding = $this->getHashEncoding();
+            $this->tagManifest = new BagItManifest(
+                "{$this->bagDirectory}/tagmanifest-$hashEncoding.txt",
+                $this->bagDirectory . '/',
+                $this->tagFileEncoding
+            );
 
             $this->fetchFile = $this->bagDirectory . '/fetch.txt';
             touch($this->fetchFile);
@@ -863,76 +781,6 @@ class BagIt
             touch($this->bagInfoFile);
             $this->bagInfoData = array();
         }
-    }
-
-    /**
-     * This takes a file name and makes it relative to the bag directory.
-     *
-     * This is unsafe, strictly speaking, because it doesn't check that the
-     * file name passed in is in fact under the bag directory.
-     *
-     * @param string $filename An absolute file name under the bag directory.
-     *
-     * @return string The file name relative to the bag directory.
-     */
-    private function _makeRelative($filename)
-    {
-        return substr($filename, strlen($this->bagDirectory) + 1);
-    }
-
-    /**
-     * This takes a list of files and generates an array mapping the file names
-     * (made relative to the data directory) to the hashes.
-     *
-     * @param array $files A list of absolute file names to generate hashes
-     * for.
-     *
-     * @return array A mapping of relative file names to hashes.
-     */
-    private function _makeChecksumArray($files)
-    {
-        $csums = array();
-
-        foreach ($files as $file) {
-            if (file_exists($file)) {
-                $hash = $this->_calculateChecksum($file);
-                $csums[$this->_makeRelative($file)] = $hash;
-            }
-        }
-
-        return $csums;
-    }
-
-    /**
-     * This writes a checksum array to a file.
-     *
-     * @param array  $csums    The checksum array to write.
-     * @param string $filename The name of the file to write the checksums to.
-     *
-     * @return void
-     */
-    private function _writeChecksumArray($csums, $filename)
-    {
-        ksort($csums);
-        $output = array();
-
-        foreach ($csums as $path => $hash) {
-            array_push($output, "$hash $path\n");
-        }
-
-        $this->_writeFile($filename, implode('', $output));
-    }
-
-    /**
-     * Create the checksum for a file.
-     *
-     * @param string $filename The file to generate a checksum for.
-     *
-     * @return string The checksum.
-     */
-    private function _calculateChecksum($filename)
-    {
-        return hash_file($this->hashEncoding, $filename);
     }
 
     /**
@@ -1089,19 +937,6 @@ class BagIt
     }
 
     /**
-     * This makes sure that the manifest file names have the correct encoding.
-     *
-     * @return void
-     */
-    private function _updateManifestFileNames()
-    {
-        $this->manifestFile = $this->bagDirectory .
-            '/manifest-' . $this->hashEncoding . '.txt';
-        $this->tagManifestFile = $this->bagDirectory .
-            '/tagmanifest-' . $this->hashEncoding . '.txt';
-    }
-
-    /**
      * This uncompresses a bag.
      *
      * @param string $bagBase The base name for the Bag It directory.
@@ -1223,76 +1058,6 @@ class BagIt
         $this->bagMinorVersion = $versions[1];
 
         $this->tagFileEncoding = $this->_parseEncodingString($data);
-    }
-
-    /**
-     * This reads a manifest file, checking if it exists first.
-     *
-     * @param array $filenames A list of file names to read. It reads the first
-     * that exists.
-     *
-     * @return array If none of the files passed in exist, this returns
-     * <code>null</code>. Otherwise, it returns an array triple. The first
-     * element is the manifest file name that was read in, and the second
-     * element is the hash encoding from the file name, and the third
-     * element is the manifest data read from the file.
-     */
-    private function _openManifest($filenames)
-    {
-        foreach ($filenames as $filename) {
-            $fullname = "{$this->bagDirectory}/$filename";
-            if (file_exists($fullname)) {
-                $matches = array();
-                $hashEncoding = null;
-                if (preg_match('/-(sha1|md5)\.txt$/', $filename, $matches)) {
-                    $hashEncoding = $matches[1];
-                }
-
-                $manifest = $this->_readManifest($fullname, $hashEncoding);
-
-                return array($fullname, $hashEncoding, $manifest);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * This reads the manifest data from a file.
-     *
-     * @param string $filename     The file name to read.
-     * @param string $hashEncoding The type of hash encoding used in this
-     * file.
-     *
-     * @return array An array mapping file names (relative to the bag
-     * directory) to hashes.
-     */
-    private function _readManifest($filename, $hashEncoding)
-    {
-        $manifest = array();
-
-        try {
-            $hashLen = ($hashEncoding == 'sha1') ? 40 : 32;
-            $lines = $this->_readLines($filename);
-
-            foreach ($lines as $line) {
-                $hash = trim(substr($line, 0, $hashLen));
-                $payload = trim(substr($line, $hashLen));
-
-                if (strlen($payload) > 0) {
-                    $manifest[$payload] = $hash;
-                }
-            }
-
-        } catch (Exception $exc) {
-            $filename = basename($filename);
-            array_push(
-                $this->bagErrors,
-                array('manifest', "Error reading $filename.")
-            );
-        }
-
-        return $manifest;
     }
 
     /**

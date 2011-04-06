@@ -162,7 +162,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
             count(scandir($tmpdir))
         );
         $this->assertEquals(
-            count($bag->manifestData) + 2,
+            count($bag->manifest->getData()) + 2,
             count(scandir($tmpdir))
         );
 
