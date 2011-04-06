@@ -44,9 +44,10 @@ class BagItTest extends PHPUnit_Framework_TestCase
         rrmdir($tmp2);
     }
 
-    public function testBagMajorVersion()
+    public function testBagVersion()
     {
-        $this->assertEquals(0, $this->bag->bagMajorVersion);
+        $this->assertEquals(0, $this->bag->bagVersion['major']);
+        $this->assertEquals(96, $this->bag->bagVersion['minor']);
 
         $tmp2 = tmpdir();
         try
@@ -58,31 +59,8 @@ class BagItTest extends PHPUnit_Framework_TestCase
                 "Tag-File-Character-Encoding: ISO-8859-1\n"
             );
             $bag = new BagIt($tmp2);
-            $this->assertEquals(1, $bag->bagMajorVersion);
-        }
-        catch (Exception $e)
-        {
-            rrmdir($tmp2);
-            throw $e;
-        }
-        rrmdir($tmp2);
-    }
-
-    public function testBagMinorVersion()
-    {
-        $this->assertEquals(96, $this->bag->bagMinorVersion);
-
-        $tmp2 = tmpdir();
-        try
-        {
-            mkdir($tmp2);
-            file_put_contents(
-                $tmp2 . "/bagit.txt",
-                "BagIt-Version: 1.3\n" .
-                "Tag-File-Character-Encoding: ISO-8859-1\n"
-            );
-            $bag = new BagIt($tmp2);
-            $this->assertEquals(3, $bag->bagMinorVersion);
+            $this->assertEquals(1, $bag->bagVersion['major']);
+            $this->assertEquals(3, $bag->bagVersion['minor']);
         }
         catch (Exception $e)
         {
@@ -114,15 +92,6 @@ class BagItTest extends PHPUnit_Framework_TestCase
             throw $e;
         }
         rrmdir($tmp2);
-    }
-
-    public function testDataDirectory()
-    {
-        $this->assertEquals(
-            $this->tmpdir . "/data",
-            $this->bag->dataDirectory
-        );
-        $this->assertTrue(is_dir($this->bag->dataDirectory));
     }
 
     public function testBagitFile()
@@ -291,10 +260,10 @@ class BagItTest extends PHPUnit_Framework_TestCase
             );
             $bag = new BagIt($tmp, false, true, false);
             $this->assertFalse(
-                is_file($bag->dataDirectory . '/google/index.html')
+                is_file($bag->getDataDirectory() . '/google/index.html')
             );
             $this->assertFalse(
-                is_file($bag->dataDirectory . '/yahoo/index.html')
+                is_file($bag->getDataDirectory() . '/yahoo/index.html')
             );
         }
         catch (Exception $e)
@@ -314,8 +283,8 @@ class BagItTest extends PHPUnit_Framework_TestCase
                 "http://www.yahoo.com - data/yahoo/index.html\n"
             );
             $bag = new BagIt($tmp, false, true, true);
-            $this->assertFileExists($bag->dataDirectory . '/google/index.html');
-            $this->assertFileExists($bag->dataDirectory . '/yahoo/index.html');
+            $this->assertFileExists($bag->getDataDirectory() . '/google/index.html');
+            $this->assertFileExists($bag->getDataDirectory() . '/yahoo/index.html');
         }
         catch (Exception $e)
         {
@@ -327,7 +296,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
 
     public function testConstructorInvalidBagitFile()
     {
-        $this->assertEquals(0, $this->bag->bagMajorVersion);
+        $this->assertEquals(0, $this->bag->bagVersion['major']);
 
         $tmp = tmpdir();
         try
@@ -540,14 +509,14 @@ class BagItTest extends PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $bagErrors);
         $this->assertEquals(0, count($bagErrors));
 
-        rrmdir($this->bag->dataDirectory);
+        rrmdir($this->bag->getDataDirectory());
         $this->bag->validate();
         $this->assertGreaterThan(0, count($this->bag->getBagErrors()));
     }
 
     public function testGetBagErrorsValidate()
     {
-        rrmdir($this->bag->dataDirectory);
+        rrmdir($this->bag->getDataDirectory());
         $bagErrors = $this->bag->getBagErrors(true);
         $this->assertInternalType('array', $bagErrors);
         $this->assertGreaterThan(0, count($bagErrors));
@@ -906,22 +875,16 @@ class BagItTest extends PHPUnit_Framework_TestCase
 
         $this->bag->addFile("$srcdir/README.txt", 'data/README.txt');
 
-        $this->assertFileExists(
-            "{$this->bag->dataDirectory}/README.txt"
-        );
-        $this->assertFileEquals(
-            "$srcdir/README.txt",
-            "{$this->bag->dataDirectory}/README.txt"
-        );
+        $datadir = $this->bag->getDataDirectory();
+        $this->assertFileExists("{$datadir}/README.txt");
+        $this->assertFileEquals("$srcdir/README.txt", "{$datadir}/README.txt");
 
         $this->bag->addFile("$srcdir/imgs/uvalib.png", "data/pics/uvalib.png");
 
-        $this->assertFileExists(
-            "{$this->bag->dataDirectory}/pics/uvalib.png"
-        );
+        $this->assertFileExists("{$datadir}/pics/uvalib.png");
         $this->assertFileEquals(
             "$srcdir/imgs/uvalib.png",
-            "{$this->bag->dataDirectory}/pics/uvalib.png"
+            "{$datadir}/pics/uvalib.png"
         );
     }
 

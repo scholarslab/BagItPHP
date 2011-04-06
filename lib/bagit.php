@@ -92,18 +92,11 @@ class BagIt
     var $extended;
 
     /**
-     * The major version number declared in 'bagit.txt'. Default is '0'.
+     * The version information declared in 'bagit.txt'.
      *
-     * @var string
+     * @var array
      */
-    var $bagMajorVersion;
-
-    /**
-     * The minor version number declared in 'bagit.txt'. Default is '96'.
-     *
-     * @var string
-     */
-    var $bagMinorVersion;
+    var $bagVersion;
 
     /**
      * The tag file encoding declared in 'bagit.txt'. Default is 'utf-8'.
@@ -111,13 +104,6 @@ class BagIt
      * @var string
      */
     var $tagFileEncoding;
-
-    /**
-     * Absolute path to the data directory.
-     *
-     * @var string
-     */
-    var $dataDirectory;
 
     /**
      * Absolute path to the bagit file.
@@ -209,10 +195,8 @@ class BagIt
     ) {
         $this->bag = $bag;
         $this->extended = $extended;
-        $this->bagMajorVersion = 0;
-        $this->bagMinorVersion = 96;
+        $this->bagVersion = array('major' => 0, 'minor' => 96);
         $this->tagFileEncoding = 'UTF-8';
-        $this->dataDirectory = null;
         $this->bagDirectory = null;
         $this->bagitFile = null;
         $this->manifest = null;
@@ -268,8 +252,11 @@ class BagIt
      */
     function getBagInfo()
     {
+        $major = $this->bagVersion['major'];
+        $minor = $this->bagVersion['minor'];
+
         $info = array(
-            'version'  => "{$this->bagMajorVersion}.{$this->bagMinorVersion}",
+            'version'  => "$major.$minor",
             'encoding' => $this->tagFileEncoding,
             'hash'     => $this->getHashEncoding()
         );
@@ -283,7 +270,7 @@ class BagIt
      */
     function getDataDirectory()
     {
-        return $this->dataDirectory;
+        return "{$this->bagDirectory}/data";
     }
 
     /**
@@ -325,7 +312,7 @@ class BagIt
      */
     function getBagContents()
     {
-        return rls($this->dataDirectory);
+        return rls($this->getDataDirectory());
     }
 
     /**
@@ -358,7 +345,7 @@ class BagIt
         $errors = array();
 
         $this->_validateExists($this->bagitFile, $errors);
-        $this->_validateExists($this->dataDirectory, $errors);
+        $this->_validateExists($this->getDataDirectory(), $errors);
         $this->manifest->validate($errors);
 
         $this->bagErrors = $errors;
@@ -539,7 +526,7 @@ class BagIt
      */
     private function _updateManifests()
     {
-        $this->manifest->update(rls($this->dataDirectory));
+        $this->manifest->update(rls($this->getDataDirectory()));
         if ($this->tagManifest !== null) {
             $bagdir = $this->bagDirectory;
             $tagFiles = array(
@@ -559,7 +546,7 @@ class BagIt
      */
     private function _cleanDataFileNames()
     {
-        $dataFiles = rls($this->dataDirectory);
+        $dataFiles = rls($this->getDataDirectory());
         foreach ($dataFiles as $dataFile) {
             $baseName = basename($dataFile);
             if ($baseName == '.' || $baseName == '..') {
@@ -665,8 +652,6 @@ class BagIt
 
         $files = scandir($this->bagDirectory);
         if (count($files) > 0) {
-            $this->dataDirectory = "{$this->bagDirectory}/data";
-
             $bagdir = $this->bagDirectory;
             $manifestFile = findFirstExisting(
                 array("$bagdir/manifest-sha1.txt", "$bagdir/manifest-md5.txt"),
@@ -739,8 +724,7 @@ class BagIt
         mkdir($this->bag);
         $this->bagDirectory = realpath($this->bag);
 
-        $this->dataDirectory = $this->bagDirectory . '/data';
-        mkdir($this->dataDirectory);
+        mkdir($this->getDataDirectory());
 
         $this->bagitFile = $this->bagDirectory . '/bagit.txt';
         $this->manifest = new BagItManifest(
@@ -749,9 +733,10 @@ class BagIt
             $this->tagFileEncoding
         );
 
+        $major = $this->bagVersion['major'];
+        $minor = $this->bagVersion['minor'];
         $bagItData
-            = "BagIt-Version: " .
-              "{$this->bagMajorVersion}.{$this->bagMinorVersion}\n" .
+            = "BagIt-Version: $major.$minor\n" .
               "Tag-File-Character-Encoding: {$this->tagFileEncoding}\n";
         $this->_writeFile($this->bagitFile, $bagItData);
 
@@ -1008,8 +993,7 @@ class BagIt
     /**
      * This reads the information from the bag it file.
      *
-     * This sets the bagMajorVersion, bagMinorVersion, and tagFileEncoding
-     * properties.
+     * This sets the bagVersion and tagFileEncoding properties.
      *
      * If it encounters an error, it adds it to bagErrors.
      *
@@ -1054,8 +1038,7 @@ class BagIt
         if ($versions === null) {
             throw new Exception();
         }
-        $this->bagMajorVersion = $versions[0];
-        $this->bagMinorVersion = $versions[1];
+        $this->bagVersion = $versions;
 
         $this->tagFileEncoding = $this->_parseEncodingString($data);
     }
@@ -1066,7 +1049,7 @@ class BagIt
      * @param string $bagitFileData The contents of the bagit file.
      *
      * @return array A two-item array containing the version string as
-     * integers.
+     * integers. The keys for this array are 'major' and 'minor'.
      */
     private function _parseVersionString($bagitFileData)
     {
@@ -1083,7 +1066,7 @@ class BagIt
             if ($major === null || $minor === null) {
                 throw new Exception("Invalid bagit version: '{$matches[0]}'.");
             }
-            return array($major, $minor);
+            return array('major' => $major, 'minor' => $minor);
         }
 
         return null;
