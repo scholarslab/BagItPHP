@@ -8,6 +8,7 @@
     <directory suffix=".php">test</directory>
   </testsuite>
 
+
   <logging>
     <log type="coverage-html" target="build/coverage" title="Bagit"
       charset="UTF-8" yui="true" highlight="true"
