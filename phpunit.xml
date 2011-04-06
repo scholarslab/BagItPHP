@@ -8,6 +8,12 @@
     <directory suffix=".php">test</directory>
   </testsuite>
 
+  <filter>
+    <whitelist>
+      <directory suffix=".php">test</directory>
+    </whitelist>
+  </filter>
+
   <logging>
     <log type="coverage-html" target="build/coverage" title="Bagit"
       charset="UTF-8" yui="true" highlight="true"
