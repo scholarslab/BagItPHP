@@ -230,7 +230,8 @@ function readFileText($fileName, $fileEncoding)
  *
  * @return array The lines of data in the file.
  */
-function readLines($fileName, $fileEncoding) {
+function readLines($fileName, $fileEncoding)
+{
     $data = readFileText($fileName, $fileEncoding);
     $lines = preg_split('/[\n\r]+/', $data, null, PREG_SPLIT_NO_EMPTY);
     return $lines;

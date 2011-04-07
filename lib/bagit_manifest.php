@@ -146,6 +146,8 @@ class BagItManifest
 
     /**
      * This clears the data in the manifest, both in memory and on disk.
+     *
+     * @return void
      */
     public function clear()
     {
@@ -229,8 +231,7 @@ class BagItManifest
     {
         if (array_key_exists($fileName, $this->data)) {
             return $this->data[$fileName];
-        } else if (array_key_exists($this->_makeRelative($fileName),
-                                    $this->data)) {
+        } else if (array_key_exists($this->_makeRelative($fileName), $this->data)) {
             return $this->data[$this->_makeRelative($fileName)];
         } else {
             return null;
