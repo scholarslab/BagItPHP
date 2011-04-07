@@ -4,7 +4,7 @@ require_once 'lib/bagit.php';
 require_once 'lib/bagit_utils.php';
 
 class BagItTest extends PHPUnit_Framework_TestCase
- {
+{
     var $tmpdir;
     var $bag;
 

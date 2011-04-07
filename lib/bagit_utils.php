@@ -157,7 +157,7 @@ function seenAtKey($array, $key, $item)
     $keys = array_keys($array);
     for ($x=0, $len=count($keys); $x<$len; $x++) {
         $sub = $array[$keys[$x]];
-        if ($sub[$key] == $item) {
+        if (array_key_exists($key, $sub) && $sub[$key] == $item) {
             return true;
         }
     }
@@ -328,7 +328,7 @@ function BagIt_parseVersionString($bagitFileData)
 {
     $matches = array();
     $success = preg_match(
-        "/BagIt-Version: (\d+)\.(\d+)/i",
+        "/BagIt-Version: (\d+)\.(\d+)/",
         $bagitFileData,
         $matches
     );
@@ -356,7 +356,7 @@ function BagIt_parseEncodingString($bagitFileData)
 {
     $matches = array();
     $success = preg_match(
-        '/Tag-File-Character-Encoding: (.*)/i',
+        '/Tag-File-Character-Encoding: (.*)/',
         $bagitFileData,
         $matches
     );
@@ -478,7 +478,7 @@ function BagIt_parseBagInfo($lines)
     foreach ($lines as $line) {
         if (strlen($line) == 0) {
             // Skip.
-        } else if ($line[0] == ' ' || $line[1] == '\t') {
+        } else if ($line[0] == ' ' || $line[0] == "\t") {
             // Continued line.
             $val = $bagInfo[$prevKeys[0]] . ' ' . trim($line);
             foreach ($prevKeys as $pk) {
