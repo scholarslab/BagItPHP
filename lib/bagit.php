@@ -439,8 +439,11 @@ class BagIt
             $destination = "$destination.$method";
         }
 
-        $package = $this->_compressBag($method);
-        rename($package, $destination);
+        BagIt_compressBag(
+            $this->bagDirectory,
+            $destination,
+            $method
+        );
     }
     //}}}
 
@@ -475,9 +478,11 @@ class BagIt
      */
     private function _openBag()
     {
-        $this->bagDirectory = ($this->_isCompressed()) ?
-            $this->_getCompressedBaseName($this->bag) :
+        if ($this->_isCompressed()) {
+            $this->bagDirectory = BagIt_uncompressBag($this->bag);
+        } else {
             $this->bagDirectory = realpath($this->bag);
+        }
 
         $this->bagitFile = "{$this->bagDirectory}/bagit.txt";
         list($version, $fileEncoding, $errors) = BagIt_readBagItFile(
@@ -533,32 +538,6 @@ class BagIt
 
                 $this->_readBagInfo("{$this->bagDirectory}/bag-info.txt");
             }
-        }
-    }
-
-    /**
-     * This returns the base name of a compressed bag.
-     *
-     * @param string $bag The full bag name.
-     *
-     * @return string The bag name without the compressed-file extension. This
-     * is the bag directory.
-     */
-    private function _getCompressedBaseName($bag)
-    {
-        $matches = array();
-        $success = preg_match(
-            '/^(.*)\.(zip|tar\.gz|tgz)$/',
-            basename($bag),
-            $matches
-        );
-        if ($success) {
-            $base = $matches[1];
-            return $this->_uncompressBag($base);
-        } else {
-            throw new BagItException(
-                "Invalid compressed bag name: $bag."
-            );
         }
     }
 
@@ -701,75 +680,6 @@ class BagIt
             }
         }
         return false;
-    }
-
-    /**
-     * This uncompresses a bag.
-     *
-     * @param string $bagBase The base name for the Bag It directory.
-     *
-     * @return The bagDirectory.
-     */
-    private function _uncompressBag($bagBase)
-    {
-        $dir = tempnam(sys_get_temp_dir(), 'bagit_');
-        unlink($dir);
-        mkdir($dir, 0700);
-
-        if ($this->bagCompression == 'zip') {
-            $zip = new ZipArchive();
-            $zip->open($this->bag);
-            $zip->extractTo($dir);
-
-        } else if ($this->bagCompression == 'tgz') {
-            $tar = new Archive_Tar($this->bag, 'gz');
-            $tar->extract($dir);
-
-        } else {
-            throw new BagItException(
-                "Invalid bag compression format: {$this->bagCompression}."
-            );
-        }
-
-        return "$dir/$bagBase";
-    }
-
-    /**
-     * This compresses the bag into a new file.
-     *
-     * @param string $method Either 'tgz' or 'zip'. Default is 'tgz'.
-     *
-     * @return string The file name for the file.
-     */
-    private function _compressBag($method='tgz')
-    {
-        $output = tempnam(sys_get_temp_dir(), 'bagit_');
-        unlink($output);
-
-        $base = basename($this->bagDirectory);
-        $stripLen = strlen($this->bagDirectory) - strlen($base);
-
-        if ($method == 'zip') {
-            $zip = new ZipArchive();
-            $zip->open($output, ZIPARCHIVE::CREATE);
-
-            foreach (rls($this->bagDirectory) as $file) {
-                $zip->addFile($file, substr($file, $stripLen));
-            }
-
-            $zip->close();
-
-        } else if ($method == 'tgz') {
-            $tar = new Archive_Tar($output, 'gz');
-            $tar->createModify(
-                $this->bagDirectory,
-                $base,
-                $this->bagDirectory
-            );
-
-        }
-
-        return $output;
     }
 
     //}}}

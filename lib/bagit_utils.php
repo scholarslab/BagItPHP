@@ -368,6 +368,78 @@ function BagIt_parseEncodingString($bagitFileData)
     return null;
 }
 
+/**
+ * This uncompresses a bag.
+ *
+ * @param string $compressedFile The file name of the compressed file.
+ *
+ * @return The bagDirectory.
+ */
+function BagIt_uncompressBag($compressedFile)
+{
+    // Create an output directory.
+    $dir = tempnam(sys_get_temp_dir(), 'bagit_');
+    unlink($dir);
+    mkdir($dir, 0700);
+
+    // Pull apart the compressed file name.
+    $matches = array();
+    $success = preg_match(
+        '/^(.*)\.(zip|tar\.gz|tgz)$/',
+        basename($compressedFile),
+        $matches
+    );
+    if (!$success) {
+        throw new Exception("File not compressed: $compressedFile.");
+    }
+
+    $bagBase = $matches[1];
+    $ext = $matches[2];
+
+    if ($ext == 'zip') {
+        $zip = new ZipArchive();
+        $zip->open($compressedFile);
+        $zip->extractTo($dir);
+
+    } else if ($ext == 'tgz' || $ext == 'tar.gz') {
+        $tar = new Archive_Tar($compressedFile, 'gz');
+        $tar->extract($dir);
+
+    }
+
+    return "$dir/$bagBase";
+}
+
+/**
+ * This compresses the bag into a new file.
+ *
+ * @param string $dirname The directory to compress.
+ * @param string $output  The output file.
+ * @param string $method  Either 'tgz' or 'zip'. Default is 'tgz'.
+ *
+ * @return string The file name for the file.
+ */
+function BagIt_compressBag($dirname, $output, $method='tgz')
+{
+    $base = basename($dirname);
+    $stripLen = strlen($dirname) - strlen($base);
+
+    if ($method == 'zip') {
+        $zip = new ZipArchive();
+        $zip->open($output, ZIPARCHIVE::CREATE);
+
+        foreach (rls($dirname) as $file) {
+            $zip->addFile($file, substr($file, $stripLen));
+        }
+
+        $zip->close();
+
+    } else if ($method == 'tgz') {
+        $tar = new Archive_Tar($output, 'gz');
+        $tar->createModify($dirname, $base, $dirname);
+
+    }
+}
 /*
  * Local variables:
  * tab-width: 4
