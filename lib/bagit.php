@@ -338,8 +338,8 @@ class BagIt
     {
         $errors = array();
 
-        $this->_validateExists($this->bagitFile, $errors);
-        $this->_validateExists($this->getDataDirectory(), $errors);
+        BagIt_validateExists($this->bagitFile, $errors);
+        BagIt_validateExists($this->getDataDirectory(), $errors);
         $this->manifest->validate($errors);
 
         $this->bagErrors = $errors;
@@ -448,28 +448,6 @@ class BagIt
     //}}}
 
     //{{{ Private Methods
-
-    /**
-     * This validates that a file or directory exists.
-     *
-     * @param string $filename The file name to check for.
-     * @param array  &$errors  The list of errors to add the message to, if the
-     * file doesn't exist.
-     *
-     * @return boolean True if the file does exist; false otherwise.
-     */
-    private function _validateExists($filename, &$errors)
-    {
-        if (! file_exists($filename)) {
-            $basename = basename($filename);
-            array_push(
-                $errors,
-                array($basename, "$basename does not exist.")
-            );
-            return false;
-        }
-        return true;
-    }
 
     /**
      * Open an existing bag. This expects $bag to be set.

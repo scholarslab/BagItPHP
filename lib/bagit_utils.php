@@ -440,6 +440,29 @@ function BagIt_compressBag($dirname, $output, $method='tgz')
 
     }
 }
+
+/**
+ * This validates that a file or directory exists.
+ *
+ * @param string $filename The file name to check for.
+ * @param array  &$errors  The list of errors to add the message to, if the
+ * file doesn't exist.
+ *
+ * @return boolean True if the file does exist; false otherwise.
+ */
+function BagIt_validateExists($filename, &$errors)
+{
+    if (! file_exists($filename)) {
+        $basename = basename($filename);
+        array_push(
+            $errors,
+            array($basename, "$basename does not exist.")
+        );
+        return false;
+    }
+    return true;
+}
+
 /*
  * Local variables:
  * tab-width: 4
