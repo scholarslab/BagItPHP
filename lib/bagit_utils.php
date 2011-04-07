@@ -463,6 +463,41 @@ function BagIt_validateExists($filename, &$errors)
     return true;
 }
 
+/**
+ * Parse bag info file.
+ *
+ * @param array $lines An array of lines from the file.
+ *
+ * @return array The parsed bag-info data.
+ */
+function BagIt_parseBagInfo($lines)
+{
+    $bagInfo = array();
+
+    $prevKeys = array('');
+    foreach ($lines as $line) {
+        if (strlen($line) == 0) {
+            // Skip.
+        } else if ($line[0] == ' ' || $line[1] == '\t') {
+            // Continued line.
+            $val = $bagInfo[$prevKeys[0]] . ' ' . trim($line);
+            foreach ($prevKeys as $pk) {
+                $bagInfo[$pk] = $val;
+            }
+        } else {
+            list($key, $val) = preg_split('/:\s*/', $line, 2);
+            $val = trim($val);
+
+            $prevKeys = array($key, strtolower($key), strtoupper($key));
+            foreach ($prevKeys as $pk) {
+                $bagInfo[$pk] = $val;
+            }
+        }
+    }
+
+    return $bagInfo;
+}
+
 /*
  * Local variables:
  * tab-width: 4

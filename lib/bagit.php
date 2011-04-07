@@ -514,7 +514,8 @@ class BagIt
                     );
                 }
 
-                $this->_readBagInfo("{$this->bagDirectory}/bag-info.txt");
+                $this->bagInfoFile = "{$this->bagDirectory}/bag-info.txt";
+                $this->_readBagInfo();
             }
         }
     }
@@ -575,67 +576,19 @@ class BagIt
     /**
      * This reads the bag-info.txt file into an array dictionary.
      *
-     * @param string $filename If given, this tests whether the file exists,
-     * and if it does, it sets the bagInfoFile parameter before reading the
-     * file. If it is set but doesn't exist, then the method returns without
-     * reading anything.
-     *
      * @return void
      */
-    private function _readBagInfo($filename=null)
+    private function _readBagInfo()
     {
-        if ($filename !== null) {
-            if (file_exists($filename)) {
-                $this->bagInfoFile = $filename;
-            } else {
-                return;
-            }
-        }
-
         try {
             $lines = readLines($this->bagInfoFile, $this->tagFileEncoding);
-            $this->bagInfoData = $this->_parseBagInfo($lines);
+            $this->bagInfoData = BagIt_parseBagInfo($lines);
         } catch (Exception $exc) {
             array_push(
                 $this->bagErrors,
                 array('baginfo', 'Error reading bag info file.')
             );
         }
-    }
-
-    /**
-     * Parse bag info file.
-     *
-     * @param array $lines An array of lines from the file.
-     *
-     * @return array The parsed bag-info data.
-     */
-    private function _parseBagInfo($lines)
-    {
-        $bagInfo = array();
-
-        $prevKeys = array('');
-        foreach ($lines as $line) {
-            if (strlen($line) == 0) {
-                // Skip.
-            } else if ($line[0] == ' ' || $line[1] == '\t') {
-                // Continued line.
-                $val = $bagInfo[$prevKeys[0]] . ' ' . trim($line);
-                foreach ($prevKeys as $pk) {
-                    $bagInfo[$pk] = $val;
-                }
-            } else {
-                list($key, $val) = preg_split('/:\s*/', $line, 2);
-                $val = trim($val);
-
-                $prevKeys = array($key, strtolower($key), strtoupper($key));
-                foreach ($prevKeys as $pk) {
-                    $bagInfo[$pk] = $val;
-                }
-            }
-        }
-
-        return $bagInfo;
     }
 
     /**
