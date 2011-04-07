@@ -149,7 +149,7 @@
         -->
 
         <exec executable="phpmd">
-            <arg line="${basedir} html codesize,design,naming,unusedcode --reportfile ${build}/phpmd/index.html" />
+            <arg line="lib html codesize,design,naming,unusedcode --reportfile ${build}/phpmd/index.html" />
         </exec>
     </target>
 
