@@ -364,10 +364,41 @@ class BagIt
      */
     function update()
     {
-        $this->_clearManifests();
-        $this->_cleanDataFileNames();
+        // Clear the manifests.
+        $this->manifest->clear();
+        if ($this->tagManifest !== null) {
+            $this->tagManifest->clear();
+        }
 
-        $this->_updateManifests();
+        // Clean up the file names in the data directory.
+        $dataFiles = rls($this->getDataDirectory());
+        foreach ($dataFiles as $dataFile) {
+            $baseName = basename($dataFile);
+            if ($baseName == '.' || $baseName == '..') {
+                continue;
+            }
+
+            $cleanName = $this->_sanitizeFileName($baseName);
+            if ($cleanName === null) {
+                unlink($dataFile);
+            } else if ($baseName != $cleanName) {
+                $dirName = dirname($dataFile);
+                rename($dataFile, "$dirName/$cleanName");
+            }
+        }
+
+        // Update the manifests.
+        $this->manifest->update(rls($this->getDataDirectory()));
+        if ($this->tagManifest !== null) {
+            $bagdir = $this->bagDirectory;
+            $tagFiles = array(
+                "$bagdir/bagit.txt",
+                "$bagdir/bag-info.txt",
+                $this->fetch->fileName,
+                $this->manifest->getFileName()
+            );
+            $this->tagManifest->update($tagFiles);
+        }
     }
 
     /**
@@ -416,63 +447,6 @@ class BagIt
     //}}}
 
     //{{{ Private Methods
-
-    /**
-     * This cleans up the manifest files.
-     *
-     * @return void
-     */
-    private function _clearManifests()
-    {
-        $this->manifest->clear();
-        if ($this->tagManifest !== null) {
-            $this->tagManifest->clear();
-        }
-    }
-
-    /**
-     * This updates the manifests' data.
-     *
-     * @return void
-     */
-    private function _updateManifests()
-    {
-        $this->manifest->update(rls($this->getDataDirectory()));
-        if ($this->tagManifest !== null) {
-            $bagdir = $this->bagDirectory;
-            $tagFiles = array(
-                "$bagdir/bagit.txt",
-                "$bagdir/bag-info.txt",
-                $this->fetch->fileName,
-                $this->manifest->getFileName()
-            );
-            $this->tagManifest->update($tagFiles);
-        }
-    }
-
-    /**
-     * This cleans up the file names of all the files in the data/ directory.
-     *
-     * @return void
-     */
-    private function _cleanDataFileNames()
-    {
-        $dataFiles = rls($this->getDataDirectory());
-        foreach ($dataFiles as $dataFile) {
-            $baseName = basename($dataFile);
-            if ($baseName == '.' || $baseName == '..') {
-                continue;
-            }
-
-            $cleanName = $this->_sanitizeFileName($baseName);
-            if ($cleanName === null) {
-                unlink($dataFile);
-            } else if ($baseName != $cleanName) {
-                $dirName = dirname($dataFile);
-                rename($dataFile, "$dirName/$cleanName");
-            }
-        }
-    }
 
     /**
      * This validates that a file or directory exists.
