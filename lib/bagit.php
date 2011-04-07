@@ -378,10 +378,8 @@ class BagIt
                 continue;
             }
 
-            $cleanName = $this->_sanitizeFileName($baseName);
-            if ($cleanName === null) {
-                unlink($dataFile);
-            } else if ($baseName != $cleanName) {
+            $cleanName = BagIt_sanitizeFileName($baseName);
+            if ($baseName != $cleanName) {
                 $dirName = dirname($dataFile);
                 rename($dataFile, "$dirName/$cleanName");
             }
@@ -481,7 +479,13 @@ class BagIt
             $this->_getCompressedBaseName($this->bag) :
             $this->bagDirectory = realpath($this->bag);
 
-        $this->_readBagIt($this->bagDirectory . '/bagit.txt');
+        $this->bagitFile = "{$this->bagDirectory}/bagit.txt";
+        list($version, $fileEncoding, $errors) = BagIt_readBagItFile(
+            $this->bagitFile
+        );
+        $this->bagVersion = $version;
+        $this->tagFileEncoding = $fileEncoding;
+        $this->bagErrors = array_merge($this->bagErrors, $errors);
 
         $files = scandir($this->bagDirectory);
         if (count($files) > 0) {
@@ -768,142 +772,6 @@ class BagIt
         return $output;
     }
 
-    /**
-     * This reads the information from the bag it file.
-     *
-     * This sets the bagVersion and tagFileEncoding properties.
-     *
-     * If it encounters an error, it adds it to bagErrors.
-     *
-     * @param string $filename If given, this tests whether the file exists,
-     * and if it does, it sets the bagitFile parameter before reading the
-     * file. If it is set but doesn't exist, then the method returns without
-     * reading anything.
-     *
-     * @return void
-     */
-    private function _readBagIt($filename=null)
-    {
-        if ($filename !== null) {
-            if (file_exists($filename)) {
-                $this->bagitFile = $filename;
-            } else {
-                return;
-            }
-        }
-
-        try {
-            $this->_parseBagIt(readFileText($filename, $this->tagFileEncoding));
-        } catch (Exception $exc) {
-            array_push(
-                $this->bagErrors,
-                array('bagit', 'Error reading the bagit.txt file.')
-            );
-        }
-    }
-
-    /**
-     * This parses information from the bagit.txt from the string data read 
-     * from that file.
-     *
-     * @param string $data The data from the bagit.txt file.
-     *
-     * @return void
-     */
-    private function _parseBagIt($data)
-    {
-        $versions = $this->_parseVersionString($data);
-        if ($versions === null) {
-            throw new Exception();
-        }
-        $this->bagVersion = $versions;
-
-        $this->tagFileEncoding = $this->_parseEncodingString($data);
-    }
-
-    /**
-     * This parses the version string from the bagit.txt file.
-     *
-     * @param string $bagitFileData The contents of the bagit file.
-     *
-     * @return array A two-item array containing the version string as
-     * integers. The keys for this array are 'major' and 'minor'.
-     */
-    private function _parseVersionString($bagitFileData)
-    {
-        $matches = array();
-        $success = preg_match(
-            "/BagIt-Version: (\d+)\.(\d+)/i",
-            $bagitFileData,
-            $matches
-        );
-
-        if ($success) {
-            $major = (int)$matches[1];
-            $minor = (int)$matches[2];
-            if ($major === null || $minor === null) {
-                throw new Exception("Invalid bagit version: '{$matches[0]}'.");
-            }
-            return array('major' => $major, 'minor' => $minor);
-        }
-
-        return null;
-    }
-
-    /**
-     * This parses the encoding string from the bagit.txt file.
-     *
-     * @param string $bagitFileData The contents of the bagit file.
-     *
-     * @return string The encoding.
-     */
-    private function _parseEncodingString($bagitFileData)
-    {
-        $matches = array();
-        $success = preg_match(
-            '/Tag-File-Character-Encoding: (.*)/i',
-            $bagitFileData,
-            $matches
-        );
-
-        if ($success) {
-            return $matches[1];
-        }
-
-        return null;
-    }
-
-    /**
-     * This cleans up the file name.
-     *
-     * @param string $filename The file name to clean up.
-     *
-     * @return string The cleaned up file name.
-     */
-    private function _sanitizeFileName($filename)
-    {
-        // White space => underscores.
-        $filename = preg_replace('/\s+/', '_', $filename);
-
-        // Remove some characters.
-        $filename = preg_replace(
-            '/\.{2}|[~\^@!#%&\*\/:\'?\"<>\|]/',
-            '',
-            $filename
-        );
-
-        $forbidden = '/^(CON|PRN|AUX|NUL|COM1|COM2|COM3|COM4|COM5| ' .
-            'COM6|COM7|COM8|COM9|LPT1|LPT2|LPT3|LPT4|LPT5|LPT6|' .
-            'LPT7|LPT8|LPT9)$/';
-
-        if (preg_match($forbidden, $filename)) {
-            $filename = strtolower($filename);
-            $suffix = substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 12);
-            $filename = "{$filename}_{$suffix}";
-        }
-
-        return $filename;
-    }
     //}}}
 
 }
