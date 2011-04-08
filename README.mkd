@@ -33,12 +33,12 @@ You'll need to have these installed to use this:
     $bag = new Bagit(BASE_DIR);
 
     // add a file
-    $bag->addFile('../phpunit.xml', BASE_DIR . '/phpunit.xml');
+    $bag->addFile('../phpunit.xml', 'data/phpunit.xml');
 
     // create a tarball
     $bag->package('testbag');
 
-## Example: Validating an exhisting bag
+## Example: Validating an existing bag
 
 ## Example: Fetch remote files
 
