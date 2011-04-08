@@ -2,12 +2,44 @@
 # BagIt PHP
 
 This is a PHP implementation of the [BagIt
-specification](https://wiki.ucop.edu/display/Curation/BagIt). Really, it is a
-port of [PyBagIt](https://github.com/ahankinson/pybagit/) for PHP.
+0.96 specification](https://wiki.ucop.edu/display/Curation/BagIt)
+
+## Supported Features:
+
+* bag compiling
+* manifest and tagmanifest generation
+* generation of tag files, bag-info.txt and bagit.txt
+* fetching remote files (fetch.txt)
+* bag validation
+
+
+## Installation
+
+    % git clone git://github.com/scholarslab/BagItPHP.git
 
 ## Dependencies
 
 You'll need to have these installed to use this:
 
  * Archive\_Tar (http://pear.php.net/package/Archive\_Tar)
+
+## Example: Creating a bag
+    
+    require_once 'lib/bagit.php';
+    
+    define('BASE_DIR', 'testbag');
+
+    // create a new bag at BASE_DIR
+    $bag = new Bagit(BASE_DIR);
+
+    // add a file
+    $bag->addFile('../phpunit.xml', BASE_DIR . '/phpunit.xml');
+
+    // create a tarball
+    $bag->package('testbag');
+
+## Example: Validating an exhisting bag
+
+## Example: Fetch remote files
+
 
