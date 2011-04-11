@@ -67,9 +67,10 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
         $srcdir = __DIR__ . '/TestBag/data';
         $bag->addFile("$srcdir/README.txt", 'data/README.txt');
         $bag->addFile("$srcdir/imgs/uvalib.png", 'data/payloads/uvalib.png');
+        // This needs to add data/ to the beginning of the file.
         $bag->addFile(
             "$srcdir/imgs/fibtriangle-110x110.jpg",
-            'data/payloads/fibtri.jpg'
+            'payloads/fibtri.jpg'
         );
 
         // 3. Add fetch entries;
@@ -100,6 +101,12 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
         // Now, check that the file was fetched.
         $dest->fetch->download();
         $this->assertFileExists("{$dest->bagDirectory}/data/index.html");
+
+        // Also, check that fibtri.jpg was added in the data/ directory.
+        $this->assertFalse(
+            file_exists("{$dest->bagDirectory}/payloads/fibtri.jpg")
+        );
+        $this->assertFileExists("{$dest->bagDirectory}/data/payloads/fibtri.jpg");
 
     }
 

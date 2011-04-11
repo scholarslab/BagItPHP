@@ -402,6 +402,8 @@ class BagIt
     /**
      * This copies the file specified into the bag at the place given.
      *
+     * $dest should begin with "data/", but if it doesn't that will be added.
+     *
      * @param string $src  The file name for the source file.
      * @param string $dest The file name for the destination file. This should 
      * be relative to the bag directory.
@@ -410,6 +412,14 @@ class BagIt
      */
     function addFile($src, $dest)
     {
+        $dataPref = 'data' . DIRECTORY_SEPARATOR;
+        $prefLen = strlen($dataPref);
+        if ((strncasecmp($dest, $dataPref, $prefLen) != 0)
+            && (strncasecmp($dest, $dataPref, $prefLen) != 0)
+        ) {
+            $dest = $dataPref . $dest;
+        }
+
         $fulldest = "{$this->bagDirectory}/$dest";
         $dirname = dirname($fulldest);
         if (! is_dir($dirname)) {
