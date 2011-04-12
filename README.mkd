@@ -30,7 +30,7 @@ You'll need to have these installed to use this:
     define('BASE_DIR', 'testbag');
 
     // create a new bag at BASE_DIR
-    $bag = new Bagit(BASE_DIR);
+    $bag = new BagIt(BASE_DIR);
 
     // add a file
     $bag->addFile('../phpunit.xml', 'data/phpunit.xml');
