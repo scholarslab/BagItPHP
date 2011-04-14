@@ -32,8 +32,8 @@ You'll need to have these installed to use this:
     // create a new bag at BASE_DIR
     $bag = new Bagit(BASE_DIR);
 
-    // add a file
-    $bag->addFile('../phpunit.xml', 'data/phpunit.xml');
+    // add a file; these are relative to the data directory
+    $bag->addFile('../phpunit.xml', 'phpunit.xml');
 
     // create a tarball
     $bag->package('testbag');
@@ -48,8 +48,17 @@ You'll need to have these installed to use this:
     // check validity
     var_dump((bool)$bag->isValid());
 
-## Example: Fetch remote files
+## Feedback
 
-    require_once 'lib/bagit.php';
+We are relying on the [GitHug issues tracker][issues] linked from the above for
+feedback. File bugs or other issues [here][issues].
 
-    
+[issues]: http://github.com/scholarslab/BagItPHP/issues 
+
+## Tests
+
+The BagItPHP library includes unit tests to ensure the quality of the software.
+The easiest way to contribute to the project is to contribute back to the project
+with bugs and include a test case. Read the build.xml file more more information
+on running tests, the underlying report types, and packing information.
+
