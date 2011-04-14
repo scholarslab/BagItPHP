@@ -40,6 +40,16 @@ You'll need to have these installed to use this:
 
 ## Example: Validating an existing bag
 
+    require_once 'lib/bagit.php';
+
+    // use an existing bag
+    $bag = new BagIt('test/TestBag.tgz');
+
+    // check validity
+    var_dump((bool)$bag->isValid());
+
 ## Example: Fetch remote files
 
+    require_once 'lib/bagit.php';
 
+    
