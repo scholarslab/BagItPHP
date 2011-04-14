@@ -728,6 +728,25 @@ class BagItTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testAddFileAddDataDir()
+    {
+        $srcdir = __DIR__ . '/TestBag/data';
+
+        $this->bag->addFile("$srcdir/README.txt", 'README.txt');
+
+        $datadir = $this->bag->getDataDirectory();
+        $this->assertFileExists("{$datadir}/README.txt");
+        $this->assertFileEquals("$srcdir/README.txt", "{$datadir}/README.txt");
+
+        $this->bag->addFile("$srcdir/imgs/uvalib.png", "pics/uvalib.png");
+
+        $this->assertFileExists("{$datadir}/pics/uvalib.png");
+        $this->assertFileEquals(
+            "$srcdir/imgs/uvalib.png",
+            "{$datadir}/pics/uvalib.png"
+        );
+    }
+
     /**
      * @expectedException Exception
      */
