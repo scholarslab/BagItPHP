@@ -38,6 +38,8 @@ You'll need to have these installed to use this:
     // create a tarball
     $bag->package('testbag');
 
+    // the bag package will be created at ./testbag.tgz
+
 ## Example: Validating an existing bag
 
     require_once 'lib/bagit.php';
@@ -48,9 +50,31 @@ You'll need to have these installed to use this:
     // check validity
     var_dump((bool)$bag->isValid());
 
+## Example: Reading a bag
+
+    require_once 'lib/bagit.php';
+
+    // use an existing bag
+    $bag = new BagIt('test/TestBag.tgz');
+
+    // validate the bag
+    $bag->validate();
+
+    // only execute if a valid bag
+    if(count($bag->getErrors()) == 0 {
+      // retrieve remote files
+      $bag->fetch->download();
+
+      // copy files
+      foreach($bag->getBagContents() as $filename) {
+        copy($filename, 'final/destination/' . basename(filename));
+      }
+    }
+
+
 ## Feedback
 
-We are relying on the [GitHug issues tracker][issues] linked from the above for
+We are relying on the [GitHub issues tracker][issues] linked from the above for
 feedback. File bugs or other issues [here][issues].
 
 [issues]: http://github.com/scholarslab/BagItPHP/issues 
