@@ -82,7 +82,16 @@ feedback. File bugs or other issues [here][issues].
 ## Tests
 
 The BagItPHP library includes unit tests to ensure the quality of the software.
-The easiest way to contribute to the project is to contribute back to the project
-with bugs and include a test case. Read the build.xml file more more information
+The easiest way to contribute to the project is to to let us know about andy bugs, 
+and include a test case. Read the build.xml file more more information
 on running tests, the underlying report types, and packing information.
+
+
+## Note on Patches/Pull Requests
+* Fork the project
+* Make your feature addition/bug fix.
+* Add tests for it. This is important so we don't unintentionally break it in a future
+  version 
+* Commit
+* Send us a pull request...bonus points for topic branches.
 
