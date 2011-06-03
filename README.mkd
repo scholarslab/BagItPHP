@@ -35,6 +35,9 @@ You'll need to have these installed to use this:
     // add a file; these are relative to the data directory
     $bag->addFile('../phpunit.xml', 'phpunit.xml');
 
+    // update the hashes
+    $bag->update();
+
     // create a tarball
     $bag->package('testbag');
 
