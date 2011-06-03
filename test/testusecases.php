@@ -6,7 +6,7 @@ require_once 'lib/bagit.php';
  * This abuses the unit test framework to do some use case testing.
  */
 class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
- {
+{
     var $to_rm;
 
     private function queueRm($dirname)
