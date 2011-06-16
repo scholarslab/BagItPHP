@@ -398,11 +398,19 @@ function BagIt_uncompressBag($compressedFile)
     $ext = $matches[2];
 
     if ($ext == 'zip') {
+
         $zip = new ZipArchive();
         $zip->open($compressedFile);
         $zip->extractTo($dir);
 
+        $datadir = $dir . '/' . $bagBase . '/data';
+
+        if (!file_exists($datadir)) {
+            mkdir($datadir, 0700);
+        }
+
     } else if ($ext == 'tgz' || $ext == 'tar.gz') {
+
         $tar = new Archive_Tar($compressedFile, 'gz');
         $tar->extract($dir);
 
