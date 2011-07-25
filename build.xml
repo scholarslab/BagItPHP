@@ -28,21 +28,15 @@
         following packages:
 
         sudo pear upgrade
-        sudo pear install PhpDocumentor
-        sudo pear install phpunit/PHPUnit
+        sudo pear install pdepend/PHP_Depend
+        sudo pear install phpmd/PHP_PMD
         sudo pear install phpunit/phpcpd
-        sudo pear install phpmd/PHP_PMD-alpha
-        sudo pear install pdepend/PHP_Depend-beta
-        sudo pear install PHP_CodeSniffer-1.3.0a1
+        sudo pear install phpunit/phploc
+        sudo pear install PHPDocumentor
+        sudo pear install PHP_CodeSniffer
+        sudo pear install -alldeps phpunit/PHP_CodeBrowser
+        sudo pear install -alldeps phpunit/PHPUnit
 
-        In addition to these, if you wish to have use the code browser package,
-        please refere to the documentation at http://github.com/mayflowergmbh/PHP_CodeBrowser
-
-        In short, these are the directions for installing the alpha package
-
-        sudo pear config-set preferred_state alpha
-        sudo pear install -a phpunit/PHP_CodeBrowser
-        sudo pear config-set peferred_state stable
 -->
 
 <project name="bagitphp" default="usage" basedir=".">
