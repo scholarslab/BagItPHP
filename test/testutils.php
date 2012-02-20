@@ -213,7 +213,7 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
 
         $this->assertFileExists("$tmpdir/google.html");
         $this->assertStringStartsWith(
-            '<!doctype html><html><head>',
+            '<!doctype html',
             file_get_contents("$tmpdir/google.html")
         );
     }
