@@ -163,6 +163,58 @@ class BagItTest extends PHPUnit_Framework_TestCase
         rrmdir($tmp2);
     }
 
+    public function testBagInfoWrite()
+    {
+        $this->assertEquals(0, count($this->bag->bagInfoData));
+
+        $tmp2 = tmpdir();
+        try
+        {
+            mkdir($tmp2);
+            mkdir("$tmp2/data");
+            file_put_contents(
+                "$tmp2/bag-info.txt",
+                "Source-organzation: University of Virginia Alderman Library\n" .
+                "Contact-name: Eric Rochester\n" .
+                "Bag-size: very, very small\n"
+            );
+            $bag = new BagIt($tmp2);
+            $this->assertNotNull($bag->bagInfoData);
+
+            $bag->bagInfoData['First'] = 'This is the first tag value.';
+            $bag->bagInfoData['Second'] = 'This is the second tag value.';
+
+            $bag->update();
+            $bag->package("$tmp2.tgz");
+            rrmdir($tmp2);
+
+            $bag2 = new BagIt("$tmp2.tgz");
+            $tmp2 = $bag2->bagDirectory;
+
+            $this->assertArrayHasKey('First', $bag2->bagInfoData);
+            $this->assertEquals(
+                'This is the first tag value.',
+                $bag2->bagInfoData['First']
+            );
+            $this->assertArrayHasKey('Second', $bag2->bagInfoData);
+            $this->assertEquals(
+                'This is the second tag value.',
+                $bag2->bagInfoData['Second']
+            );
+        }
+        catch (Exception $e)
+        {
+            if (file_exists($tmp2)) {
+                rrmdir($tmp2);
+            }
+            if (file_exists("$tmp2.tgz")) {
+                unlink("$tmp2.tgz");
+            }
+            throw $e;
+        }
+        rrmdir($tmp2);
+    }
+
     public function testBagCompression()
     {
         $this->assertNull($this->bag->bagCompression);
