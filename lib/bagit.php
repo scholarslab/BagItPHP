@@ -289,7 +289,7 @@ class BagIt
     {
         $hashAlgorithm = strtolower($hashAlgorithm);
         if ($hashAlgorithm != 'md5' && $hashAlgorithm != 'sha1') {
-            throw new Exception("Invalid hash algorithim: '$hashAlgorithm'.");
+            throw new InvalidArgumentException("Invalid hash algorithim: '$hashAlgorithm'.");
         }
 
         $this->manifest->setHashEncoding($hashAlgorithm);

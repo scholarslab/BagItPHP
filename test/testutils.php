@@ -54,7 +54,7 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException Exception
+     * @expectedException PHPUnit_Framework_Error_Warning
      */
     public function testEndsWithError()
     {
@@ -484,7 +484,7 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException Exception
+     * @expectedException ErrorException
      */
     public function testBagIt_uncompressBagError()
     {

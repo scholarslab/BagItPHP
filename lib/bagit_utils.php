@@ -391,7 +391,7 @@ function BagIt_uncompressBag($compressedFile)
         $matches
     );
     if (!$success) {
-        throw new Exception("File not compressed: $compressedFile.");
+        throw new ErrorException("File not compressed: $compressedFile.");
     }
 
     $bagBase = $matches[1];
