@@ -8,4 +8,5 @@ branches:
         - master
         - develop
 notifications:
-    - "irc.freenode.org#slab"
+    irc:
+        - "irc.freenode.org#slab"
