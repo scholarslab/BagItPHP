@@ -239,6 +239,118 @@ class BagItTest extends PHPUnit_Framework_TestCase
         rrmdir($tmp2);
     }
 
+    public function testBagInfoNull()
+    {
+        $this->assertNull($this->bag->bagInfoData);
+        $this->bag->hasBagInfoKey('hi');
+        $this->assertFalse(is_null($this->bag->bagInfoData));
+        $this->assertCount(0, $this->bag->bagInfoData);
+    }
+
+    public function testHasBagInfoKey()
+    {
+        $tmp2 = tmpdir();
+        try
+        {
+            mkdir($tmp2);
+            mkdir("$tmp2/data");
+
+            file_put_contents(
+                "$tmp2/bag-info.txt",
+                "Source-organzation: University of Virginia Alderman Library\n" .
+                "Contact-name: Eric Rochester\n" .
+                "Bag-size: very, very small\n"
+            );
+            $bag = new BagIt($tmp2);
+
+            $this->assertTrue($bag->hasBagInfoKey('source-organization'));
+            $this->assertTrue($bag->hasBagInfoKey('SOURCE-ORGANIZATION'));
+            $this->assertTrue($bag->hasBagInfoKey('Source-Organization'));
+            $this->assertTrue($bag->hasBagInfoKey('SoUrCe-oRgAnIzAtIoN'));
+
+            $this->assertTrue($bag->hasBagInfoKey('contact-name'));
+            $this->assertTrue($bag->hasBagInfoKey('CONTACT-NAME'));
+            $this->assertTrue($bag->hasBagInfoKey('Contact-Name'));
+            $this->assertTrue($bag->hasBagInfoKey('CoNtAcT-NaMe'));
+
+            $this->assertTrue($bag->hasBagInfoKey('bag-size'));
+            $this->assertTrue($bag->hasBagInfoKey('BAG-SIZE'));
+            $this->assertTrue($bag->hasBagInfoKey('Bag-Size'));
+            $this->assertTrue($bag->hasBagInfoKey('BaG-SiZe'));
+
+            $this->assertFalse($bag->hasBagInfoKey('copyright-date'));
+            $this->assertFalse($bag->hasBagInfoKey('other-metadata'));
+            $this->assertFalse($bag->hasBagInfoKey('thrown-away-the-key'));
+        }
+        catch (Exception $e)
+        {
+            if (file_exists($tmp2)) {
+                rrmdir($tmp2);
+            }
+            throw $e;
+        }
+        rrmdir($tmp2);
+    }
+
+    public function testGetBagInfo()
+    {
+        $tmp2 = tmpdir();
+        try
+        {
+            mkdir($tmp2);
+            mkdir("$tmp2/data");
+
+            file_put_contents(
+                "$tmp2/bag-info.txt",
+                "Source-organzation: University of Virginia Alderman Library\n" .
+                "Contact-name: Eric Rochester\n" .
+                "Bag-size: very, very small\n"
+            );
+            $bag = new BagIt($tmp2);
+
+            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfo('source-organization'));
+            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfo('SOURCE-ORGANIZATION'));
+            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfo('Source-Organization'));
+            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfo('SoUrCe-oRgAnIzAtIoN'));
+
+            $this->assertEquals('Eric Rochester', $bag->getBagInfo('contact-name'));
+            $this->assertEquals('Eric Rochester', $bag->getBagInfo('CONTACT-NAME'));
+            $this->assertEquals('Eric Rochester', $bag->getBagInfo('Contact-Name'));
+            $this->assertEquals('Eric Rochester', $bag->getBagInfo('CoNtAcT-NaMe'));
+
+            $this->assertEquals('very, very small', $bag->getBagInfo('bag-size'));
+            $this->assertEquals('very, very small', $bag->getBagInfo('BAG-SIZE'));
+            $this->assertEquals('very, very small', $bag->getBagInfo('Bag-Size'));
+            $this->assertEquals('very, very small', $bag->getBagInfo('BaG-SiZe'));
+
+            $this->assertNull($bag->getBagInfo('copyright-date'));
+            $this->assertNull($bag->getBagInfo('other-metadata'));
+            $this->assertNull($bag->getBagInfo('thrown-away-the-key'));
+        }
+        catch (Exception $e)
+        {
+            if (file_exists($tmp2)) {
+                rrmdir($tmp2);
+            }
+            throw $e;
+        }
+        rrmdir($tmp2);
+    }
+
+    public function testSetBagInfo()
+    {
+        $this->assertNull($this->bag->bagInfoData);
+        $this->bag->setBagInfo('hi', 'some value');
+
+        $this->assertTrue($this->bag->hasBagInfoKey('hi'));
+        $this->assertTrue($this->bag->hasBagInfoKey('HI'));
+        $this->assertTrue($this->bag->hasBagInfoKey('Hi'));
+        $this->assertTrue($this->bag->hasBagInfoKey('hI'));
+
+        $this->assertEquals('some value', $this->bag->getBagInfo('hi'));
+        $this->assertCount(1, $this->bag->bagInfoData);
+    }
+
     public function testBagCompression()
     {
         $this->assertNull($this->bag->bagCompression);
