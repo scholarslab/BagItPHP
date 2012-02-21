@@ -171,6 +171,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
             );
             $bag = new BagIt($tmp2);
             $this->assertNotNull($bag->bagInfoData);
+            $this->assertCount(3, $bag->bagInfoData);
             $this->assertTrue($bag->hasBagInfoData("source-organization"));
             $this->assertTrue($bag->hasBagInfoData("contact-name"));
             $this->assertTrue($bag->hasBagInfoData("bag-size"));
