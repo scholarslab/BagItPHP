@@ -1,6 +1,8 @@
 
 # BagIt PHP
 
+[![Build Status](https://secure.travis-ci.org/scholarslab/BagItPHP.png?branch=develop)](http://travis-ci.org/scholarslab/BagItPHP)
+
 This is a PHP implementation of the [BagIt
 0.96 specification](https://wiki.ucop.edu/display/Curation/BagIt)
 
