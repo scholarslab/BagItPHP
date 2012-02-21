@@ -472,7 +472,8 @@ class BagIt
      **/
     public function hasBagInfoData($key)
     {
-        return array_key_exists(strtolower($key), $this->_ensureBagInfoData());
+        $this->_ensureBagInfoData();
+        return array_key_exists(strtolower($key), $this->bagInfoData);
     }
 
     /**
@@ -486,8 +487,9 @@ class BagIt
      **/
     public function setBagInfoData($key, $value)
     {
-        $bagInfoData = $this->_ensureBagInfoData();
+        $this->_ensureBagInfoData();
         $key = strtolower($key);
+        $this->bagInfoData[$key] = $value;
     }
 
     /**
