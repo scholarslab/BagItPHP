@@ -472,6 +472,7 @@ class BagIt
      **/
     public function hasBagInfoData($key)
     {
+        return array_key_exists(strtolower($key), $this->_ensureBagInfoData());
     }
 
     /**
@@ -485,6 +486,8 @@ class BagIt
      **/
     public function setBagInfoData($key, $value)
     {
+        $bagInfoData = $this->_ensureBagInfoData();
+        $key = strtolower($key);
     }
 
     /**
@@ -497,6 +500,8 @@ class BagIt
      **/
     public function getBagInfoData($key)
     {
+        $bagInfoData = $this->_ensureBagInfoData();
+        $key = strtolower($key);
     }
 
     //}}}
@@ -686,6 +691,20 @@ class BagIt
             }
         }
         return false;
+    }
+
+    /**
+     * This makes sure that bagInfoData is not null.
+     *
+     * @return array
+     * @author Eric Rochester <erochest@virginia.edu>
+     **/
+    private function _ensureBagInfoData()
+    {
+        if (is_null($this->bagInfoData)) {
+            $this->bagInfoData = array();
+        }
+        return $this->bagInfoData;
     }
 
     //}}}
