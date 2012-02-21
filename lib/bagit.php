@@ -488,8 +488,7 @@ class BagIt
     public function setBagInfoData($key, $value)
     {
         $this->_ensureBagInfoData();
-        $key = strtolower($key);
-        $this->bagInfoData[$key] = $value;
+        $this->bagInfoData[strtolower($key)] = $value;
     }
 
     /**
@@ -502,8 +501,8 @@ class BagIt
      **/
     public function getBagInfoData($key)
     {
-        $bagInfoData = $this->_ensureBagInfoData();
-        $key = strtolower($key);
+        $this->_ensureBagInfoData();
+        return $this->bagInfoData[strtolower($key)];
     }
 
     //}}}
