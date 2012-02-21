@@ -132,6 +132,29 @@ class BagItTest extends PHPUnit_Framework_TestCase
         $this->assertFileExists($this->bag->bagInfoFile);
     }
 
+    public function testBagInfoContructor()
+    {
+        $tmp2 = tmpdir();
+        try
+        {
+            $bag = new BagIt($tmp2, FALSE, FALSE, FALSE, array(
+                'source-organization' => 'University of Virginia',
+                'contact-name'        => 'Someone'
+            ));
+            $this->assertTrue($bag->extended);
+            $this->assertNotNull($bag->bagInfoData);
+            $this->assertArrayHasKey("source-organization", $bag->bagInfoData);
+            $this->assertArrayHasKey("contact-name", $bag->bagInfoData);
+            $this->assertFalse(array_key_exists("bag-date", $bag->bagInfoData));
+        }
+        catch (Exception $e)
+        {
+            rrmdir($tmp2);
+            throw $e;
+        }
+        rrmdir($tmp2);
+    }
+
     public function testBagInfoData()
     {
         $this->assertEquals(0, count($this->bag->bagInfoData));
