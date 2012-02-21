@@ -172,24 +172,26 @@ class BagIt
     /**
      * Define a new BagIt instance.
      *
-     * @param string  $bag      Either a non-existing folder name (will create
+     * @param string  $bag         Either a non-existing folder name (will create
      * a new bag here); an existing folder name (this will treat it as a bag
      * and create any missing files or folders needed); or an existing
      * compressed file (this will un-compress it to a temporary directory and
      * treat it as a bag).
-     * @param boolean $validate This will validate all files in the bag,
+     * @param boolean $validate    This will validate all files in the bag,
      * including running checksums on all of them. Default is false.
-     * @param boolean $extended This will ensure that optional 'bag-info.txt',
+     * @param boolean $extended    This will ensure that optional 'bag-info.txt',
      * 'fetch.txt', and 'tagmanifest-{sha1,md5}.txt' are created. Default is
      * true.
-     * @param boolean $fetch    If true, it will download all files in
+     * @param boolean $fetch       If true, it will download all files in
      * 'fetch.txt'. Default is false.
+     * @param array   $bagInfoData If given, this sets the bagInfoData
+     * property.
      */
     public function __construct(
-        $bag, $validate=false, $extended=true, $fetch=false
+        $bag, $validate=false, $extended=true, $fetch=false, $bagInfoData=null
     ) {
         $this->bag = $bag;
-        $this->extended = $extended;
+        $this->extended = $extended || (! is_null($bagInfoData));
         $this->bagVersion = array('major' => 0, 'minor' => 96);
         $this->tagFileEncoding = 'UTF-8';
         $this->bagDirectory = null;
@@ -198,7 +200,7 @@ class BagIt
         $this->tagManifest = null;
         $this->fetch = null;
         $this->bagInfoFile = null;
-        $this->bagInfoData = null;
+        $this->bagInfoData = $bagInfoData;
         $this->bagCompression = null;
         $this->bagErrors = array();
 
@@ -583,7 +585,9 @@ class BagIt
 
             $this->bagInfoFile = $this->bagDirectory . '/bag-info.txt';
             touch($this->bagInfoFile);
-            $this->bagInfoData = array();
+            if (is_null($this->bagInfoData)) {
+                $this->bagInfoData = array();
+            }
         }
     }
 
