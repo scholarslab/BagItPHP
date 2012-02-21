@@ -502,7 +502,8 @@ class BagIt
     public function getBagInfoData($key)
     {
         $this->_ensureBagInfoData();
-        return $this->bagInfoData[strtolower($key)];
+        $key = strtolower($key);
+        return array_key_exists($key, $this->bagInfoData) ? $this->bagInfoData[$key] : null;
     }
 
     //}}}
