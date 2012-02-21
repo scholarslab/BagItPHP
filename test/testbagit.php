@@ -143,9 +143,9 @@ class BagItTest extends PHPUnit_Framework_TestCase
             ));
             $this->assertTrue($bag->extended);
             $this->assertNotNull($bag->bagInfoData);
-            $this->assertArrayHasKey("source-organization", $bag->bagInfoData);
-            $this->assertArrayHasKey("contact-name", $bag->bagInfoData);
-            $this->assertFalse(array_key_exists("bag-date", $bag->bagInfoData));
+            $this->assertTrue($bag->hasBagInfoKey("source-organization"));
+            $this->assertTrue($bag->hasBagInfoKey("contact-name"));
+            $this->assertFalse($bag->hasBagInfoKey("bag-date"));
         }
         catch (Exception $e)
         {
@@ -171,12 +171,12 @@ class BagItTest extends PHPUnit_Framework_TestCase
             );
             $bag = new BagIt($tmp2);
             $this->assertNotNull($bag->bagInfoData);
-            $this->assertArrayHasKey("source-organization", $bag->bagInfoData);
-            $this->assertArrayHasKey("contact-name", $bag->bagInfoData);
-            $this->assertArrayHasKey("bag-size", $bag->bagInfoData);
-            $this->assertArrayHasKey("Bag-size", $bag->bagInfoData);
-            $this->assertArrayHasKey("BAG-SIZE", $bag->bagInfoData);
-            $this->assertFalse(array_key_exists("bag-date", $bag->bagInfoData));
+            $this->assertTrue($bag->hasBagInfoKey("source-organization"));
+            $this->assertTrue($bag->hasBagInfoKey("contact-name"));
+            $this->assertTrue($bag->hasBagInfoKey("bag-size"));
+            $this->assertTrue($bag->hasBagInfoKey("Bag-size"));
+            $this->assertTrue($bag->hasBagInfoKey("BAG-SIZE"));
+            $this->assertFalse($bag->hasBagInfoKey("bag-date"));
         }
         catch (Exception $e)
         {
@@ -195,6 +195,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
         {
             mkdir($tmp2);
             mkdir("$tmp2/data");
+
             file_put_contents(
                 "$tmp2/bag-info.txt",
                 "Source-organzation: University of Virginia Alderman Library\n" .
@@ -204,8 +205,8 @@ class BagItTest extends PHPUnit_Framework_TestCase
             $bag = new BagIt($tmp2);
             $this->assertNotNull($bag->bagInfoData);
 
-            $bag->bagInfoData['First'] = 'This is the first tag value.';
-            $bag->bagInfoData['Second'] = 'This is the second tag value.';
+            $bag->setBagInfoData('First', 'This is the first tag value.');
+            $bag->setBagInfoData('Second', 'This is the second tag value.');
 
             $bag->update();
             $bag->package("$tmp2.tgz");
@@ -214,15 +215,15 @@ class BagItTest extends PHPUnit_Framework_TestCase
             $bag2 = new BagIt("$tmp2.tgz");
             $tmp2 = $bag2->bagDirectory;
 
-            $this->assertArrayHasKey('First', $bag2->bagInfoData);
+            $this->assertTrue($bag2->hasBagInfoKey('First'));
             $this->assertEquals(
                 'This is the first tag value.',
-                $bag2->bagInfoData['First']
+                $bag2->getBagInfo('first')
             );
-            $this->assertArrayHasKey('Second', $bag2->bagInfoData);
+            $this->assertTrue($bag2->hasBagInfoKey('Second'));
             $this->assertEquals(
                 'This is the second tag value.',
-                $bag2->bagInfoData['Second']
+                $bag2->getBagInfo('second')
             );
         }
         catch (Exception $e)
