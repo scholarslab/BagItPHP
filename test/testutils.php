@@ -212,9 +212,9 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         saveUrl('http://www.google.com', "$tmpdir/google.html");
 
         $this->assertFileExists("$tmpdir/google.html");
-        $this->assertStringStartsWith(
-            '<!doctype html',
-            file_get_contents("$tmpdir/google.html")
+        $this->assertContains(
+            'html',
+            strtolower(file_get_contents("$tmpdir/google.html"))
         );
     }
 
