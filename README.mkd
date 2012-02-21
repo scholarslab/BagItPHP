@@ -1,6 +1,8 @@
 
 # BagIt PHP
 
+Master: {<img src="https://secure.travis-ci.org/scholarslab/BagItPHP.png" />}[http://travis-ci.org/scholarslab/BagItPHP]
+
 This is a PHP implementation of the [BagIt
 0.96 specification](https://wiki.ucop.edu/display/Curation/BagIt)
 
