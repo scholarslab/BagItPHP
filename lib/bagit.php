@@ -385,6 +385,10 @@ class BagIt
             }
         }
 
+        if ($this->extended || count($this->bagInfoData) > 0) {
+            $this->_writeBagInfo();
+        }
+
         // Update the manifests.
         $this->manifest->update(rls($this->getDataDirectory()));
         if ($this->tagManifest !== null) {
@@ -599,6 +603,25 @@ class BagIt
                 array('baginfo', 'Error reading bag info file.')
             );
         }
+    }
+
+    /**
+     * This writes the bag-info.txt file with the contents of bagInfoData.
+     *
+     * @return void
+     * @author Eric Rochester <erochest@virginia.edu>
+     **/
+    private function _writeBagInfo()
+    {
+        $lines = array();
+
+        if (count($this->bagInfoData)) {
+            foreach ($this->bagInfoData as $label => $value) {
+                array_push($lines, "$label: $value\n");
+            }
+        }
+
+        writeFileText($this->bagInfoFile, $this->tagFileEncoding, join('', $lines));
     }
 
     /**
