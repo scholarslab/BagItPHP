@@ -461,6 +461,44 @@ class BagIt
             $method
         );
     }
+
+    /**
+     * This tests whether bagInfoData has a key.
+     *
+     * @param string $key The key to test for existence of.
+     *
+     * @return bool
+     * @author Eric Rochester <erochest@virginia.edu>
+     **/
+    public function hasBagInfoData($key)
+    {
+    }
+
+    /**
+     * This inserts a value into bagInfoData.
+     *
+     * @param string $key   This is the key to insert into the data.
+     * @param string $value This is the value to associate with the key.
+     *
+     * @return void
+     * @author Eric Rochester <erochest@virginia.edu>
+     **/
+    public function setBagInfoData($key, $value)
+    {
+    }
+
+    /**
+     * This returns the value for a key from bagInfoData.
+     * 
+     * @param string $key This is the key to get the value associated with.
+     *
+     * @return string|null
+     * @author Eric Rochester <erochest@virginia.edu>
+     **/
+    public function getBagInfoData($key)
+    {
+    }
+
     //}}}
 
     //{{{ Private Methods
