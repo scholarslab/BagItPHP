@@ -7,3 +7,5 @@ branches:
     only:
         - master
         - develop
+notifications:
+    - "irc.freenode.org#slab"
