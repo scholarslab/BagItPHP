@@ -143,9 +143,9 @@ class BagItTest extends PHPUnit_Framework_TestCase
             ));
             $this->assertTrue($bag->extended);
             $this->assertNotNull($bag->bagInfoData);
-            $this->assertTrue($bag->hasBagInfoKey("source-organization"));
-            $this->assertTrue($bag->hasBagInfoKey("contact-name"));
-            $this->assertFalse($bag->hasBagInfoKey("bag-date"));
+            $this->assertTrue($bag->hasBagInfoData("source-organization"));
+            $this->assertTrue($bag->hasBagInfoData("contact-name"));
+            $this->assertFalse($bag->hasBagInfoData("bag-date"));
         }
         catch (Exception $e)
         {
@@ -171,12 +171,12 @@ class BagItTest extends PHPUnit_Framework_TestCase
             );
             $bag = new BagIt($tmp2);
             $this->assertNotNull($bag->bagInfoData);
-            $this->assertTrue($bag->hasBagInfoKey("source-organization"));
-            $this->assertTrue($bag->hasBagInfoKey("contact-name"));
-            $this->assertTrue($bag->hasBagInfoKey("bag-size"));
-            $this->assertTrue($bag->hasBagInfoKey("Bag-size"));
-            $this->assertTrue($bag->hasBagInfoKey("BAG-SIZE"));
-            $this->assertFalse($bag->hasBagInfoKey("bag-date"));
+            $this->assertTrue($bag->hasBagInfoData("source-organization"));
+            $this->assertTrue($bag->hasBagInfoData("contact-name"));
+            $this->assertTrue($bag->hasBagInfoData("bag-size"));
+            $this->assertTrue($bag->hasBagInfoData("Bag-size"));
+            $this->assertTrue($bag->hasBagInfoData("BAG-SIZE"));
+            $this->assertFalse($bag->hasBagInfoData("bag-date"));
         }
         catch (Exception $e)
         {
@@ -215,12 +215,12 @@ class BagItTest extends PHPUnit_Framework_TestCase
             $bag2 = new BagIt("$tmp2.tgz");
             $tmp2 = $bag2->bagDirectory;
 
-            $this->assertTrue($bag2->hasBagInfoKey('First'));
+            $this->assertTrue($bag2->hasBagInfoData('First'));
             $this->assertEquals(
                 'This is the first tag value.',
                 $bag2->getBagInfo('first')
             );
-            $this->assertTrue($bag2->hasBagInfoKey('Second'));
+            $this->assertTrue($bag2->hasBagInfoData('Second'));
             $this->assertEquals(
                 'This is the second tag value.',
                 $bag2->getBagInfo('second')
@@ -242,12 +242,12 @@ class BagItTest extends PHPUnit_Framework_TestCase
     public function testBagInfoNull()
     {
         $this->assertNull($this->bag->bagInfoData);
-        $this->bag->hasBagInfoKey('hi');
+        $this->bag->hasBagInfoData('hi');
         $this->assertFalse(is_null($this->bag->bagInfoData));
         $this->assertCount(0, $this->bag->bagInfoData);
     }
 
-    public function testHasBagInfoKey()
+    public function testHasBagInfoData()
     {
         $tmp2 = tmpdir();
         try
@@ -263,24 +263,24 @@ class BagItTest extends PHPUnit_Framework_TestCase
             );
             $bag = new BagIt($tmp2);
 
-            $this->assertTrue($bag->hasBagInfoKey('source-organization'));
-            $this->assertTrue($bag->hasBagInfoKey('SOURCE-ORGANIZATION'));
-            $this->assertTrue($bag->hasBagInfoKey('Source-Organization'));
-            $this->assertTrue($bag->hasBagInfoKey('SoUrCe-oRgAnIzAtIoN'));
+            $this->assertTrue($bag->hasBagInfoData('source-organization'));
+            $this->assertTrue($bag->hasBagInfoData('SOURCE-ORGANIZATION'));
+            $this->assertTrue($bag->hasBagInfoData('Source-Organization'));
+            $this->assertTrue($bag->hasBagInfoData('SoUrCe-oRgAnIzAtIoN'));
 
-            $this->assertTrue($bag->hasBagInfoKey('contact-name'));
-            $this->assertTrue($bag->hasBagInfoKey('CONTACT-NAME'));
-            $this->assertTrue($bag->hasBagInfoKey('Contact-Name'));
-            $this->assertTrue($bag->hasBagInfoKey('CoNtAcT-NaMe'));
+            $this->assertTrue($bag->hasBagInfoData('contact-name'));
+            $this->assertTrue($bag->hasBagInfoData('CONTACT-NAME'));
+            $this->assertTrue($bag->hasBagInfoData('Contact-Name'));
+            $this->assertTrue($bag->hasBagInfoData('CoNtAcT-NaMe'));
 
-            $this->assertTrue($bag->hasBagInfoKey('bag-size'));
-            $this->assertTrue($bag->hasBagInfoKey('BAG-SIZE'));
-            $this->assertTrue($bag->hasBagInfoKey('Bag-Size'));
-            $this->assertTrue($bag->hasBagInfoKey('BaG-SiZe'));
+            $this->assertTrue($bag->hasBagInfoData('bag-size'));
+            $this->assertTrue($bag->hasBagInfoData('BAG-SIZE'));
+            $this->assertTrue($bag->hasBagInfoData('Bag-Size'));
+            $this->assertTrue($bag->hasBagInfoData('BaG-SiZe'));
 
-            $this->assertFalse($bag->hasBagInfoKey('copyright-date'));
-            $this->assertFalse($bag->hasBagInfoKey('other-metadata'));
-            $this->assertFalse($bag->hasBagInfoKey('thrown-away-the-key'));
+            $this->assertFalse($bag->hasBagInfoData('copyright-date'));
+            $this->assertFalse($bag->hasBagInfoData('other-metadata'));
+            $this->assertFalse($bag->hasBagInfoData('thrown-away-the-key'));
         }
         catch (Exception $e)
         {
@@ -292,7 +292,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
         rrmdir($tmp2);
     }
 
-    public function testGetBagInfo()
+    public function testGetBagInfoData()
     {
         $tmp2 = tmpdir();
         try
@@ -308,24 +308,24 @@ class BagItTest extends PHPUnit_Framework_TestCase
             );
             $bag = new BagIt($tmp2);
 
-            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfo('source-organization'));
-            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfo('SOURCE-ORGANIZATION'));
-            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfo('Source-Organization'));
-            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfo('SoUrCe-oRgAnIzAtIoN'));
+            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfoData('source-organization'));
+            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfoData('SOURCE-ORGANIZATION'));
+            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfoData('Source-Organization'));
+            $this->assertEquals('University of Virginia Alderman Library', $bag->getBagInfoData('SoUrCe-oRgAnIzAtIoN'));
 
-            $this->assertEquals('Eric Rochester', $bag->getBagInfo('contact-name'));
-            $this->assertEquals('Eric Rochester', $bag->getBagInfo('CONTACT-NAME'));
-            $this->assertEquals('Eric Rochester', $bag->getBagInfo('Contact-Name'));
-            $this->assertEquals('Eric Rochester', $bag->getBagInfo('CoNtAcT-NaMe'));
+            $this->assertEquals('Eric Rochester', $bag->getBagInfoData('contact-name'));
+            $this->assertEquals('Eric Rochester', $bag->getBagInfoData('CONTACT-NAME'));
+            $this->assertEquals('Eric Rochester', $bag->getBagInfoData('Contact-Name'));
+            $this->assertEquals('Eric Rochester', $bag->getBagInfoData('CoNtAcT-NaMe'));
 
-            $this->assertEquals('very, very small', $bag->getBagInfo('bag-size'));
-            $this->assertEquals('very, very small', $bag->getBagInfo('BAG-SIZE'));
-            $this->assertEquals('very, very small', $bag->getBagInfo('Bag-Size'));
-            $this->assertEquals('very, very small', $bag->getBagInfo('BaG-SiZe'));
+            $this->assertEquals('very, very small', $bag->getBagInfoData('bag-size'));
+            $this->assertEquals('very, very small', $bag->getBagInfoData('BAG-SIZE'));
+            $this->assertEquals('very, very small', $bag->getBagInfoData('Bag-Size'));
+            $this->assertEquals('very, very small', $bag->getBagInfoData('BaG-SiZe'));
 
-            $this->assertNull($bag->getBagInfo('copyright-date'));
-            $this->assertNull($bag->getBagInfo('other-metadata'));
-            $this->assertNull($bag->getBagInfo('thrown-away-the-key'));
+            $this->assertNull($bag->getBagInfoData('copyright-date'));
+            $this->assertNull($bag->getBagInfoData('other-metadata'));
+            $this->assertNull($bag->getBagInfoData('thrown-away-the-key'));
         }
         catch (Exception $e)
         {
@@ -337,17 +337,17 @@ class BagItTest extends PHPUnit_Framework_TestCase
         rrmdir($tmp2);
     }
 
-    public function testSetBagInfo()
+    public function testSetBagInfoData()
     {
         $this->assertNull($this->bag->bagInfoData);
-        $this->bag->setBagInfo('hi', 'some value');
+        $this->bag->setBagInfoData('hi', 'some value');
 
-        $this->assertTrue($this->bag->hasBagInfoKey('hi'));
-        $this->assertTrue($this->bag->hasBagInfoKey('HI'));
-        $this->assertTrue($this->bag->hasBagInfoKey('Hi'));
-        $this->assertTrue($this->bag->hasBagInfoKey('hI'));
+        $this->assertTrue($this->bag->hasBagInfoData('hi'));
+        $this->assertTrue($this->bag->hasBagInfoData('HI'));
+        $this->assertTrue($this->bag->hasBagInfoData('Hi'));
+        $this->assertTrue($this->bag->hasBagInfoData('hI'));
 
-        $this->assertEquals('some value', $this->bag->getBagInfo('hi'));
+        $this->assertEquals('some value', $this->bag->getBagInfoData('hi'));
         $this->assertCount(1, $this->bag->bagInfoData);
     }
 
