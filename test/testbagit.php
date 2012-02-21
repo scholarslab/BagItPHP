@@ -218,12 +218,12 @@ class BagItTest extends PHPUnit_Framework_TestCase
             $this->assertTrue($bag2->hasBagInfoData('First'));
             $this->assertEquals(
                 'This is the first tag value.',
-                $bag2->getBagInfo('first')
+                $bag2->getBagInfoData('first')
             );
             $this->assertTrue($bag2->hasBagInfoData('Second'));
             $this->assertEquals(
                 'This is the second tag value.',
-                $bag2->getBagInfo('second')
+                $bag2->getBagInfoData('second')
             );
         }
         catch (Exception $e)
