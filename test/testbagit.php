@@ -198,7 +198,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
 
             file_put_contents(
                 "$tmp2/bag-info.txt",
-                "Source-organzation: University of Virginia Alderman Library\n" .
+                "Source-organization: University of Virginia Alderman Library\n" .
                 "Contact-name: Eric Rochester\n" .
                 "Bag-size: very, very small\n"
             );
@@ -241,6 +241,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
 
     public function testBagInfoNull()
     {
+        $this->bag->bagInfoData = null;
         $this->assertNull($this->bag->bagInfoData);
         $this->bag->hasBagInfoData('hi');
         $this->assertFalse(is_null($this->bag->bagInfoData));
@@ -257,7 +258,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
 
             file_put_contents(
                 "$tmp2/bag-info.txt",
-                "Source-organzation: University of Virginia Alderman Library\n" .
+                "Source-organization: University of Virginia Alderman Library\n" .
                 "Contact-name: Eric Rochester\n" .
                 "Bag-size: very, very small\n"
             );
@@ -302,7 +303,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
 
             file_put_contents(
                 "$tmp2/bag-info.txt",
-                "Source-organzation: University of Virginia Alderman Library\n" .
+                "Source-organization: University of Virginia Alderman Library\n" .
                 "Contact-name: Eric Rochester\n" .
                 "Bag-size: very, very small\n"
             );
@@ -339,7 +340,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
 
     public function testSetBagInfoData()
     {
-        $this->assertNull($this->bag->bagInfoData);
+        $this->assertCount(0, $this->bag->bagInfoData);
         $this->bag->setBagInfoData('hi', 'some value');
 
         $this->assertTrue($this->bag->hasBagInfoData('hi'));
