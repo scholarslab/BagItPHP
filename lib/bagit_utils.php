@@ -494,7 +494,7 @@ function BagIt_parseBagInfo($lines)
             list($key, $val) = preg_split('/:\s*/', $line, 2);
             $val = trim($val);
 
-            $prevKey = strtolower($key);
+            $prevKey = $key;
             $bagInfo[$prevKey] = $val;
         }
     }
