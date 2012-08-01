@@ -882,6 +882,13 @@ class BagItTest extends PHPUnit_Framework_TestCase
         $this->bag->setHashEncoding('err');
     }
 
+    public function testSetHashEncodingBoth()
+    {
+        $this->bag->setHashEncoding('md5');
+        $this->assertEquals('md5', $this->bag->manifest->getHashEncoding());
+        $this->assertEquals('md5', $this->bag->tagManifest->getHashEncoding());
+    }
+
     public function testGetBagContents()
     {
         $bagContents = $this->bag->getBagContents();

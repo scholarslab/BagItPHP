@@ -296,7 +296,7 @@ class BagIt
 
         $this->manifest->setHashEncoding($hashAlgorithm);
         if ($this->tagManifest !== null) {
-            $this->manifest->setHashEncoding($hashAlgorithm);
+            $this->tagManifest->setHashEncoding($hashAlgorithm);
         }
     }
 
