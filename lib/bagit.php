@@ -488,16 +488,9 @@ class BagIt
     public function setBagInfoData($key, $value)
     {
         $this->_ensureBagInfoData();
-        if (array_key_exists($key, $this->bagInfoData)) {
-            $pval = $this->bagInfoData[$key];
-            if (is_array($pval)) {
-                $pval[] = $value;
-            } else {
-                $pval = array( $pval, $value );
-            }
-            $value = $pval;
-        }
-        $this->bagInfoData[$key] = $value;
+        $this->bagInfoData[$key] = BagIt_getAccumulatedValue(
+            $this->bagInfoData, $key, $value
+        );
     }
 
     /**

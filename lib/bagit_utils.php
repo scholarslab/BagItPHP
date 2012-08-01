@@ -497,24 +497,45 @@ function BagIt_parseBagInfo($lines)
             }
             $bagInfo[$prevKey] = $val;
         } else {
-            list($key, $val) = preg_split('/:\s*/', $line, 2);
-            $val = trim($val);
-
-            $prevKey = $key;
-            if (array_key_exists($prevKey, $bagInfo)) {
-                $prevVal = $bagInfo[$prevKey];
-                if (is_array($prevVal)) {
-                    $prevVal[] = $val;
-                } else {
-                    $prevVal = array( $prevVal, $val );
-                }
-                $val = $prevVal;
-            }
-            $bagInfo[$prevKey] = $val;
+            list($key, $val)   = preg_split('/:\s*/', $line, 2);
+            $val               = trim($val);
+            $prevKey           = $key;
+            $bagInfo[$prevKey] = BagIt_getAccumulatedValue(
+                $bagInfo, $prevKey, $val
+            );
         }
     }
 
     return $bagInfo;
+}
+
+/**
+ * This accumulates values into an array.
+ *
+ * If $key exists in the array, the new value is appended to the array 
+ * currently in the associative array. If the current value isn't an array, 
+ * then it's wrapped in one.
+ *
+ * @param $map array  The associative array containing the current value.
+ * @param $key string The key storing the current value.
+ * @param $val mixed  The new value to add to the array under the given key.
+ *
+ * @return mixed $val The value either plan or appended to the end of an array 
+ * containing the current values in the parent array.
+ * @author Eric Rochester <erochest@virginia.edu>
+ **/
+function BagIt_getAccumulatedValue($map, $key, $val)
+{
+    if (array_key_exists($key, $map)) {
+        $pval = $map[$key];
+        if (is_array($pval)) {
+            $pval[] = $val;
+        } else {
+            $pval = array( $pval, $val );
+        }
+        $val = $pval;
+    }
+    return $val;
 }
 
 /*
