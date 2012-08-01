@@ -187,6 +187,205 @@ class BagItTest extends PHPUnit_Framework_TestCase
         rrmdir($tmp2);
     }
 
+    public function testBagInfoDuplicateData()
+    {
+        $this->assertEquals(0, count($this->bag->bagInfoData));
+
+        $tmp2 = tmpdir();
+        try
+        {
+            mkdir($tmp2);
+            file_put_contents(
+                $tmp2 . "/bag-info.txt",
+                "Source-organization: University of Virginia Alderman Library\n" .
+                "Contact-name: Eric Rochester\n" .
+                "Bag-size: very, very small\n" .
+                "DC-Author: Me\n" .
+                "DC-Author: Myself\n" .
+                "DC-Author: The other\n" .
+                " and more\n"
+            );
+            $bag = new BagIt($tmp2);
+            $this->assertNotNull($bag->bagInfoData);
+            $this->assertCount(4, $bag->bagInfoData);
+
+            $this->assertTrue($bag->hasBagInfoData('DC-Author'));
+            $this->assertEquals(
+                array( 'Me', 'Myself', 'The other and more' ),
+                $bag->getBagInfoData('DC-Author')
+            );
+        }
+        catch (Exception $e)
+        {
+            rrmdir($tmp2);
+            throw $e;
+        }
+        rrmdir($tmp2);
+    }
+
+    public function testBagInfoDuplicateSetBagData()
+    {
+        $this->assertEquals(0, count($this->bag->bagInfoData));
+
+        $tmp2 = tmpdir();
+        try
+        {
+            mkdir($tmp2);
+            file_put_contents(
+                $tmp2 . "/bag-info.txt",
+                "Source-organization: University of Virginia Alderman Library\n" .
+                "Contact-name: Eric Rochester\n" .
+                "Bag-size: very, very small\n" .
+                "DC-Author: Me\n" .
+                "DC-Author: Myself\n" .
+                "DC-Author: The other\n"
+            );
+            $bag = new BagIt($tmp2);
+
+            $bag->setBagInfoData('First', 'This is the first tag value.');
+            $bag->setBagInfoData('Second', 'This is the second tag value.');
+            $bag->setBagInfoData('Second', 'This is the third tag value.');
+            $bag->setBagInfoData('Third', 'This is the fourth tag value.');
+            $bag->setBagInfoData('Third', 'This is the fifth tag value.');
+            $bag->setBagInfoData('Third', 'This is the sixth tag value.');
+
+            $this->assertEquals(
+                'This is the first tag value.',
+                $bag->getBagInfoData('First')
+            );
+            $this->assertEquals(
+                array( 'This is the second tag value.', 'This is the third tag value.' ),
+                $bag->getBagInfoData('Second')
+            );
+            $this->assertEquals(
+                array(
+                    'This is the fourth tag value.',
+                    'This is the fifth tag value.',
+                    'This is the sixth tag value.'
+                ),
+                $bag->getBagInfoData('Third')
+            );
+
+        }
+        catch (Exception $e)
+        {
+            rrmdir($tmp2);
+            throw $e;
+        }
+        rrmdir($tmp2);
+    }
+
+    public function testBagInfoDuplicateClearBagData()
+    {
+        $this->assertEquals(0, count($this->bag->bagInfoData));
+
+        $tmp2 = tmpdir();
+        try
+        {
+            mkdir($tmp2);
+            file_put_contents(
+                $tmp2 . "/bag-info.txt",
+                "Source-organization: University of Virginia Alderman Library\n" .
+                "Contact-name: Eric Rochester\n" .
+                "Bag-size: very, very small\n" .
+                "DC-Author: Me\n" .
+                "DC-Author: Myself\n" .
+                "DC-Author: The other\n"
+            );
+            $bag = new BagIt($tmp2);
+
+            $bag->setBagInfoData('First',  'This is the first tag value.');
+            $bag->setBagInfoData('Second', 'This is the second tag value.');
+            $bag->setBagInfoData('Second', 'This is the third tag value.');
+            $bag->setBagInfoData('Third',  'This is the fourth tag value.');
+            $bag->setBagInfoData('Third',  'This is the fifth tag value.');
+            $bag->setBagInfoData('Third',  'This is the sixth tag value.');
+
+            $this->assertEquals(
+                'This is the first tag value.',
+                $bag->getBagInfoData('First')
+            );
+            $this->assertEquals(
+                array( 'This is the second tag value.', 'This is the third tag value.' ),
+                $bag->getBagInfoData('Second')
+            );
+            $this->assertEquals(
+                array(
+                    'This is the fourth tag value.',
+                    'This is the fifth tag value.',
+                    'This is the sixth tag value.'
+                ),
+                $bag->getBagInfoData('Third')
+            );
+
+            $bag->clearBagInfoData('Third');
+            $this->assertNotNull($bag->getBagInfoData('First'));
+            $this->assertNotNull($bag->getBagInfoData('Second'));
+            $this->assertNull(   $bag->getBagInfoData('Third'));
+
+        }
+        catch (Exception $e)
+        {
+            rrmdir($tmp2);
+            throw $e;
+        }
+        rrmdir($tmp2);
+    }
+
+    public function testBagInfoDuplicateDataWrite()
+    {
+        $this->assertEquals(0, count($this->bag->bagInfoData));
+
+        $tmp2 = tmpdir();
+        try
+        {
+            mkdir($tmp2);
+            mkdir("$tmp2/data");
+            file_put_contents(
+                $tmp2 . "/bag-info.txt",
+                "Source-organization: University of Virginia Alderman Library\n" .
+                "Contact-name: Eric Rochester\n" .
+                "Bag-size: very, very small\n" .
+                "DC-Author: Me\n" .
+                "DC-Author: Myself\n" .
+                "DC-Author: The other\n"
+            );
+            $bag = new BagIt($tmp2);
+
+            $bag->setBagInfoData('First', 'This is the first tag value.');
+            $bag->setBagInfoData('Second', 'This is the second tag value.');
+            $bag->setBagInfoData('Second', 'This is the third tag value.');
+            $bag->setBagInfoData('Third', 'This is the fourth tag value.');
+            $bag->setBagInfoData('Third', 'This is the fifth tag value.');
+            $bag->setBagInfoData('Third', 'This is the sixth tag value.');
+
+            $bag->update();
+
+            $this->assertEquals(
+                "Source-organization: University of Virginia Alderman Library\n" .
+                "Contact-name: Eric Rochester\n" .
+                "Bag-size: very, very small\n" .
+                "DC-Author: Me\n" .
+                "DC-Author: Myself\n" .
+                "DC-Author: The other\n" .
+                "First: This is the first tag value.\n" .
+                "Second: This is the second tag value.\n" .
+                "Second: This is the third tag value.\n" .
+                "Third: This is the fourth tag value.\n" .
+                "Third: This is the fifth tag value.\n" .
+                "Third: This is the sixth tag value.\n",
+                file_get_contents("$tmp2/bag-info.txt")
+            );
+
+        }
+        catch (Exception $e)
+        {
+            rrmdir($tmp2);
+            throw $e;
+        }
+        rrmdir($tmp2);
+    }
+
     public function testBagInfoWrite()
     {
         $this->assertEquals(0, count($this->bag->bagInfoData));

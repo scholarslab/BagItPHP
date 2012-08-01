@@ -488,7 +488,31 @@ class BagIt
     public function setBagInfoData($key, $value)
     {
         $this->_ensureBagInfoData();
+        if (array_key_exists($key, $this->bagInfoData)) {
+            $pval = $this->bagInfoData[$key];
+            if (is_array($pval)) {
+                $pval[] = $value;
+            } else {
+                $pval = array( $pval, $value );
+            }
+            $value = $pval;
+        }
         $this->bagInfoData[$key] = $value;
+    }
+
+    /**
+     * This removes all the values for a key in the `bag-info.txt` file.
+     *
+     * @param string $key The key to clear.
+     *
+     * @return void
+     * @author Eric Rochester <erochest@virginia.edu>
+     **/
+    public function clearBagInfoData($key)
+    {
+        if (array_key_exists($key, $this->bagInfoData)) {
+            unset($this->bagInfoData[$key]);
+        }
     }
 
     /**
@@ -665,7 +689,13 @@ class BagIt
 
         if (count($this->bagInfoData)) {
             foreach ($this->bagInfoData as $label => $value) {
-                array_push($lines, "$label: $value\n");
+                if (is_array($value)) {
+                    foreach ($value as $v) {
+                        $lines[] = "$label: $v\n";
+                    }
+                } else {
+                    $lines[] = "$label: $value\n";
+                }
             }
         }
 

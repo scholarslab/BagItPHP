@@ -485,16 +485,31 @@ function BagIt_parseBagInfo($lines)
 
     $prevKey = null;
     foreach ($lines as $line) {
-        if (strlen($line) == 0) {
+        if (strlen($line) <= 1) {
             // Skip.
         } else if ($line[0] == ' ' || $line[0] == "\t") {
             // Continued line.
-            $bagInfo[$prevKey] = $bagInfo[$prevKey] . ' ' . trim($line);
+            $val = $bagInfo[$prevKey];
+            if (is_array($val)) {
+                $val[count($val) - 1] .= ' '. trim($line);
+            } else {
+                $val .= ' ' . trim($line);
+            }
+            $bagInfo[$prevKey] = $val;
         } else {
             list($key, $val) = preg_split('/:\s*/', $line, 2);
             $val = trim($val);
 
             $prevKey = $key;
+            if (array_key_exists($prevKey, $bagInfo)) {
+                $prevVal = $bagInfo[$prevKey];
+                if (is_array($prevVal)) {
+                    $prevVal[] = $val;
+                } else {
+                    $prevVal = array( $prevVal, $val );
+                }
+                $val = $prevVal;
+            }
             $bagInfo[$prevKey] = $val;
         }
     }
