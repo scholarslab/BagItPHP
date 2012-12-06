@@ -204,7 +204,10 @@ class BagIt
         $this->bagCompression = null;
         $this->bagErrors = array();
 
-        if (file_exists($this->bag)) {
+        if (
+            file_exists($this->bag) &&
+            ($this->_isCompressed() || file_exists("{$this->bag}/bagit.txt"))
+        ) {
             $this->_openBag();
         } else {
             $this->_createBag();
@@ -604,10 +607,15 @@ class BagIt
      */
     private function _createBag()
     {
-        mkdir($this->bag);
+        if (!is_dir($this->bag)) {
+            mkdir($this->bag);
+        }
         $this->bagDirectory = realpath($this->bag);
 
-        mkdir($this->getDataDirectory());
+        $dataDir = $this->getDataDirectory();
+        if (!is_dir($dataDir)) {
+            mkdir($dataDir);
+        }
 
         $this->bagitFile = $this->bagDirectory . '/bagit.txt';
         $this->manifest = new BagItManifest(

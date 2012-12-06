@@ -1286,6 +1286,28 @@ class BagItTest extends PHPUnit_Framework_TestCase
         }
         rrmdir($tmp);
     }
+
+    public function testEmptyDirectory()
+    {
+        $tmp = tmpdir();
+        try
+        {
+            mkdir($tmp);
+
+            $bag = new BagIt($tmp);
+            $this->assertFileExists("$tmp/bagit.txt");
+            $this->assertFileExists("$tmp/manifest-sha1.txt");
+            $this->assertFileExists("$tmp/bag-info.txt");
+            $this->assertFileExists("$tmp/fetch.txt");
+            $this->assertFileExists("$tmp/tagmanifest-sha1.txt");
+        }
+        catch (Exception $e)
+        {
+            rrmdir($tmp);
+            throw $e;
+        }
+        rrmdir($tmp);
+    }
 }
 
 ?>
