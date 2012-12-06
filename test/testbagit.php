@@ -8,6 +8,15 @@ class BagItTest extends PHPUnit_Framework_TestCase
     var $tmpdir;
     var $bag;
 
+    private function _createBagItTxt($dirname)
+    {
+        file_put_contents(
+            "$dirname/bagit.txt",
+            "BagIt-Version: 1.3\n" .
+            "Tag-File-Character-Encoding: ISO-8859-1\n"
+        );
+    }
+
     public function setUp()
     {
         $this->tmpdir = tmpdir();
@@ -53,11 +62,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
         try
         {
             mkdir($tmp2);
-            file_put_contents(
-                $tmp2 . "/bagit.txt",
-                "BagIt-Version: 1.3\n" .
-                "Tag-File-Character-Encoding: ISO-8859-1\n"
-            );
+            $this->_createBagItTxt($tmp2);
             $bag = new BagIt($tmp2);
             $this->assertEquals(1, $bag->bagVersion['major']);
             $this->assertEquals(3, $bag->bagVersion['minor']);
@@ -78,11 +83,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
         try
         {
             mkdir($tmp2);
-            file_put_contents(
-                $tmp2 . "/bagit.txt",
-                "BagIt-Version: 1.3\n" .
-                "Tag-File-Character-Encoding: ISO-8859-1\n"
-            );
+            $this->_createBagItTxt($tmp2);
             $bag = new BagIt($tmp2);
             $this->assertEquals('ISO-8859-1', $bag->tagFileEncoding);
         }
@@ -163,6 +164,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
         try
         {
             mkdir($tmp2);
+            $this->_createBagItTxt($tmp2);
             file_put_contents(
                 $tmp2 . "/bag-info.txt",
                 "Source-organization: University of Virginia Alderman Library\n" .
@@ -195,6 +197,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
         try
         {
             mkdir($tmp2);
+            $this->_createBagItTxt($tmp2);
             file_put_contents(
                 $tmp2 . "/bag-info.txt",
                 "Source-organization: University of Virginia Alderman Library\n" .
@@ -341,6 +344,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
         {
             mkdir($tmp2);
             mkdir("$tmp2/data");
+            $this->_createBagItTxt($tmp2);
             file_put_contents(
                 $tmp2 . "/bag-info.txt",
                 "Source-organization: University of Virginia Alderman Library\n" .
@@ -449,6 +453,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
             mkdir($tmp2);
             mkdir("$tmp2/data");
 
+            $this->_createBagItTxt($tmp2);
             file_put_contents(
                 "$tmp2/bag-info.txt",
                 "Source-organization: University of Virginia Alderman Library\n" .
@@ -501,6 +506,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
             mkdir($tmp2);
             mkdir("$tmp2/data");
 
+            $this->_createBagItTxt($tmp2);
             file_put_contents(
                 "$tmp2/bag-info.txt",
                 "Source-organization: University of Virginia Alderman Library\n" .
@@ -549,6 +555,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
             mkdir($tmp2);
             mkdir("$tmp2/data");
 
+            $this->_createBagItTxt($tmp2);
             file_put_contents(
                 "$tmp2/bag-info.txt",
                 "Source-organization: University of Virginia Alderman Library\n" .
@@ -623,6 +630,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
         try
         {
             mkdir($tmp);
+            $this->_createBagItTxt($tmp);
             $bag = new BagIt($tmp, true);
             $this->assertFalse($bag->isValid());
             $this->assertGreaterThan(0, count($bag->bagErrors));
@@ -1270,6 +1278,28 @@ class BagItTest extends PHPUnit_Framework_TestCase
 
             // TODO: Test the contents of the package.
 
+        }
+        catch (Exception $e)
+        {
+            rrmdir($tmp);
+            throw $e;
+        }
+        rrmdir($tmp);
+    }
+
+    public function testEmptyDirectory()
+    {
+        $tmp = tmpdir();
+        try
+        {
+            mkdir($tmp);
+
+            $bag = new BagIt($tmp);
+            $this->assertFileExists("$tmp/bagit.txt");
+            $this->assertFileExists("$tmp/manifest-sha1.txt");
+            $this->assertFileExists("$tmp/bag-info.txt");
+            $this->assertFileExists("$tmp/fetch.txt");
+            $this->assertFileExists("$tmp/tagmanifest-sha1.txt");
         }
         catch (Exception $e)
         {
