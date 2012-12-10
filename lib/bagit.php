@@ -23,7 +23,7 @@
  * @author    Wayne Graham <wayne.graham@gmail.com>
  * @copyright 2011 The Board and Visitors of the University of Virginia
  * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
- * @version   0.1
+ * @version   0.2.1
  * @link      https://github.com/erochest/BagItPHP
  *
  */
@@ -204,7 +204,10 @@ class BagIt
         $this->bagCompression = null;
         $this->bagErrors = array();
 
-        if (file_exists($this->bag)) {
+        if (
+            file_exists($this->bag) &&
+            ($this->_isCompressed() || file_exists("{$this->bag}/bagit.txt"))
+        ) {
             $this->_openBag();
         } else {
             $this->_createBag();
@@ -296,7 +299,7 @@ class BagIt
 
         $this->manifest->setHashEncoding($hashAlgorithm);
         if ($this->tagManifest !== null) {
-            $this->manifest->setHashEncoding($hashAlgorithm);
+            $this->tagManifest->setHashEncoding($hashAlgorithm);
         }
     }
 
@@ -473,7 +476,7 @@ class BagIt
     public function hasBagInfoData($key)
     {
         $this->_ensureBagInfoData();
-        return array_key_exists(strtolower($key), $this->bagInfoData);
+        return array_key_exists($key, $this->bagInfoData);
     }
 
     /**
@@ -488,7 +491,24 @@ class BagIt
     public function setBagInfoData($key, $value)
     {
         $this->_ensureBagInfoData();
-        $this->bagInfoData[strtolower($key)] = $value;
+        $this->bagInfoData[$key] = BagIt_getAccumulatedValue(
+            $this->bagInfoData, $key, $value
+        );
+    }
+
+    /**
+     * This removes all the values for a key in the `bag-info.txt` file.
+     *
+     * @param string $key The key to clear.
+     *
+     * @return void
+     * @author Eric Rochester <erochest@virginia.edu>
+     **/
+    public function clearBagInfoData($key)
+    {
+        if (array_key_exists($key, $this->bagInfoData)) {
+            unset($this->bagInfoData[$key]);
+        }
     }
 
     /**
@@ -502,7 +522,6 @@ class BagIt
     public function getBagInfoData($key)
     {
         $this->_ensureBagInfoData();
-        $key = strtolower($key);
         return array_key_exists($key, $this->bagInfoData) ? $this->bagInfoData[$key] : null;
     }
 
@@ -588,10 +607,15 @@ class BagIt
      */
     private function _createBag()
     {
-        mkdir($this->bag);
+        if (!is_dir($this->bag)) {
+            mkdir($this->bag);
+        }
         $this->bagDirectory = realpath($this->bag);
 
-        mkdir($this->getDataDirectory());
+        $dataDir = $this->getDataDirectory();
+        if (!is_dir($dataDir)) {
+            mkdir($dataDir);
+        }
 
         $this->bagitFile = $this->bagDirectory . '/bagit.txt';
         $this->manifest = new BagItManifest(
@@ -666,7 +690,13 @@ class BagIt
 
         if (count($this->bagInfoData)) {
             foreach ($this->bagInfoData as $label => $value) {
-                array_push($lines, "$label: $value\n");
+                if (is_array($value)) {
+                    foreach ($value as $v) {
+                        $lines[] = "$label: $v\n";
+                    }
+                } else {
+                    $lines[] = "$label: $value\n";
+                }
             }
         }
 
