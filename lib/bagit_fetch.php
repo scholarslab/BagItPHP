@@ -23,7 +23,7 @@
  * @author    Wayne Graham <wayne.graham@gmail.com>
  * @copyright 2011 The Board and Visitors of the University of Virginia
  * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
- * @version   0.1
+ * @version   0.2.1
  * @link      https://github.com/erochest/BagItPHP
  *
  */
