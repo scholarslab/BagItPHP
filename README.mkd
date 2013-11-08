@@ -1,4 +1,3 @@
-
 # BagIt PHP
 
 [![Build Status](https://secure.travis-ci.org/scholarslab/BagItPHP.png?branch=develop)](http://travis-ci.org/scholarslab/BagItPHP)
@@ -108,7 +107,7 @@ $bag = new BagIt('test/TestBag.tgz');
 $bag->validate();
 
 // only execute if a valid bag
-if(count($bag->getErrors()) == 0 {
+if (count($bag->getBagErrors()) == 0) {
   // retrieve remote files
   $bag->fetch->download();
 
