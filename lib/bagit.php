@@ -129,6 +129,13 @@ class BagIt
     var $tagManifest;
 
     /**
+     * Boolean indicating whether this Bag should include a fetch.txt file.
+     *
+     * @var BagItFetch
+     */
+    var $hasFetch;
+
+    /**
      * Information about files that need to be downloaded, listed in fetch.txt.
      *
      * @var BagItFetch
@@ -199,6 +206,7 @@ class BagIt
         $this->manifest = null;
         $this->tagManifest = null;
         $this->fetch = null;
+        $this->hasFetch = $fetch;
         $this->bagInfoFile = null;
         $this->bagInfoData = $bagInfoData;
         $this->bagCompression = null;
@@ -211,10 +219,6 @@ class BagIt
             $this->_openBag();
         } else {
             $this->_createBag();
-        }
-
-        if ($fetch) {
-            $this->fetch->download();
         }
 
         if ($validate) {
@@ -396,14 +400,17 @@ class BagIt
 
         // Update the manifests.
         $this->manifest->update(rls($this->getDataDirectory()));
+
         if ($this->tagManifest !== null) {
             $bagdir = $this->bagDirectory;
             $tagFiles = array(
                 "$bagdir/bagit.txt",
                 "$bagdir/bag-info.txt",
-                $this->fetch->fileName,
                 $this->manifest->getFileName()
             );
+            if ($this->fetch) {
+                $tagFiles[] = $this->fetch->fileName;
+            }
             $this->tagManifest->update($tagFiles);
         }
     }
@@ -582,16 +589,19 @@ class BagIt
                     $this->tagFileEncoding
                 );
 
-                try {
-                    $this->fetch = new BagItFetch(
-                        "{$this->bagDirectory}/fetch.txt",
-                        $this->tagFileEncoding
-                    );
-                } catch (Exception $exc) {
-                    array_push(
-                        $this->bagErrors,
-                        array('fetch', 'Error reading fetch file.')
-                    );
+                if (file_exists("{$this->bagDirectory}/fetch.txt")) {
+                    try {
+                        $this->fetch = new BagItFetch(
+                            "{$this->bagDirectory}/fetch.txt",
+                            $this->tagFileEncoding
+                        );
+                        $this->fetch->download();
+                    } catch (Exception $exc) {
+                        array_push(
+                            $this->bagErrors,
+                            array('fetch', 'Error reading fetch file.')
+                        );
+                    }
                 }
 
                 $this->bagInfoFile = "{$this->bagDirectory}/bag-info.txt";
@@ -649,8 +659,10 @@ class BagIt
                 $this->tagFileEncoding
             );
 
-            $fetchFile = $this->bagDirectory . '/fetch.txt';
-            $this->fetch = new BagItFetch($fetchFile, $this->tagFileEncoding);
+            if ($this->hasFetch) {
+                $fetchFile = $this->bagDirectory . '/fetch.txt';
+                $this->fetch = new BagItFetch($fetchFile, $this->tagFileEncoding);
+            }
 
             $this->bagInfoFile = $this->bagDirectory . '/bag-info.txt';
             touch($this->bagInfoFile);
