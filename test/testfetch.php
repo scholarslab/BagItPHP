@@ -141,6 +141,13 @@ class BagItFetchTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testEmptyWrite()
+    {
+        $this->fetch->clear();
+        $this->fetch->write();
+        $this->assertFileNotExists("{$this->tmpdir}/fetch.txt");
+    }
+
 }
 
 ?>
