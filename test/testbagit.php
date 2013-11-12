@@ -646,7 +646,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
     public function testConstructorExtended()
     {
         $this->assertFileExists($this->tmpdir . '/bag-info.txt');
-        $this->assertFileExists($this->tmpdir . '/fetch.txt');
+        $this->assertFileNotExists($this->tmpdir . '/fetch.txt');
         $this->assertFileExists($this->tmpdir . '/tagmanifest-sha1.txt');
 
         $tmp = tmpdir();
@@ -1153,7 +1153,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
 
             $this->assertFileExists($tmp . '/bag-info.txt');
             $this->assertFileExists($tmp . '/tagmanifest-sha1.txt');
-            $this->assertFileExists($tmp . '/fetch.txt');
+            $this->assertFileNotExists($tmp . '/fetch.txt');
 
         }
         catch (Exception $e)
@@ -1298,7 +1298,7 @@ class BagItTest extends PHPUnit_Framework_TestCase
             $this->assertFileExists("$tmp/bagit.txt");
             $this->assertFileExists("$tmp/manifest-sha1.txt");
             $this->assertFileExists("$tmp/bag-info.txt");
-            $this->assertFileExists("$tmp/fetch.txt");
+            $this->assertFileNotExists("$tmp/fetch.txt");
             $this->assertFileExists("$tmp/tagmanifest-sha1.txt");
         }
         catch (Exception $e)

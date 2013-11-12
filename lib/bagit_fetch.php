@@ -90,8 +90,6 @@ class BagItFetch
 
         if (file_exists($this->fileName)) {
             $this->read();
-        } else {
-            touch($this->fileName);
         }
     }
 
