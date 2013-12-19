@@ -112,8 +112,8 @@ if (count($bag->getBagErrors()) == 0) {
   $bag->fetch->download();
 
   // copy files
-  foreach($bag->getBagContents() as $filename) {
-    copy($filename, 'final/destination/' . basename(filename));
+  foreach ($bag->getBagContents() as $filename) {
+    copy($filename, 'final/destination/' . basename($filename));
   }
 }
 ```
