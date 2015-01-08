@@ -53,14 +53,6 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         $this->assertFalse(endsWith("Scholars' Lab", 'z'));
     }
 
-    /**
-     * @expectedException PHPUnit_Framework_Error_Warning
-     */
-    public function testEndsWithError()
-    {
-        $this->assertTrue(endsWith("Scholars' Lab", ''));
-    }
-
     private function _testRls($dirnames) {
         $files = array();
         foreach ($dirnames as $dirname) {
