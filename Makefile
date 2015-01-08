@@ -6,7 +6,7 @@ init:
 	composer install
 
 dist:
-	composer archive
+	composer archive --format=zip
 
 .PHONY: test init dist
 
