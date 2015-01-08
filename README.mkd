@@ -13,6 +13,24 @@ This is a PHP implementation of the [BagIt
 * fetching remote files (fetch.txt)
 * bag validation
 
+## Using Composer
+
+BagItPHP can be installed using [composer](https://getcomposer.org/) using a
+package repository. Your `composer.json` will need to look something like this:
+
+```json
+{
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/scholarslab/BagItPHP"
+    }
+  ],
+  "require": {
+    "scholarslab/bagit": "~0.2"
+  }
+}
+```
 
 ## Installation
 
