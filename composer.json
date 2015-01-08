@@ -1,0 +1,10 @@
+{
+    "name": "scholarslab/bagit",
+    "version": "0.2.2",
+    "require": {
+        "pear/archive_tar": "~1.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.4"
+    }
+}

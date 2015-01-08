@@ -1,4 +1,3 @@
-
 # BagIt PHP
 
 [![Build Status](https://secure.travis-ci.org/scholarslab/BagItPHP.png?branch=develop)](http://travis-ci.org/scholarslab/BagItPHP)
@@ -14,6 +13,24 @@ This is a PHP implementation of the [BagIt
 * fetching remote files (fetch.txt)
 * bag validation
 
+## Using Composer
+
+BagItPHP can be installed using [composer](https://getcomposer.org/) using a
+package repository. Your `composer.json` will need to look something like this:
+
+```json
+{
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/scholarslab/BagItPHP"
+    }
+  ],
+  "require": {
+    "scholarslab/bagit": "~0.2"
+  }
+}
+```
 
 ## Installation
 
@@ -108,13 +125,13 @@ $bag = new BagIt('test/TestBag.tgz');
 $bag->validate();
 
 // only execute if a valid bag
-if(count($bag->getErrors()) == 0 {
+if (count($bag->getBagErrors()) == 0) {
   // retrieve remote files
   $bag->fetch->download();
 
   // copy files
-  foreach($bag->getBagContents() as $filename) {
-    copy($filename, 'final/destination/' . basename(filename));
+  foreach ($bag->getBagContents() as $filename) {
+    copy($filename, 'final/destination/' . basename($filename));
   }
 }
 ```

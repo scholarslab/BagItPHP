@@ -90,8 +90,6 @@ class BagItFetch
 
         if (file_exists($this->fileName)) {
             $this->read();
-        } else {
-            touch($this->fileName);
         }
     }
 
@@ -143,7 +141,13 @@ class BagItFetch
             array_push($lines, join(' ', $data) . "\n");
         }
 
-        writeFileText($this->fileName, $this->fileEncoding, join('', $lines));
+        if (count($lines) == 0) {
+            if (file_exists($this->fileName)) {
+                unlink($this->fileName);
+            }
+        } else {
+            writeFileText($this->fileName, $this->fileEncoding, join('', $lines));
+        }
     }
 
     /**
