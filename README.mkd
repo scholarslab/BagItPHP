@@ -20,12 +20,6 @@ package repository. Your `composer.json` will need to look something like this:
 
 ```json
 {
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/scholarslab/BagItPHP"
-    }
-  ],
   "require": {
     "scholarslab/bagit": "~0.2"
   }

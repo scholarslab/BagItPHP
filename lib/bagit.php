@@ -438,6 +438,39 @@ class BagIt
         copy($src, $fulldest);
     }
 
+    /**
+     * Create a new file in the bag at $dest, with the contents in $content.
+     *
+     * $dest should begin with "data/", but if it doesn't that will be added.
+     *
+     * @param mixed $content the content to write to the file. May be binary
+     * data.
+     * @param string $dest The file name for the destination file. This should
+     * be relative to the bag directory.
+     *
+     * @throws BagitException if the file already exists.
+     * @return null
+     */
+    function createFile($content, $dest) {
+        $dataPref = 'data' . DIRECTORY_SEPARATOR;
+        $prefLen = strlen($dataPref);
+        if ((strncasecmp($dest, $dataPref, $prefLen) != 0)) {
+            $dest = $dataPref . $dest;
+        }
+
+        $fulldest = "{$this->bagDirectory}/$dest";
+
+        if(file_exists($fulldest)) {
+            throw new BagitException("File already exists: '$dest'");
+        }
+
+        $dirname = dirname($fulldest);
+        if (! is_dir($dirname)) {
+            mkdir($dirname, 0777, true);
+        }
+        file_put_contents($fulldest, $content);
+    }
+
 
     /**
      * Compresses the bag into a file.
