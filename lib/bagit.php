@@ -453,11 +453,8 @@ class BagIt
      */
     function createFile($content, $dest) {
         $dataPref = 'data' . DIRECTORY_SEPARATOR;
-        $dataPref = 'data' . DIRECTORY_SEPARATOR;
         $prefLen = strlen($dataPref);
-        if ((strncasecmp($dest, $dataPref, $prefLen) != 0)
-            && (strncasecmp($dest, $dataPref, $prefLen) != 0)
-        ) {
+        if ((strncasecmp($dest, $dataPref, $prefLen) != 0)) {
             $dest = $dataPref . $dest;
         }
 
