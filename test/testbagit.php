@@ -1202,6 +1202,41 @@ class BagItTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testCreateFile()
+    {
+        $testContent = "This is some test content.";
+
+        $this->bag->createFile($testContent, "data/testCreateFile.txt");
+        $datadir = $this->bag->getDataDirectory();
+        $this->assertFileExists("{$datadir}/testCreateFile.txt");
+        $content = file_get_contents("{$datadir}/testCreateFile.txt");
+        $this->assertEquals($content, $testContent);
+    }
+
+    public function testCreateFileAddDataDir()
+    {
+        $testContent = "This is some test content.";
+
+        $this->bag->createFile($testContent, "testCreateFile.txt");
+        $datadir = $this->bag->getDataDirectory();
+        $this->assertFileExists("{$datadir}/testCreateFile.txt");
+        $content = file_get_contents("{$datadir}/testCreateFile.txt");
+        $this->assertEquals($content, $testContent);
+    }
+
+    /**
+     * @expectedException BagitException
+     */
+    public function testCreateFileDuplicate()
+    {
+        $testContent = "This is some test content.";
+
+        $this->bag->createFile($testContent, "testCreateFile.txt");
+        $this->bag->createFile('', "testCreateFile.txt");
+    }
+
+
+
     /**
      * @expectedException PHPUnit_Framework_Error_Warning
      */
