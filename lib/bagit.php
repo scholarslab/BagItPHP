@@ -483,7 +483,7 @@ class BagIt
     function package($destination, $method='tgz')
     {
         $method = strtolower($method);
-        if ($method != 'zip' && $method != 'tgz') {
+        if ($method != 'zip' && $method != 'tgz' && $method != 'tar') {
             throw new BagItException("Invalid compression method: '$method'.");
         }
 
@@ -750,7 +750,7 @@ class BagIt
             if (endsWith($bag, '.zip')) {
                 $this->bagCompression = 'zip';
                 return true;
-            } else if (endsWith($bag, '.tar.gz') || endsWith($bag, '.tgz')) {
+            } else if (endsWith($bag, '.tar.gz') || endsWith($bag, '.tgz') || endsWith($bag, '.tar')) {
                 $this->bagCompression = 'tgz';
                 return true;
             }
