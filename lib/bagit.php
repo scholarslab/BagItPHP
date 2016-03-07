@@ -543,6 +543,27 @@ class BagIt
             unset($this->bagInfoData[$key]);
         }
     }
+    
+    /**
+     * Remove all of the keys and values in the `bag-info.txt` file. Use with
+     * caution.
+     * 
+     * @return void
+     * @author Michael Joyce <ubermichael@gmail.com>
+     */
+    public function clearAllBagInfo() {
+        $this->bagInfoData = array();
+    }
+    
+    /**
+     * Return a list of all keys in the `bag-info.txt` file.
+     * 
+     * @return array
+     */
+    public function getBagInfoKeys() {
+        $this->_ensureBagInfoData();
+        return array_keys($this->bagInfoData);
+    }
 
     /**
      * This returns the value for a key from bagInfoData.

@@ -334,6 +334,73 @@ class BagItTest extends PHPUnit_Framework_TestCase
         }
         rrmdir($tmp2);
     }
+    
+    public function testBagItClearAllBagInfo() {
+        $this->assertEquals(0, count($this->bag->bagInfoData));
+
+        $tmp2 = tmpdir();
+        try
+        {
+            mkdir($tmp2);
+            file_put_contents(
+                $tmp2 . "/bag-info.txt",
+                "Source-organization: University of Virginia Alderman Library\n" .
+                "Contact-name: Eric Rochester\n" .
+                "Bag-size: very, very small\n" .
+                "DC-Author: Me\n" .
+                "DC-Author: Myself\n" .
+                "DC-Author: The other\n"
+            );
+            $bag = new BagIt($tmp2);
+
+            $bag->clearAllBagInfo();
+            
+            $this->assertNull($bag->getBagInfoData('Source-organization'));
+            $this->assertNull($bag->getBagInfoData('DC-Author'));
+        } catch (Exception $e) {
+            rrmdir($tmp2);
+            throw $e;
+        }
+        rrmdir($tmp2);
+    }
+    
+    public function testBagItGetBagInfoKeys() {
+        $this->assertEquals(0, count($this->bag->bagInfoData));
+
+        $tmp2 = tmpdir();
+        try
+        {
+            mkdir($tmp2);
+            $this->_createBagItTxt($tmp2);
+            file_put_contents(
+                $tmp2 . "/bag-info.txt",
+                "Source-organization: University of Virginia Alderman Library\n" .
+                "Contact-name: Eric Rochester\n" .
+                "Bag-size: very, very small\n" .
+                "DC-Author: Me\n" .
+                "DC-Author: Myself\n" .
+                "DC-Author: The other\n" .
+                " and more\n"
+            );
+            $bag = new BagIt($tmp2);
+            $keys = $bag->getBagInfoKeys();
+            sort($keys);
+            $expected = array('Bag-size', 'Contact-name', 'DC-Author', 'Source-organization');
+            $this->assertEquals($expected, $keys);
+
+            $this->assertTrue($bag->hasBagInfoData('DC-Author'));
+            $this->assertEquals(
+                array( 'Me', 'Myself', 'The other and more' ),
+                $bag->getBagInfoData('DC-Author')
+            );
+        }
+        catch (Exception $e)
+        {
+            rrmdir($tmp2);
+            throw $e;
+        }
+        rrmdir($tmp2);
+    }
 
     public function testBagInfoDuplicateDataWrite()
     {
