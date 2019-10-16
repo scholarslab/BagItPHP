@@ -174,7 +174,12 @@ class BagIt {
      *
      * @var array
      */
-    var $validHashAlgorithms;
+    private $validHashAlgorithms;
+
+    /**
+     * The default algorithm to use if one is not specified.
+     */
+    const DEFAULT_HASH_ALGORITHM = 'sha1';
 
     //}}}
 
@@ -217,7 +222,13 @@ class BagIt {
         $this->bagInfoData = $bagInfoData;
         $this->bagCompression = null;
         $this->bagErrors = array();
-        $this->validHashAlgorithms = hash_algos();
+        $this->validHashAlgorithms = array_filter(
+          hash_algos(),
+          array($this, '_filterPhpHashAlgorithms')
+        );
+        array_walk($this->validHashAlgorithms,
+            array($this, '_normalizeHashAlgorithmName')
+        );
 
         if (
             file_exists($this->bag) &&
@@ -762,7 +773,7 @@ class BagIt {
             try {
                 if (count($manifestFiles) == 0) {
                     // Set a default.
-                    $manifestFiles = array('manifest-sha1.txt');
+                    $manifestFiles = array('manifest-' . self::DEFAULT_HASH_ALGORITHM . '.txt');
                 }
                 foreach ($manifestFiles as $manifestFile) {
                     $hash = $this->_determineHashFromFilename($manifestFile);
@@ -783,7 +794,7 @@ class BagIt {
                 $manifestFiles = findAllByPattern("$bagdir/tagmanifest-*.txt");
                 if (count($manifestFiles) == 0) {
                     // Set a default.
-                    $manifestFiles = array('tagmanifest-sha1.txt');
+                    $manifestFiles = array('tagmanifest-' . self::DEFAULT_HASH_ALGORITHM . '.txt');
                 }
                 foreach ($manifestFiles as $manifestFile) {
                     $hash = $this->_determineHashFromFilename($manifestFile);
@@ -848,7 +859,7 @@ class BagIt {
         $this->bagitFile = $this->bagDirectory . '/bagit.txt';
         $this->manifest = array(
           'sha1' => new BagItManifest(
-            "{$this->bagDirectory}/manifest-sha1.txt",
+            "{$this->bagDirectory}/manifest-" . self::DEFAULT_HASH_ALGORITHM . ".txt",
             $this->bagDirectory . '/',
             $this->tagFileEncoding
         ));
@@ -970,6 +981,28 @@ class BagIt {
             $this->bagInfoData = array();
         }
         return $this->bagInfoData;
+    }
+
+    /**
+     * Normalize a PHP hash algorithm to a BagIt specification name.
+     *
+     * @param string $item The hash algorithm name.
+     */
+    private function _normalizeHashAlgorithmName(&$item)
+    {
+        $item = preg_replace("/[^a-zA-Z0-9]+/", "", $item);
+    }
+
+    /**
+     * Check if the algorithm PHP has is allowed by the specification.
+     *
+     * @param string $item A hash algorithm name.
+     *
+     * @return bool True if allowed by the specification.
+     */
+    private function _filterPhpHashAlgorithms($item)
+    {
+        return in_array($item, array_values(BagItManifest::HASH_ALGORITHMS));
     }
 
     //}}}

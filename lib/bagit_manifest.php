@@ -63,7 +63,8 @@ class BagItManifest
     var $fileName;
 
     /**
-     * The hash encoding to use. This must be one of 'sha1' or 'md5'.
+     * The hash encoding to use. This must be one of self::HASH_ALGORITHMS
+     * array values.
      *
      * @var string
      */
@@ -82,6 +83,26 @@ class BagItManifest
      * @var array
      */
     var $data;
+
+    /**
+     * Array of BagIt approved names of hash algorithms to the PHP names of
+     * those hash algorithms for use with hash_file().
+     *
+     * @see https://tools.ietf.org/html/rfc8493#section-2.4
+     *
+     * @var array
+     */
+    const HASH_ALGORITHMS = array(
+      'md5' => 'md5',
+      'sha1' => 'sha1',
+      'sha256' => 'sha256',
+      'sha384' => 'sha384',
+      'sha512' => 'sha512',
+      'sha3224' => 'sha3-224',
+      'sha3256' => 'sha3-256',
+      'sha3384' => 'sha3-384',
+      'sha3512' => 'sha3-512',
+    );
 
     //}}}
 
@@ -189,7 +210,7 @@ class BagItManifest
      */
     public function calculateHash($fileName)
     {
-        return hash_file($this->hashEncoding, $fileName);
+        return hash_file($this->_getPhpHashName(), $fileName);
     }
 
     /**
@@ -434,6 +455,18 @@ class BagItManifest
         } else {
             return $rel;
         }
+    }
+
+    /**
+     * Needed to account for differences in PHP hash to BagIt hash naming.
+     *
+     * i.e. BagIt sha3512 -> PHP sha3-512
+     *
+     * @return string the PHP hash name for the internal hash encoding.
+     */
+    private function _getPhpHashName()
+    {
+        return self::HASH_ALGORITHMS[$this->hashEncoding];
     }
     //}}}
 

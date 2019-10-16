@@ -111,7 +111,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * This is the use case for consuming a bag from someone else. The user 
+     * This is the use case for consuming a bag from someone else. The user
      * does these actions:
      *
      * <ol>
@@ -171,7 +171,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
             count(scandir($tmpdir))
         );
         $this->assertEquals(
-            count($bag->manifest->getData()) + 2,
+            count($bag->manifest['sha1']->getData()) + 2,
             count(scandir($tmpdir))
         );
 
