@@ -48,7 +48,7 @@ class BagItManifest
     //{{{ properties
 
     /**
-     * If given, this is the path prefix to strip off of files before using 
+     * If given, this is the path prefix to strip off of files before using
      * them as keys in the hash mapping (data property).
      *
      * @var string
@@ -91,10 +91,10 @@ class BagItManifest
      * Define a new BagItManifest instance.
      *
      * @param string $fileName     This is the file name for the manifest file.
-     * @param string $pathPrefix   This is the prefix to remove from the 
-     * beginning of file names before they're used as keys in the hash mapping. 
+     * @param string $pathPrefix   This is the prefix to remove from the
+     * beginning of file names before they're used as keys in the hash mapping.
      * The default is an empty string (i.e., nothing removed).
-     * @param string $fileEncoding This is the encoding to use when reading or 
+     * @param string $fileEncoding This is the encoding to use when reading or
      * writing the manifest file. The default is 'UTF-8'.
      */
     public function __construct(
@@ -117,8 +117,8 @@ class BagItManifest
     /**
      * This reads the data from the file name.
      *
-     * @param string $fileName This is the file name to read. It defaults to 
-     * the current value of the $fileName property. If given, it will set the 
+     * @param string $fileName This is the file name to read. It defaults to
+     * the current value of the $fileName property. If given, it will set the
      * value of the property also.
      *
      * @return array The data read.
@@ -195,8 +195,8 @@ class BagItManifest
     /**
      * This writes the data to the manifest file.
      *
-     * @param string $fileName This is the file name to write to. It defaults 
-     * to the current value of the $fileName property. If given, it will set 
+     * @param string $fileName This is the file name to write to. It defaults
+     * to the current value of the $fileName property. If given, it will set
      * the value of the property also.
      *
      * @return void
@@ -222,7 +222,7 @@ class BagItManifest
     /**
      * This returns the hash for a file.
      *
-     * @param string $fileName This can be either the absolute file name or the 
+     * @param string $fileName This can be either the absolute file name or the
      * file name without the path prefix.
      *
      * @return string The file's hash.
@@ -261,7 +261,7 @@ class BagItManifest
     /**
      * This returns the file encoding.
      *
-     * @return string The encoding to use when reading or writing the manifest 
+     * @return string The encoding to use when reading or writing the manifest
      * file.
      */
     public function getFileEncoding()
@@ -272,12 +272,10 @@ class BagItManifest
     /**
      * This sets the file encoding.
      *
-     * The value for this should be either 'sha1' or 'md5', but this doesn't 
-     * verify that.
+     * The value for this should be a valid file encoding scheme like 'UTF-8',
+     * but doesn't verify it.
      *
-     * This also re-sets the manifest file name based upon this value.
-     *
-     * @param string $fileEncoding The new encoding to use when reading or 
+     * @param string $fileEncoding The new encoding to use when reading or
      * writing the manifest file.
      *
      * @return void
@@ -300,9 +298,8 @@ class BagItManifest
     /**
      * This sets the hash encoding.
      *
-     * @param string $hashEncoding This sets the encoding to use when creating 
-     * the manifest hash data. This must be either 'md5' or 'sha1'; however, it 
-     * does not test for this.
+     * @param string $hashEncoding This sets the encoding to use when creating
+     * the manifest hash data.
      *
      *  @return void
      */
@@ -385,13 +382,13 @@ class BagItManifest
      * File names should be in the format '*-{sha1,md5}.txt'.
      *
      * @param string $filename The file name to parse.
-     * 
+     *
      * @return string The hash encoding, if one is found.
      */
     private function _parseHashEncoding($filename)
     {
         $matches = array();
-        if (preg_match('/-(sha1|md5)\.txt$/', $filename, $matches)) {
+        if (preg_match('/-(\w+)\.txt$/', $filename, $matches)) {
             return $matches[1];
         }
         return null;
@@ -400,7 +397,7 @@ class BagItManifest
     /**
      * This returns the file name to use.
      *
-     * If a file name is passed into this function, that will be used. 
+     * If a file name is passed into this function, that will be used.
      * Otherwise, the current value of the $fileName property will be used.
      *
      * @param string $fileName If given, then this file name will be used;
@@ -418,7 +415,7 @@ class BagItManifest
             return $fileName;
         }
     }
-    
+
     /**
      * This takes a file name and strips the prefix path from it.
      *
