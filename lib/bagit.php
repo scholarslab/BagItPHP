@@ -66,7 +66,8 @@ class BagItException extends Exception
  * @version   Release: <package_version>
  * @link      https://github.com/erochest/BagItPHP
  */
-class BagIt {
+class BagIt
+{
 
     //{{{ properties
 
@@ -169,8 +170,9 @@ class BagIt {
     var $bagErrors;
 
     /**
-     * The valid algorithms from the current version of PHP. Stored to avoid
-     * extraneous calls to hash_algos().
+     * The valid algorithms from the current version of PHP filtered to those
+     * supported by the BagIt specification. Stored to avoid extraneous calls
+     * to hash_algos().
      *
      * @var array
      */
@@ -333,7 +335,8 @@ class BagIt {
      *
      * @return void
      *
-     * @throws \ErrorException If the hash algorithm is not supported.
+     * @throws \InvalidArgumentException If hash algorithm is not "md5" or "sha1"
+     * or if the hash algorithm is not supported.
      */
     function setHashEncoding($hashAlgorithm)
     {
@@ -374,7 +377,7 @@ class BagIt {
      *
      * @param string $hashAlgorithm The hash algorithm name.
      *
-     * @throws \ErrorException If the hash algorithm is not supported.
+     * @throws \InvalidArgumentException If the hash algorithm is not supported.
      */
     function addHashEncoding($hashAlgorithm)
     {
@@ -414,12 +417,12 @@ class BagIt {
      *
      * @param string $hashAlgorithm The requested hash algorithm.
      *
-     * @throws \ErrorException If the requested algorithm is not supported.
+     * @throws \InvalidArgumentException If the requested algorithm is not supported.
      */
     function checkSupportedHash($hashAlgorithm)
     {
         if (!$this->isSupportedHash($hashAlgorithm)) {
-            throw new ErrorException("The hash algorithm ({$hashAlgorithm}) is not supported on this system.");
+            throw new InvalidArgumentException("The hash algorithm ({$hashAlgorithm}) is not supported on this system.");
         }
     }
 
@@ -432,9 +435,6 @@ class BagIt {
      */
     function isSupportedHash($hashAlgorithm)
     {
-        if (!isset($this->validHashAlgorithms)) {
-            $this->validHashAlgorithms = hash_algos();
-        }
         $hashAlgorithm = strtolower($hashAlgorithm);
         return in_array($hashAlgorithm, $this->validHashAlgorithms);
     }
