@@ -1,5 +1,5 @@
 <?php
-/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
+namespace ScholarsLab\BagIt;
 
 /**
  * This is a PHP implementation of the {@link
@@ -21,38 +21,13 @@
  * @package   Bagit
  * @author    Eric Rochester <erochest@gmail.com>
  * @author    Wayne Graham <wayne.graham@gmail.com>
+ * @author    Jared Whiklo <jwhiklo@gmail.com>
  * @copyright 2011 The Board and Visitors of the University of Virginia
  * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
  * @version   0.2.1
- * @link      https://github.com/erochest/BagItPHP
+ * @link      https://github.com/whikloj/BagItPHP
  *
  */
-
-
-require_once 'Archive/Tar.php';
-require_once 'bagit_fetch.php';
-require_once 'bagit_manifest.php';
-require_once 'bagit_utils.php';
-
-
-/**
- * This is a class for all bag exceptions.
- *
- * @category   FileUtils
- * @package    Bagit
- * @subpackage Exception
- * @author     Eric Rochester <erochest@gmail.com>
- * @author     Wayne Graham <wayne.graham@gmail.com>
- * @copyright  2011 The Board and Visitors of the University of Virginia
- * @license    http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
- * @version    Release: <package_version>
- * @link       https://github.com/erochest/BagItPHP
- */
-class BagItException extends Exception
-{
-
-}
-
 
 /**
  * This is the main class for interacting with a bag.
@@ -61,10 +36,11 @@ class BagItException extends Exception
  * @package   Bagit
  * @author    Eric Rochester <erochest@gmail.com>
  * @author    Wayne Graham <wayne.graham@gmail.com>
+ * @author    Jared Whiklo <jwhiklo@gmail.com>
  * @copyright 2011 The Board and Visitors of the University of Virginia
  * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
  * @version   Release: <package_version>
- * @link      https://github.com/erochest/BagItPHP
+ * @link      https://github.com/whikloj/BagItPHP
  */
 class BagIt
 {
@@ -77,42 +53,42 @@ class BagIt
      *
      * @var string
      */
-    var $bag;
+    private $bag;
 
     /**
      * Absolute path to the bag directory.
      *
      * @var string
      */
-    var $bagDirectory;
+    private $bagDirectory;
 
     /**
      * True if the bag is extended.
      *
      * @var boolean
      */
-    var $extended;
+    private $extended;
 
     /**
      * The version information declared in 'bagit.txt'.
      *
      * @var array
      */
-    var $bagVersion;
+    private $bagVersion;
 
     /**
      * The tag file encoding declared in 'bagit.txt'. Default is 'utf-8'.
      *
      * @var string
      */
-    var $tagFileEncoding;
+    private $tagFileEncoding;
 
     /**
      * Absolute path to the bagit file.
      *
      * @var string
      */
-    var $bagitFile;
+    private $bagitFile;
 
     /**
      * Information about the 'manifest-(hash).txt'.
@@ -121,7 +97,7 @@ class BagIt
      *
      * @var array
      */
-    var $manifest;
+    private $manifest;
 
     /**
      * Information about the 'tagmanifest-{hash}.txt'.
@@ -130,28 +106,28 @@ class BagIt
      *
      * @var array
      */
-    var $tagManifest;
+    private $tagManifest;
 
     /**
      * Information about files that need to be downloaded, listed in fetch.txt.
      *
-     * @var BagItFetch
+     * @var \ScholarsLab\BagIt\BagItFetch
      */
-    var $fetch;
+    private $fetch;
 
     /**
      * Absolute path to the 'bag-info.txt' file or null.
      *
      * @var string
      */
-    var $bagInfoFile;
+    private $bagInfoFile;
 
     /**
      * A dictionary array containing the 'bag-info.txt' file contents.
      *
      * @var array
      */
-    var $bagInfoData;
+    private $bagInfoData;
 
     /**
      * If the bag came from a compressed file, this contains either 'tgz' or
@@ -159,7 +135,14 @@ class BagIt
      *
      * @var string
      */
-    var $bagCompression;
+    private $bagCompression;
+
+    /**
+     * If the bag came from a compressed file, this contains boolean of state.
+     *
+     * @var bool
+     */
+    private $bagIsCompressed;
 
     /**
      * An array of all bag validation errors. Each entries is a two-element
@@ -167,7 +150,7 @@ class BagIt
      *
      * @var array
      */
-    var $bagErrors;
+    private $bagErrors;
 
     /**
      * The valid algorithms from the current version of PHP filtered to those
@@ -209,7 +192,11 @@ class BagIt
      *
      */
     public function __construct(
-        $bag, $validate=false, $extended=true, $fetch=false, $bagInfoData=null
+        $bag,
+        $validate = false,
+        $extended = true,
+        $fetch = false,
+        $bagInfoData = null
     ) {
         $this->bag = $bag;
         $this->extended = $extended || (! is_null($bagInfoData));
@@ -225,20 +212,20 @@ class BagIt
         $this->bagCompression = null;
         $this->bagErrors = array();
         $this->validHashAlgorithms = array_filter(
-          hash_algos(),
-          array($this, '_filterPhpHashAlgorithms')
+            hash_algos(),
+            array($this, 'filterPhpHashAlgorithms')
         );
-        array_walk($this->validHashAlgorithms,
-            array($this, '_normalizeHashAlgorithmName')
+        array_walk(
+            $this->validHashAlgorithms,
+            array($this, 'normalizeHashAlgorithmName')
         );
 
-        if (
-            file_exists($this->bag) &&
-            ($this->_isCompressed() || file_exists("{$this->bag}/bagit.txt"))
+        if (file_exists($this->bag) &&
+            ($this->checkCompressed() || file_exists("{$this->bag}/bagit.txt"))
         ) {
-            $this->_openBag();
+            $this->openBag();
         } else {
-            $this->_createBag();
+            $this->createBag();
         }
 
         if ($fetch) {
@@ -266,28 +253,42 @@ class BagIt
      * @return boolean True if the bag contains the optional files
      * 'bag-info.txt', 'fetch.txt', or 'tagmanifest-{sha1,md5}.txt'.
      */
-    function isExtended()
+    public function isExtended()
     {
         return $this->extended;
     }
 
     /**
-     * Return the info keys
+     * Return the bag declaration (bagit.txt) values.
      *
-     * @return array A dictionary array containing these keys: 'version',
-     * 'encoding', 'hash'.
+     * @return array A dictionary array containing these keys:
+     *  - 'version'
+     *  - 'version_parts'
+     *  - 'encoding'
+     *  - 'hash'
      */
-    function getBagInfo()
+    public function getBagInfo()
     {
         $major = $this->bagVersion['major'];
         $minor = $this->bagVersion['minor'];
 
         $info = array(
             'version'  => "$major.$minor",
+            'version_parts' => $this->bagVersion,
             'encoding' => $this->tagFileEncoding,
-            'hash'     => $this->getHashEncoding()
+            'hash'     => implode(",", $this->getHashEncodings()),
         );
         return $info;
+    }
+
+    /**
+     * Return the main directory of the bag.
+     *
+     * @return string|null The absolute path to the bag.
+     */
+    public function getBagDirectory()
+    {
+        return $this->bagDirectory;
     }
 
     /**
@@ -295,9 +296,19 @@ class BagIt
      *
      * @return string The absolute path to the bag's data directory.
      */
-    function getDataDirectory()
+    public function getDataDirectory()
     {
         return "{$this->bagDirectory}/data";
+    }
+
+    /**
+     * Return information about files to be downloaded or null if none exists.
+     *
+     * @return \ScholarsLab\BagIt\BagItFetch|null
+     */
+    public function getFetch()
+    {
+        return $this->fetch;
     }
 
     /**
@@ -308,7 +319,7 @@ class BagIt
      *
      * @return string The bag's checksum encoding scheme.
      */
-    function getHashEncoding()
+    public function getHashEncoding()
     {
         $encodings = $this->getHashEncodings();
         return reset($encodings);
@@ -318,8 +329,9 @@ class BagIt
      * Return all current hash algorithms.
      *
      * @return array List of hash algorithms in this bag.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
      */
-    function getHashEncodings()
+    public function getHashEncodings()
     {
         return array_keys($this->manifest);
     }
@@ -338,11 +350,11 @@ class BagIt
      * @throws \InvalidArgumentException If hash algorithm is not "md5" or "sha1"
      * or if the hash algorithm is not supported.
      */
-    function setHashEncoding($hashAlgorithm)
+    public function setHashEncoding($hashAlgorithm)
     {
         $hashAlgorithm = strtolower($hashAlgorithm);
         if ($hashAlgorithm != 'md5' && $hashAlgorithm != 'sha1') {
-            throw new InvalidArgumentException("Invalid hash algorithim: '$hashAlgorithm'.");
+            throw new \InvalidArgumentException("Invalid hash algorithim: '$hashAlgorithm'.");
         }
         foreach ($this->manifest as $hash => $manifest) {
             if ($hash != $hashAlgorithm) {
@@ -357,8 +369,9 @@ class BagIt
      * and tag-manifest files.
      *
      * @param string $hashAlgorithm the hash algorithm.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
      */
-    function removeHashEncoding($hashAlgorithm)
+    public function removeHashEncoding($hashAlgorithm)
     {
         $hashAlgorithm = strtolower($hashAlgorithm);
         if ($this->hasHashEncoding($hashAlgorithm)) {
@@ -378,23 +391,24 @@ class BagIt
      * @param string $hashAlgorithm The hash algorithm name.
      *
      * @throws \InvalidArgumentException If the hash algorithm is not supported.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
      */
-    function addHashEncoding($hashAlgorithm)
+    public function addHashEncoding($hashAlgorithm)
     {
         $hashAlgorithm = strtolower($hashAlgorithm);
         $this->checkSupportedHash($hashAlgorithm);
         if (!$this->hasHashEncoding($hashAlgorithm)) {
             $this->manifest[$hashAlgorithm] = new BagItManifest(
-              "{$this->bagDirectory}/manifest-{$hashAlgorithm}.txt",
-              $this->bagDirectory . "/",
-              $this->tagFileEncoding
+                "{$this->bagDirectory}/manifest-{$hashAlgorithm}.txt",
+                $this->bagDirectory . "/",
+                $this->tagFileEncoding
             );
 
             if ($this->isExtended()) {
                 $this->tagManifest[$hashAlgorithm] = new BagItManifest(
-                  "{$this->bagDirectory}/tagmanifest-{$hashAlgorithm}.txt",
-                  $this->bagDirectory . "/",
-                  $this->tagFileEncoding
+                    "{$this->bagDirectory}/tagmanifest-{$hashAlgorithm}.txt",
+                    $this->bagDirectory . "/",
+                    $this->tagFileEncoding
                 );
             }
         }
@@ -406,8 +420,9 @@ class BagIt
      * @param string $hashAlgorithm The requested hash algorithms.
      *
      * @return bool Do we already have this manifest.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
      */
-    function hasHashEncoding($hashAlgorithm)
+    public function hasHashEncoding($hashAlgorithm)
     {
         return (in_array($hashAlgorithm, array_keys($this->manifest)));
     }
@@ -418,26 +433,26 @@ class BagIt
      * @param string $hashAlgorithm The requested hash algorithm.
      *
      * @throws \InvalidArgumentException If the requested algorithm is not supported.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
      */
-    function checkSupportedHash($hashAlgorithm)
+    public function checkSupportedHash($hashAlgorithm)
     {
         if (!$this->isSupportedHash($hashAlgorithm)) {
-            throw new InvalidArgumentException("The hash algorithm ({$hashAlgorithm}) is not supported on this system.");
+            throw new \InvalidArgumentException("The hash algorithm " .
+                "({$hashAlgorithm}) is not supported on this system.");
         }
     }
 
     /**
-     * Is this a supported algorithm?
+     * Return current file encoding.
      *
-     * @param string $hashAlgorithm A string representing a hash algorithm.
-     *
-     * @return bool Whether the algorithm can be used.
+     * @return string the file encoding charset.
      */
-    function isSupportedHash($hashAlgorithm)
+    public function getFileEncoding()
     {
-        $hashAlgorithm = strtolower($hashAlgorithm);
-        return in_array($hashAlgorithm, $this->validHashAlgorithms);
+        return $this->tagFileEncoding;
     }
+
 
     /**
      * Return an array of all files in the data directory
@@ -445,9 +460,9 @@ class BagIt
      * @return array An array of absolute paths for all of the files in the
      * data directory.
      */
-    function getBagContents()
+    public function getBagContents()
     {
-        return rls($this->getDataDirectory());
+        return BagItUtils::rls($this->getDataDirectory());
     }
 
     /**
@@ -458,7 +473,7 @@ class BagIt
      *
      * @return array An array of all bag errors.
      */
-    function getBagErrors($validate=false)
+    public function getBagErrors($validate = false)
     {
         if ($validate) {
             $this->validate();
@@ -475,12 +490,12 @@ class BagIt
      *
      * @return array The list of bag errors.
      */
-    function validate()
+    public function validate()
     {
         $errors = array();
 
-        BagIt_validateExists($this->bagitFile, $errors);
-        BagIt_validateExists($this->getDataDirectory(), $errors);
+        BagItUtils::validateExists($this->bagitFile, $errors);
+        BagItUtils::validateExists($this->getDataDirectory(), $errors);
         foreach ($this->manifest as $hash => $manifest) {
             $manifest->validate($errors);
         }
@@ -505,7 +520,7 @@ class BagIt
      *
      * @return void
      */
-    function update()
+    public function update()
     {
         // Clear the manifests.
         foreach ($this->manifest as &$manifest) {
@@ -516,14 +531,14 @@ class BagIt
         }
 
         // Clean up the file names in the data directory.
-        $dataFiles = rls($this->getDataDirectory());
+        $dataFiles = BagItUtils::rls($this->getDataDirectory());
         foreach ($dataFiles as $dataFile) {
             $baseName = basename($dataFile);
             if ($baseName == '.' || $baseName == '..') {
                 continue;
             }
 
-            $cleanName = BagIt_sanitizeFileName($baseName);
+            $cleanName = BagItUtils::sanitizeFileName($baseName);
             if ($baseName != $cleanName) {
                 $dirName = dirname($dataFile);
                 rename($dataFile, "$dirName/$cleanName");
@@ -531,12 +546,12 @@ class BagIt
         }
 
         if ($this->extended || count($this->bagInfoData) > 0) {
-            $this->_writeBagInfo();
+            $this->writeBagInfo();
         }
 
         // Update the manifests.
         foreach ($this->manifest as &$manifest) {
-            $manifest->update(rls($this->getDataDirectory()));
+            $manifest->update(BagItUtils::rls($this->getDataDirectory()));
         }
 
         foreach ($this->tagManifest as &$tagManifest) {
@@ -545,7 +560,7 @@ class BagIt
             $tagFiles = array(
                 "$bagdir/bagit.txt",
                 "$bagdir/bag-info.txt",
-                $this->fetch->fileName,
+                $this->fetch->getFileName(),
             );
             $tagFiles = array_merge($tagFiles, $this->getManifestFileNames());
             $tagManifest->update($tagFiles);
@@ -556,8 +571,9 @@ class BagIt
      * Get all manifest filenames.
      *
      * @return array all manifest filenames.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
      */
-    function getManifestFileNames()
+    public function getManifestFileNames()
     {
         $fileNames = array();
         foreach ($this->manifest as $manifest) {
@@ -577,7 +593,7 @@ class BagIt
      *
      * @return void
      */
-    function addFile($src, $dest)
+    public function addFile($src, $dest)
     {
         $dataPref = 'data' . DIRECTORY_SEPARATOR;
         $prefLen = strlen($dataPref);
@@ -606,10 +622,10 @@ class BagIt
      * @param string $dest The file name for the destination file. This should
      * be relative to the bag directory.
      *
-     * @throws BagitException if the file already exists.
-     * @return null
+     * @throws \ScholarsLab\BagIt\BagitException if the file already exists.
      */
-    function createFile($content, $dest) {
+    public function createFile($content, $dest)
+    {
         $dataPref = 'data' . DIRECTORY_SEPARATOR;
         $prefLen = strlen($dataPref);
         if ((strncasecmp($dest, $dataPref, $prefLen) != 0)) {
@@ -618,8 +634,8 @@ class BagIt
 
         $fulldest = "{$this->bagDirectory}/$dest";
 
-        if(file_exists($fulldest)) {
-            throw new BagitException("File already exists: '$dest'");
+        if (file_exists($fulldest)) {
+            throw new BagItException("File already exists: '$dest'");
         }
 
         $dirname = dirname($fulldest);
@@ -636,11 +652,9 @@ class BagIt
      * @param string $destination The file to put the bag into.
      * @param string $method      Either 'tgz' or 'zip'. Default is 'tgz'.
      *
-     * @return void
-     *
-     * @throws \BagItException Invalid compression method selected.
+     * @throws \ScholarsLab\BagIt\BagItException Invalid compression method selected.
      */
-    function package($destination, $method='tgz')
+    public function package($destination, $method = 'tgz')
     {
         $method = strtolower($method);
         if ($method != 'zip' && $method != 'tgz') {
@@ -651,7 +665,7 @@ class BagIt
             $destination = "$destination.$method";
         }
 
-        BagIt_compressBag(
+        BagItUtils::compressBag(
             $this->bagDirectory,
             $destination,
             $method
@@ -668,7 +682,7 @@ class BagIt
      **/
     public function hasBagInfoData($key)
     {
-        $this->_ensureBagInfoData();
+        $this->ensureBagInfoData();
         return array_key_exists($key, $this->bagInfoData);
     }
 
@@ -683,9 +697,11 @@ class BagIt
      **/
     public function setBagInfoData($key, $value)
     {
-        $this->_ensureBagInfoData();
-        $this->bagInfoData[$key] = BagIt_getAccumulatedValue(
-            $this->bagInfoData, $key, $value
+        $this->ensureBagInfoData();
+        $this->bagInfoData[$key] = BagItUtils::getAccumulatedValue(
+            $this->bagInfoData,
+            $key,
+            $value
         );
     }
 
@@ -711,7 +727,8 @@ class BagIt
      * @return void
      * @author Michael Joyce <ubermichael@gmail.com>
      */
-    public function clearAllBagInfo() {
+    public function clearAllBagInfo()
+    {
         $this->bagInfoData = array();
     }
 
@@ -720,23 +737,74 @@ class BagIt
      *
      * @return array
      */
-    public function getBagInfoKeys() {
-        $this->_ensureBagInfoData();
+    public function getBagInfoKeys()
+    {
+        $this->ensureBagInfoData();
         return array_keys($this->bagInfoData);
     }
 
     /**
      * This returns the value for a key from bagInfoData.
      *
-     * @param string $key This is the key to get the value associated with.
+     * @param string $key This is the key to get the value associated.
      *
      * @return string|null
      * @author Eric Rochester <erochest@virginia.edu>
      **/
     public function getBagInfoData($key)
     {
-        $this->_ensureBagInfoData();
+        $this->ensureBagInfoData();
         return array_key_exists($key, $this->bagInfoData) ? $this->bagInfoData[$key] : null;
+    }
+
+    /**
+     * Return bag compression state.
+     *
+     * @return bool Whether the original bag was compressed.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
+     */
+    public function isCompressed()
+    {
+        if (!isset($this->bagIsCompressed)) {
+            $this->checkCompressed();
+        }
+        return $this->bagIsCompressed;
+    }
+
+    /**
+     * Return the compression type.
+     *
+     * @return string|null The compression type or null if not compressed.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
+     */
+    public function getCompressionType()
+    {
+        if (!isset($this->bagCompression)) {
+            $this->checkCompressed();
+        }
+        return $this->bagCompression;
+    }
+
+    /**
+     * Get all manifest objects in associative array keyed on hash algorithm.
+     *
+     * @return array
+     * @author Jared Whiklo <jwhiklo@gmail.com>
+     */
+    public function getManifests()
+    {
+        return $this->manifest;
+    }
+
+    /**
+     * Get all tag manifest objects in associative array keyed on hash algorithm.
+     *
+     * @return array
+     * @author Jared Whiklo <jwhiklo@gmail.com>
+     */
+    public function getTagManifests()
+    {
+        return $this->tagManifest;
     }
 
     //}}}
@@ -750,16 +818,16 @@ class BagIt
      *
      * @throws \ErrorException If trying to uncompress a non-compressed bag.
      */
-    private function _openBag()
+    private function openBag()
     {
-        if ($this->_isCompressed()) {
-            $this->bagDirectory = BagIt_uncompressBag($this->bag);
+        if ($this->checkCompressed()) {
+            $this->bagDirectory = BagItUtils::uncompressBag($this->bag);
         } else {
             $this->bagDirectory = realpath($this->bag);
         }
 
         $this->bagitFile = "{$this->bagDirectory}/bagit.txt";
-        list($version, $fileEncoding, $errors) = BagIt_readBagItFile(
+        list($version, $fileEncoding, $errors) = BagItUtils::readBagItFile(
             $this->bagitFile
         );
         $this->bagVersion = $version;
@@ -769,21 +837,21 @@ class BagIt
         $files = scandir($this->bagDirectory);
         if (count($files) > 0) {
             $bagdir = $this->bagDirectory;
-            $manifestFiles = findAllByPattern("$bagdir/manifest-*.txt");
+            $manifestFiles = BagItUtils::findAllByPattern("$bagdir/manifest-*.txt");
             try {
                 if (count($manifestFiles) == 0) {
                     // Set a default.
-                    $manifestFiles = array('manifest-' . self::DEFAULT_HASH_ALGORITHM . '.txt');
+                    $manifestFiles = array("{$bagdir}/manifest-" . self::DEFAULT_HASH_ALGORITHM . '.txt');
                 }
                 foreach ($manifestFiles as $manifestFile) {
-                    $hash = $this->_determineHashFromFilename($manifestFile);
+                    $hash = $this->determineHashFromFilename($manifestFile);
                     $this->manifest[$hash] = new BagItManifest(
-                      $manifestFile,
-                      $this->bagDirectory . '/',
-                      $this->tagFileEncoding
+                        $manifestFile,
+                        $this->bagDirectory . '/',
+                        $this->tagFileEncoding
                     );
                 }
-            } catch (Exception $exc) {
+            } catch (\Exception $exc) {
                 array_push(
                     $this->bagErrors,
                     array('manifest', "Error reading $manifestFile.")
@@ -791,17 +859,17 @@ class BagIt
             }
 
             if ($this->isExtended()) {
-                $manifestFiles = findAllByPattern("$bagdir/tagmanifest-*.txt");
+                $manifestFiles = BagItUtils::findAllByPattern("$bagdir/tagmanifest-*.txt");
                 if (count($manifestFiles) == 0) {
                     // Set a default.
-                    $manifestFiles = array('tagmanifest-' . self::DEFAULT_HASH_ALGORITHM . '.txt');
+                    $manifestFiles = array("{$bagdir}/tagmanifest-" . self::DEFAULT_HASH_ALGORITHM . '.txt');
                 }
                 foreach ($manifestFiles as $manifestFile) {
-                    $hash = $this->_determineHashFromFilename($manifestFile);
+                    $hash = $this->determineHashFromFilename($manifestFile);
                     $this->tagManifest[$hash] = new BagItManifest(
-                      $manifestFile,
-                      $this->bagDirectory . '/',
-                      $this->tagFileEncoding
+                        $manifestFile,
+                        $this->bagDirectory . '/',
+                        $this->tagFileEncoding
                     );
                 }
 
@@ -810,7 +878,7 @@ class BagIt
                         "{$this->bagDirectory}/fetch.txt",
                         $this->tagFileEncoding
                     );
-                } catch (Exception $exc) {
+                } catch (\Exception $exc) {
                     array_push(
                         $this->bagErrors,
                         array('fetch', 'Error reading fetch file.')
@@ -818,7 +886,7 @@ class BagIt
                 }
 
                 $this->bagInfoFile = "{$this->bagDirectory}/bag-info.txt";
-                $this->_readBagInfo();
+                $this->readBagInfo();
             }
         }
     }
@@ -829,8 +897,9 @@ class BagIt
      * @param string $filepath the filename.
      *
      * @return string|null the hash or null.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
      */
-    private function _determineHashFromFilename($filepath)
+    private function determineHashFromFilename($filepath)
     {
         $filename = basename($filepath);
         if (preg_match('~\-(\w+)\.txt$~', $filename, $matches)) {
@@ -844,7 +913,7 @@ class BagIt
      *
      * @return void
      */
-    private function _createBag()
+    private function createBag()
     {
         if (!is_dir($this->bag)) {
             mkdir($this->bag);
@@ -859,19 +928,19 @@ class BagIt
         $this->bagitFile = $this->bagDirectory . '/bagit.txt';
         $this->manifest = array(
           'sha1' => new BagItManifest(
-            "{$this->bagDirectory}/manifest-" . self::DEFAULT_HASH_ALGORITHM . ".txt",
-            $this->bagDirectory . '/',
-            $this->tagFileEncoding
-        ));
+              "{$this->bagDirectory}/manifest-" . self::DEFAULT_HASH_ALGORITHM . ".txt",
+              $this->bagDirectory . '/',
+              $this->tagFileEncoding
+          ));
 
         $major = $this->bagVersion['major'];
         $minor = $this->bagVersion['minor'];
         $bagItData
             = "BagIt-Version: $major.$minor\n" .
               "Tag-File-Character-Encoding: {$this->tagFileEncoding}\n";
-        writeFileText($this->bagitFile, $this->tagFileEncoding, $bagItData);
+        BagItUtils::writeFileText($this->bagitFile, $this->tagFileEncoding, $bagItData);
 
-        $this->_createExtendedBag();
+        $this->createExtendedBag();
     }
 
     /**
@@ -879,16 +948,16 @@ class BagIt
      *
      * @return void
      */
-    private function _createExtendedBag()
+    private function createExtendedBag()
     {
         if ($this->extended) {
             $hashEncoding = $this->getHashEncodings();
             $this->tagManifest = array();
             foreach ($hashEncoding as $hash) {
                 $this->tagManifest[$hash] = new BagItManifest(
-                  "{$this->bagDirectory}/tagmanifest-{$hash}.txt",
-                  $this->bagDirectory . '/',
-                  $this->tagFileEncoding
+                    "{$this->bagDirectory}/tagmanifest-{$hash}.txt",
+                    $this->bagDirectory . '/',
+                    $this->tagFileEncoding
                 );
             }
 
@@ -909,12 +978,12 @@ class BagIt
      *
      * @return void
      */
-    private function _readBagInfo()
+    private function readBagInfo()
     {
         try {
-            $lines = readLines($this->bagInfoFile, $this->tagFileEncoding);
-            $this->bagInfoData = BagIt_parseBagInfo($lines);
-        } catch (Exception $exc) {
+            $lines = BagItUtils::readLines($this->bagInfoFile, $this->tagFileEncoding);
+            $this->bagInfoData = BagItUtils::parseBagInfo($lines);
+        } catch (\Exception $exc) {
             array_push(
                 $this->bagErrors,
                 array('baginfo', 'Error reading bag info file.')
@@ -928,7 +997,7 @@ class BagIt
      * @return void
      * @author Eric Rochester <erochest@virginia.edu>
      **/
-    private function _writeBagInfo()
+    private function writeBagInfo()
     {
         $lines = array();
 
@@ -944,7 +1013,7 @@ class BagIt
             }
         }
 
-        writeFileText($this->bagInfoFile, $this->tagFileEncoding, join('', $lines));
+        BagItUtils::writeFileText($this->bagInfoFile, $this->tagFileEncoding, join('', $lines));
     }
 
     /**
@@ -952,21 +1021,21 @@ class BagIt
      *
      * @return True if this is a compressed bag.
      */
-    private function _isCompressed()
+    private function checkCompressed()
     {
-        if (is_dir($this->bag)) {
-            return false;
-        } else {
+        $compressed = false;
+        if (!is_dir($this->bag)) {
             $bag = strtolower($this->bag);
-            if (endsWith($bag, '.zip')) {
+            if (BagItUtils::endsWith($bag, '.zip')) {
                 $this->bagCompression = 'zip';
-                return true;
-            } else if (endsWith($bag, '.tar.gz') || endsWith($bag, '.tgz')) {
+                $compressed = true;
+            } elseif (BagItUtils::endsWith($bag, '.tar.gz') || BagItUtils::endsWith($bag, '.tgz')) {
                 $this->bagCompression = 'tgz';
-                return true;
+                $compressed = true;
             }
         }
-        return false;
+        $this->bagIsCompressed = $compressed;
+        return $compressed;
     }
 
     /**
@@ -975,7 +1044,7 @@ class BagIt
      * @return array
      * @author Eric Rochester <erochest@virginia.edu>
      **/
-    private function _ensureBagInfoData()
+    private function ensureBagInfoData()
     {
         if (is_null($this->bagInfoData)) {
             $this->bagInfoData = array();
@@ -987,10 +1056,11 @@ class BagIt
      * Normalize a PHP hash algorithm to a BagIt specification name.
      *
      * @param string $item The hash algorithm name.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
      */
-    private function _normalizeHashAlgorithmName(&$item)
+    private function normalizeHashAlgorithmName(&$item)
     {
-        $item = preg_replace("/[^a-zA-Z0-9]+/", "", $item);
+        $item = array_flip(BagItManifest::HASH_ALGORITHMS)[$item];
     }
 
     /**
@@ -999,25 +1069,26 @@ class BagIt
      * @param string $item A hash algorithm name.
      *
      * @return bool True if allowed by the specification.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
      */
-    private function _filterPhpHashAlgorithms($item)
+    private function filterPhpHashAlgorithms($item)
     {
         return in_array($item, array_values(BagItManifest::HASH_ALGORITHMS));
     }
 
+    /**
+     * Is this a supported algorithm?
+     *
+     * @param string $hashAlgorithm A string representing a hash algorithm.
+     *
+     * @return bool Whether the algorithm can be used.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
+     */
+    private function isSupportedHash($hashAlgorithm)
+    {
+        $hashAlgorithm = strtolower($hashAlgorithm);
+        return in_array($hashAlgorithm, $this->validHashAlgorithms);
+    }
+
     //}}}
-
 }
-
-/* Functional wrappers/facades. */
-
-/*
- * Local variables:
- * tab-width: 4
- * c-basic-offset: 4
- * c-hanging-comment-ender-p: nil
- * End:
- */
-
-
-?>

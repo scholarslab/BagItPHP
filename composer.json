@@ -2,15 +2,36 @@
     "name": "scholarslab/bagit",
     "version": "0.3.0",
     "require": {
+        "php": ">=5.6",
         "pear/archive_tar": "~1.3"
     },
     "require-dev": {
-        "phpunit/phpunit": "~4.4",
+        "phpunit/phpunit": "~5.7",
         "phpdocumentor/phpdocumentor": "2.*",
-        "pdepend/pdepend" : "2.1.0",
+        "pdepend/pdepend" : "~2.1",
         "phpmd/phpmd" : "@stable",
         "sebastian/phpcpd": "*",
-        "squizlabs/php_codesniffer": "2.*",
+        "squizlabs/php_codesniffer": "~2.7",
         "mayflower/php-codebrowser": "~1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "ScholarsLab\\BagIt\\": "lib/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ScholarsLab\\BagIt\\Tests\\": "test/"
+        }
+    },
+    "scripts": {
+        "check": [
+            "./vendor/bin/phpcs --standard=PSR2 lib test",
+            "./vendor/bin/phpcpd --names *.php lib"
+        ],
+        "test": [
+            "@check",
+            "./vendor/bin/phpunit"
+        ]
     }
 }
