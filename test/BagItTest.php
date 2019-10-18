@@ -1035,6 +1035,8 @@ class BagItTest extends TestCase
      * Utility to test adding a second hash and removing sha1.
      *
      * @param string $hash The hash to add.
+     *
+     * @throws \ScholarsLab\BagIt\BagItException If you try to remove the only hash encoding.
      */
     private function verifyAddingHashEncodingToDefault($hash)
     {
@@ -1110,6 +1112,19 @@ class BagItTest extends TestCase
         $this->bag->addHashEncoding('md5');
         $this->assertEquals('md5', $this->bag->getManifests()['md5']->getHashEncoding());
         $this->assertEquals('md5', $this->bag->getTagManifests()['md5']->getHashEncoding());
+    }
+
+    /**
+     * Ensure we can't remove the last hash encoding.
+     *
+     * @group BagIt
+     * @covers ::removeHashEncoding
+     * @expectedException \ScholarsLab\BagIt\BagItException
+     */
+    public function testRemoveLastHashEncoding()
+    {
+        $this->assertEquals(array('sha1'), $this->bag->getHashEncodings());
+        $this->bag->removeHashEncoding('sha1');
     }
 
     /**

@@ -217,7 +217,6 @@ class BagItFetchTest extends TestCase
     /**
      * Test that a new bag has no fetch.txt by default.
      * @group BagItFetch
-     * @covers ::update
      */
     public function testNewBagEmpty()
     {

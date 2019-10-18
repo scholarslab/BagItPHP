@@ -1,14 +1,9 @@
 <?php
-
-namespace ScholarsLab\BagIt;
-
 /**
  * This is a PHP implementation of the {@link
  * https://wiki.ucop.edu/display/Curation/BagIt BagIt specification}. Really,
  * it is a port of {@link https://github.com/ahankinson/pybagit/ PyBagIt} for
  * PHP. This contains some useful functions.
- *
- * PHP version 5
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,22 +12,21 @@ namespace ScholarsLab\BagIt;
  * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
  * OF ANY KIND, either express or implied. See the License for the specific
  * language governing permissions and limitations under the License.
- *
+ */
+
+namespace ScholarsLab\BagIt;
+
+/**
+ * Utility functions used within the BagIt architecture.
+ * @package   ScholarsLab\BagIt
  * @category  FileUtils
- * @package   Bagit
  * @author    Eric Rochester <erochest@gmail.com>
  * @author    Wayne Graham <wayne.graham@gmail.com>
  * @author    Jared Whiklo <jwhiklo@gmail.com>
  * @copyright 2011 The Board and Visitors of the University of Virginia
  * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
- * @version   0.2.1
+ * @version   Release: 1.0.0
  * @link      https://github.com/whikloj/BagItPHP
- *
- */
-
-/**
- * Class BagItUtils
- * @package ScholarsLab\BagIt
  */
 class BagItUtils
 {

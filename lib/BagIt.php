@@ -1,13 +1,9 @@
 <?php
-namespace ScholarsLab\BagIt;
-
 /**
  * This is a PHP implementation of the {@link
  * https://wiki.ucop.edu/display/Curation/BagIt BagIt specification}. Really,
  * it is a port of {@link https://github.com/ahankinson/pybagit/ PyBagIt} for
  * PHP.
- *
- * PHP version 5
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy
@@ -16,30 +12,21 @@ namespace ScholarsLab\BagIt;
  * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
- *
- * @category  FileUtils
- * @package   Bagit
- * @author    Eric Rochester <erochest@gmail.com>
- * @author    Wayne Graham <wayne.graham@gmail.com>
- * @author    Jared Whiklo <jwhiklo@gmail.com>
- * @copyright 2011 The Board and Visitors of the University of Virginia
- * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
- * @version   0.2.1
- * @link      https://github.com/whikloj/BagItPHP
- *
  */
+
+namespace ScholarsLab\BagIt;
 
 /**
  * This is the main class for interacting with a bag.
  *
  * @category  FileUtils
- * @package   Bagit
+ * @package   ScholarsLab\BagIt
  * @author    Eric Rochester <erochest@gmail.com>
  * @author    Wayne Graham <wayne.graham@gmail.com>
  * @author    Jared Whiklo <jwhiklo@gmail.com>
  * @copyright 2011 The Board and Visitors of the University of Virginia
  * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
- * @version   Release: <package_version>
+ * @version   Release: 1.0.0
  * @link      https://github.com/whikloj/BagItPHP
  */
 class BagIt
@@ -349,6 +336,7 @@ class BagIt
      *
      * @throws \InvalidArgumentException If hash algorithm is not "md5" or "sha1"
      * or if the hash algorithm is not supported.
+     * @throws \ScholarsLab\BagIt\BagItException If you try to remove the only hash encoding, should not occur here.
      */
     public function setHashEncoding($hashAlgorithm)
     {
@@ -356,12 +344,13 @@ class BagIt
         if ($hashAlgorithm != 'md5' && $hashAlgorithm != 'sha1') {
             throw new \InvalidArgumentException("Invalid hash algorithim: '$hashAlgorithm'.");
         }
+        // Add first to avoid the removeHashEncoding exception
+        $this->addHashEncoding($hashAlgorithm);
         foreach ($this->manifest as $hash => $manifest) {
             if ($hash != $hashAlgorithm) {
                 $this->removeHashEncoding($hash);
             }
         }
-        $this->addHashEncoding($hashAlgorithm);
     }
 
     /**
@@ -369,12 +358,18 @@ class BagIt
      * and tag-manifest files.
      *
      * @param string $hashAlgorithm the hash algorithm.
+     *
+     * @throws \ScholarsLab\BagIt\BagItException If you try to remove the only hash encoding.
+     *
      * @author Jared Whiklo <jwhiklo@gmail.com>
      */
     public function removeHashEncoding($hashAlgorithm)
     {
         $hashAlgorithm = strtolower($hashAlgorithm);
         if ($this->hasHashEncoding($hashAlgorithm)) {
+            if (count($this->manifest) == 1) {
+                throw new BagItException("Cannot remove the last hash encoding, you must add a new one first.");
+            }
             unlink($this->manifest[$hashAlgorithm]->getFileName());
             unset($this->manifest[$hashAlgorithm]);
 
