@@ -151,13 +151,13 @@ class BagItTest extends TestCase
     /**
      * Test the create of the tagmanifest file.
      * @group BagIt
-     * @covers ::getManifests
+     * @covers ::getTagManifests
      */
     public function testTagManifest()
     {
         $this->assertInstanceOf(
             '\ScholarsLab\BagIt\BagItManifest',
-            $this->bag->getManifests()[BagIt::DEFAULT_HASH_ALGORITHM]
+            $this->bag->getTagManifests()[BagIt::DEFAULT_HASH_ALGORITHM]
         );
     }
 
@@ -245,6 +245,7 @@ class BagItTest extends TestCase
      * @covers ::getBagInfoData
      * @covers ::hasBagInfoData
      * @covers ::getBagInfoKeys
+     * @covers ::ensureBagInfoData
      */
     public function testBagInfoDuplicateData()
     {
@@ -280,6 +281,7 @@ class BagItTest extends TestCase
      * @group BagIt
      * @covers ::setBagInfoData
      * @covers ::getBagInfoData
+     * @covers ::ensureBagInfoData
      */
     public function testBagInfoDuplicateSetBagData()
     {
@@ -899,6 +901,9 @@ class BagItTest extends TestCase
      * Test constructing from a directory.
      * @group BagIt
      * @covers ::__construct
+     * @covers ::openBag
+     * @covers ::isCompressed
+     * @covers ::checkCompressed
      */
     public function testConstructorDir()
     {
@@ -913,6 +918,9 @@ class BagItTest extends TestCase
      * Test constructing from a zip file.
      * @group BagIt
      * @covers ::__construct
+     * @covers ::openBag
+     * @covers ::checkCompressed
+     * @covers ::getCompressionType
      */
     public function testConstructorZip()
     {
@@ -927,6 +935,9 @@ class BagItTest extends TestCase
      * Test constructing from a tar.gz file.
      * @group BagIt
      * @covers ::__construct
+     * @covers ::openBag
+     * @covers ::checkCompressed
+     * @covers ::getCompressionType
      */
     public function testConstructorTGz()
     {
@@ -979,6 +990,7 @@ class BagItTest extends TestCase
      * Test default bag-info information.
      * @group BagIt
      * @covers ::getBagInfo
+     * @covers ::ensureBagInfoData
      */
     public function testGetBagInfo()
     {
@@ -1022,6 +1034,8 @@ class BagItTest extends TestCase
      * @group BagIt
      * @covers ::getHashEncodings
      * @covers ::addHashEncoding
+     * @covers ::checkSupportedHash
+     * @covers ::isSupportedHash
      */
     public function testDeduplicateHashEncodings()
     {
@@ -1054,6 +1068,8 @@ class BagItTest extends TestCase
      * @group BagIt
      * @covers ::addHashEncoding
      * @covers ::removeHashEncoding
+     * @covers ::checkSupportedHash
+     * @covers ::isSupportedHash
      */
     public function testRequiredHashEncodings()
     {
@@ -1066,6 +1082,8 @@ class BagItTest extends TestCase
      * @group BagIt
      * @covers ::addHashEncoding
      * @covers ::removeHashEncoding
+     * @covers ::checkSupportedHash
+     * @covers ::isSupportedHash
      */
     public function testSetOtherHashEncoding()
     {
@@ -1081,6 +1099,8 @@ class BagItTest extends TestCase
      * @group BagIt
      * @covers ::addHashEncoding
      * @covers ::removeHashEncoding
+     * @covers ::checkSupportedHash
+     * @covers ::isSupportedHash
      */
     public function testAddAllHashEncodings()
     {
@@ -1096,6 +1116,8 @@ class BagItTest extends TestCase
      * @group BagIt
      * @expectedException \InvalidArgumentException
      * @covers ::addHashEncoding
+     * @covers ::checkSupportedHash
+     * @covers ::isSupportedHash
      */
     public function testSetHashEncodingERR()
     {
@@ -1514,10 +1536,12 @@ class BagItTest extends TestCase
      * the bag and validate it against the original.
      *
      * @param string $compressionType compression type, one of zip, tgz
+     * @param bool $includeExtension where to add the extension to the filename or not.
+     *
      * @throws \ErrorException
      * @throws \ScholarsLab\BagIt\BagItException
      */
-    private function verifyBagCreatePackageAndValidate($compressionType)
+    private function verifyBagCreatePackageAndValidate($compressionType, $includeExtension = true)
     {
         $tmp = BagItUtils::tmpdir();
         $dirName = basename($tmp);
@@ -1539,12 +1563,14 @@ class BagItTest extends TestCase
 
         $packageTmp = BagItUtils::tmpdir();
         mkdir($packageTmp);
-        $zippath1 = "{$packageTmp}/{$dirName}.{$compressionType}";
+
+        $zippath1 = "{$packageTmp}/{$dirName}" . ($includeExtension ? ".{$compressionType}" : "");
+        $destination = $zippath1 . ($includeExtension ? "" : ".{$compressionType}");
 
         $bag->package($zippath1, $compressionType);
-        $this->assertFileExists($zippath1);
+        $this->assertFileExists($destination);
 
-        $bag1 = new BagIt($zippath1);
+        $bag1 = new BagIt($destination);
         $this->assertTrue($bag1->isCompressed());
         $this->assertEquals($compressionType, $bag1->getCompressionType());
         $this->assertFileExists($bag1->getDataDirectory() . '/missing.txt');
@@ -1561,7 +1587,7 @@ class BagItTest extends TestCase
 
         BagItUtils::rrmdir($tmp);
         BagItUtils::rrmdir($packageTmp);
-        BagItUtils::rrmdir($zippath1);
+        BagItUtils::rrmdir($destination);
     }
 
     /**
@@ -1572,6 +1598,7 @@ class BagItTest extends TestCase
     public function testPackageZip()
     {
         $this->verifyBagCreatePackageAndValidate('zip');
+        $this->verifyBagCreatePackageAndValidate('zip', false);
     }
 
     /**
@@ -1582,6 +1609,18 @@ class BagItTest extends TestCase
     public function testPackageTGz()
     {
         $this->verifyBagCreatePackageAndValidate('tgz');
+        $this->verifyBagCreatePackageAndValidate('tgz', false);
+    }
+
+    /**
+     * Create a bag package with an invalid compression type.
+     * @group BagIt
+     * @covers ::package
+     * @expectedException \ScholarsLab\BagIt\BagItException
+     */
+    public function testPackageErr()
+    {
+        $this->verifyBagCreatePackageAndValidate('err');
     }
 
     /**

@@ -228,4 +228,14 @@ class BagItFetchTest extends TestCase
         $bag->update();
         $this->assertFileNotExists("$bagdir/fetch.txt");
     }
+
+    /**
+     * Test getting file encoding.
+     * @group BagItFetch
+     * @covers ::getFileEncoding
+     */
+    public function testGetFileEncodingDefault()
+    {
+        $this->assertEquals('UTF-8', $this->fetch->getFileEncoding());
+    }
 }

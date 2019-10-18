@@ -286,6 +286,7 @@ class BagItManifestTest extends TestCase
      *
      * @group BagItManifest
      * @covers ::write
+     * @covers ::resetFileName
      */
     public function testWrite()
     {
@@ -326,6 +327,7 @@ class BagItManifestTest extends TestCase
      *
      * @group BagItManifest
      * @covers ::write
+     * @covers ::resetFileName
      */
     public function testWriteFileName()
     {
