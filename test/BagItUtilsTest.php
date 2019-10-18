@@ -1,10 +1,24 @@
 <?php
 
-require_once 'lib/bagit_utils.php';
+namespace ScholarsLab\BagIt\Test;
 
-class BagItUtilsTest extends PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+use ScholarsLab\BagIt\BagItUtils;
+
+/**
+ * Test BagItUtil functions.
+ *
+ * @package ScholarsLab\BagIt\Test
+ * @coversDefaultClass \ScholarsLab\BagIt\BagItUtils
+ */
+class BagItUtilsTest extends TestCase
 {
 
+    /**
+     * Test filterArrayMatch
+     * @group BagItUtils
+     * @covers ::filterArrayMatches
+     */
     public function testFilterArrayMatches()
     {
         $input = array(
@@ -16,9 +30,9 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
             'fghij'
         );
 
-        $this->assertEquals(1, count(filterArrayMatches('/a/', $input)));
+        $this->assertEquals(1, count(BagItUtils::filterArrayMatches('/a/', $input)));
 
-        $e = filterArrayMatches('/.*e.*/', $input);
+        $e = BagItUtils::filterArrayMatches('/.*e.*/', $input);
         $this->assertEquals(5, count($e));
         $this->assertEquals('abcde', $e[0][0]);
         $this->assertEquals('bcdef', $e[1][0]);
@@ -27,6 +41,11 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('efghi', $e[4][0]);
     }
 
+    /**
+     * Test filterArrayMatch failure.
+     * @group BagItUtils
+     * @covers ::filterArrayMatches
+     */
     public function testFilterArrayMatchesFail()
     {
         $input = array(
@@ -38,22 +57,35 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
             'fghij'
         );
 
-        $this->assertEquals(0, count(filterArrayMatches('/z/', $input)));
+        $this->assertEquals(0, count(BagItUtils::filterArrayMatches('/z/', $input)));
     }
 
+    /**
+     * Test endsWith
+     * @group BagItUtils
+     * @covers ::endsWith
+     */
     public function testEndsWithTrue()
     {
-        $this->assertTrue(endsWith("Scholars' Lab", 'b'));
-        $this->assertTrue(endsWith("Scholars' Lab", 'ab'));
-        $this->assertTrue(endsWith("Scholars' Lab", 'Lab'));
+        $this->assertTrue(BagItUtils::endsWith("Scholars' Lab", 'b'));
+        $this->assertTrue(BagItUtils::endsWith("Scholars' Lab", 'ab'));
+        $this->assertTrue(BagItUtils::endsWith("Scholars' Lab", 'Lab'));
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::endsWith
+     */
     public function testEndsWithFalse()
     {
-        $this->assertFalse(endsWith("Scholars' Lab", 'z'));
+        $this->assertFalse(BagItUtils::endsWith("Scholars' Lab", 'z'));
     }
 
-    private function _testRls($dirnames) {
+    /**
+     * Utility for rls testing
+     */
+    private function rlsTestUtil($dirnames)
+    {
         $files = array();
         foreach ($dirnames as $dirname) {
             foreach (scandir($dirname) as $filename) {
@@ -64,7 +96,7 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         }
         sort($files);
 
-        $lsout = rls($dirnames[0]);
+        $lsout = BagItUtils::rls($dirnames[0]);
         sort($lsout);
 
         $this->assertEquals(count($files), count($lsout));
@@ -74,24 +106,36 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         }
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::endsWith
+     */
     public function testRlsShallow()
     {
         $dirname = __DIR__ . '/../lib';
-        $this->_testRls(array($dirname));
+        $this->rlsTestUtil(array($dirname));
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::endsWith
+     */
     public function testRlsDeep()
     {
         $dirname = __DIR__;
-        $this->_testRls(
+        $this->rlsTestUtil(
             array($dirname, "$dirname/TestBag", "$dirname/TestBag/data",
                   "$dirname/TestBag/data/imgs")
         );
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::rrmdir
+     */
     public function testRrmdirShallow()
     {
-        $tmpdir = tmpdir();
+        $tmpdir = BagItUtils::tmpdir();
 
         mkdir($tmpdir);
         touch("$tmpdir/a");
@@ -100,7 +144,7 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
 
         $this->assertFileExists("$tmpdir/a");
 
-        rrmdir($tmpdir);
+        BagItUtils::rrmdir($tmpdir);
 
         $this->assertFalse(file_exists($tmpdir));
         $this->assertFalse(file_exists("$tmpdir/a"));
@@ -108,9 +152,13 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         $this->assertFalse(file_exists("$tmpdir/c"));
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::rrmdir
+     */
     public function testRrmdirDeep()
     {
-        $tmpdir = tmpdir();
+        $tmpdir = BagItUtils::tmpdir();
 
         mkdir($tmpdir);
         mkdir("$tmpdir/sub");
@@ -120,7 +168,7 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
 
         $this->assertFileExists("$tmpdir/sub/c");
 
-        rrmdir($tmpdir);
+        BagItUtils::rrmdir($tmpdir);
 
         $this->assertFalse(file_exists($tmpdir));
         $this->assertFalse(file_exists("$tmpdir/sub"));
@@ -129,29 +177,45 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         $this->assertFalse(file_exists("$tmpdir/sub/c"));
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::rrmdir
+     */
     public function testRrmdirFile()
     {
-        $tmpdir = tmpdir();
+        $tmpdir = BagItUtils::tmpdir();
         touch($tmpdir);
 
         $this->assertFileExists($tmpdir);
-        rrmdir($tmpdir);
+        BagItUtils::rrmdir($tmpdir);
         $this->assertFileExists($tmpdir);
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::tmpdir
+     */
     public function testTmpdir()
     {
-        $tmpdir = tmpdir();
+        $tmpdir = BagItUtils::tmpdir();
         $this->assertFalse(file_exists($tmpdir));
         $this->assertTrue(strpos($tmpdir, sys_get_temp_dir()) !== false);
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::tmpdir
+     */
     public function testTmpdirPrefix()
     {
-        $tmpdir = tmpdir('test_');
+        $tmpdir = BagItUtils::tmpdir('test_');
         $this->assertStringStartsWith('test_', basename($tmpdir));
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::seenAtKey
+     */
     public function testSeenAtKeyIntegerKey()
     {
         $data = array(
@@ -160,11 +224,15 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
             array('g', 'h', 'i')
         );
 
-        $this->assertTrue(seenAtKey($data, 0, 'a'));
-        $this->assertTrue(seenAtKey($data, 1, 'e'));
-        $this->assertTrue(seenAtKey($data, 2, 'i'));
+        $this->assertTrue(BagItUtils::seenAtKey($data, 0, 'a'));
+        $this->assertTrue(BagItUtils::seenAtKey($data, 1, 'e'));
+        $this->assertTrue(BagItUtils::seenAtKey($data, 2, 'i'));
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::seenAtKey
+     */
     public function testSeenAtKeyStringKey()
     {
         $data = array(
@@ -174,12 +242,16 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
             array('a' => 7, 'z' => 8)
         );
 
-        $this->assertTrue(seenAtKey($data, 'a', 1));
-        $this->assertTrue(seenAtKey($data, 'z', 4));
-        $this->assertTrue(seenAtKey($data, 'a', 5));
-        $this->assertTrue(seenAtKey($data, 'z', 8));
+        $this->assertTrue(BagItUtils::seenAtKey($data, 'a', 1));
+        $this->assertTrue(BagItUtils::seenAtKey($data, 'z', 4));
+        $this->assertTrue(BagItUtils::seenAtKey($data, 'a', 5));
+        $this->assertTrue(BagItUtils::seenAtKey($data, 'z', 8));
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::seenAtKey
+     */
     public function testSeenAtKeyFail()
     {
         $data = array(
@@ -189,19 +261,23 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
             array('a' => 7, 'z' => 8)
         );
 
-        $this->assertFalse(seenAtKey($data, 'a', 2));
-        $this->assertFalse(seenAtKey($data, 'z', 5));
-        $this->assertFalse(seenAtKey($data, 'a', 6));
-        $this->assertFalse(seenAtKey($data, 'z', 9));
-        $this->assertFalse(seenAtKey($data, 'm', 13));
+        $this->assertFalse(BagItUtils::seenAtKey($data, 'a', 2));
+        $this->assertFalse(BagItUtils::seenAtKey($data, 'z', 5));
+        $this->assertFalse(BagItUtils::seenAtKey($data, 'a', 6));
+        $this->assertFalse(BagItUtils::seenAtKey($data, 'z', 9));
+        $this->assertFalse(BagItUtils::seenAtKey($data, 'm', 13));
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::saveUrl
+     */
     public function testSaveUrl()
     {
-        $tmpdir = tmpdir();
+        $tmpdir = BagItUtils::tmpdir();
         mkdir($tmpdir);
 
-        saveUrl('http://www.google.com', "$tmpdir/google.html");
+        BagItUtils::saveUrl('http://www.google.com', "$tmpdir/google.html");
 
         $this->assertFileExists("$tmpdir/google.html");
         $this->assertContains(
@@ -210,67 +286,93 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::findFirstExisting
+     */
     public function testFindFirstExistingPass()
     {
-        $tmpdir = tmpdir();
+        $tmpdir = BagItUtils::tmpdir();
         mkdir($tmpdir);
 
         touch("$tmpdir/c");
 
         $this->assertEquals(
             "$tmpdir/c",
-            findFirstExisting(array("$tmpdir/a", "$tmpdir/b", "$tmpdir/c"))
+            BagItUtils::findFirstExisting(array("$tmpdir/a", "$tmpdir/b", "$tmpdir/c"))
         );
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::findFirstExisting
+     */
     public function testFindFirstExistingFail()
     {
-        $tmpdir = tmpdir();
+        $tmpdir = BagItUtils::tmpdir();
         mkdir($tmpdir);
 
         touch("$tmpdir/c");
 
         $this->assertNull(
-            findFirstExisting(array("$tmpdir/a", "$tmpdir/b", "$tmpdir/d"))
+            BagItUtils::findFirstExisting(array("$tmpdir/a", "$tmpdir/b", "$tmpdir/d"))
         );
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::findFirstExisting
+     */
     public function testFindFirstExistingDefault()
     {
-        $tmpdir = tmpdir();
+        $tmpdir = BagItUtils::tmpdir();
         mkdir($tmpdir);
 
         touch("$tmpdir/c");
 
         $this->assertEquals(
             "$tmpdir/default",
-            findFirstExisting(array("$tmpdir/a", "$tmpdir/b", "$tmpdir/d"),
-                              "$tmpdir/default")
+            BagItUtils::findFirstExisting(
+                array("$tmpdir/a", "$tmpdir/b", "$tmpdir/d"),
+                "$tmpdir/default"
+            )
         );
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::readFileText
+     */
     public function testReadFileText()
     {
         $this->assertEquals(
             "BagIt-Version: 0.96\n" .
             "Tag-File-Character-Encoding: UTF-8\n",
-            readFileText(__DIR__ . '/TestBag/bagit.txt', 'UTF-8')
+            BagItUtils::readFileText(__DIR__ . '/TestBag/bagit.txt', 'UTF-8')
         );
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::readLines
+     */
     public function testReadLines()
     {
-        $lines = readLines(__DIR__ . '/TestBag/bagit.txt', 'UTF-8');
+        $lines = BagItUtils::readLines(__DIR__ . '/TestBag/bagit.txt', 'UTF-8');
         $this->assertEquals(2, count($lines));
         $this->assertEquals("BagIt-Version: 0.96", $lines[0]);
         $this->assertEquals("Tag-File-Character-Encoding: UTF-8", $lines[1]);
     }
 
+    /**
+     * @group BagItUtils
+     * @covers ::writeFileText
+     */
     public function testWriteFileText()
     {
-        $tmpfile = tmpdir();
+        $tmpfile = BagItUtils::tmpdir();
 
-        writeFileText(
+        BagItUtils::writeFileText(
             $tmpfile,
             'UTF-8',
             "This is some text.\nYep, it sure is.\n"
@@ -282,43 +384,63 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    public function testBagIt_sanitizeFileNameWhiteSpace()
+    /**
+     * @group BagItUtils
+     * @covers ::sanitizeFileName
+     */
+    public function testSanitizeFileNameWhiteSpace()
     {
         $this->assertEquals(
             "this_contained_significant_whitespace_at_one_time",
-            BagIt_sanitizeFileName("this contained\tsignificant\t" .
+            BagItUtils::sanitizeFileName("this contained\tsignificant\t" .
                                    "whitespace   at      one        time")
         );
     }
 
-    public function testBagIt_sanitizeFileNameRemove()
+    /**
+     * @group BagItUtils
+     * @covers ::sanitizeFileName
+     */
+    public function testSanitizeFileNameRemove()
     {
         $this->assertEquals(
             'thisthatwow',
-            BagIt_sanitizeFileName("this&that###wow!!!!~~~???")
+            BagItUtils::sanitizeFileName("this&that###wow!!!!~~~???")
         );
     }
 
-    public function testBagIt_sanitizeFileNameDevs()
+    /**
+     * @group BagItUtils
+     * @covers ::sanitizeFileName
+     */
+    public function testSanitizeFileNameDevs()
     {
-        $this->assertStringStartsWith('nul_', BagIt_sanitizeFileName('NUL'));
-        $this->assertStringStartsWith('aux_', BagIt_sanitizeFileName('AUX'));
-        $this->assertStringStartsWith('com3_', BagIt_sanitizeFileName('COM3'));
-        $this->assertStringStartsWith('lpt6_', BagIt_sanitizeFileName('LPT6'));
+        $this->assertStringStartsWith('nul_', BagItUtils::sanitizeFileName('NUL'));
+        $this->assertStringStartsWith('aux_', BagItUtils::sanitizeFileName('AUX'));
+        $this->assertStringStartsWith('com3_', BagItUtils::sanitizeFileName('COM3'));
+        $this->assertStringStartsWith('lpt6_', BagItUtils::sanitizeFileName('LPT6'));
     }
 
-    public function testBagIt_sanitizeFileName()
+    /**
+     * @group BagItUtils
+     * @covers ::sanitizeFileName
+     */
+    public function testSanitizeFileName()
     {
         $this->assertEquals(
             'this-is-ok.txt',
-            BagIt_sanitizeFileName('this-is-ok.txt')
+            BagItUtils::sanitizeFileName('this-is-ok.txt')
         );
     }
 
-    public function testBagIt_readBagItFile()
+    /**
+     * @group BagItUtils
+     * @covers ::readBagItFile
+     */
+    public function testReadBagItFile()
     {
         $filename = __DIR__ . '/TestBag/bagit.txt';
-        list($versions, $encoding, $errors) = BagIt_readBagItFile($filename);
+        list($versions, $encoding, $errors) = BagItUtils::readBagItFile($filename);
 
         $this->assertEquals(2, count($versions));
         $this->assertEquals(0, $versions['major']);
@@ -327,15 +449,19 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(0, count($errors));
     }
 
-    public function testBagIt_readBagItFileNoVersion()
+    /**
+     * @group BagItUtils
+     * @covers ::readBagItFile
+     */
+    public function testReadBagItFileNoVersion()
     {
-        $tmpfile = tmpdir('bagit_');
+        $tmpfile = BagItUtils::tmpdir('bagit_');
         file_put_contents(
             $tmpfile,
             "Tag-File-Character-Encoding: ISO-8859-1\n"
         );
 
-        list($versions, $encoding, $errors) = BagIt_readBagItFile($tmpfile);
+        list($versions, $encoding, $errors) = BagItUtils::readBagItFile($tmpfile);
         $this->assertNull($versions);
         $this->assertEquals('ISO-8859-1', $encoding);
         $this->assertEquals(1, count($errors));
@@ -346,15 +472,19 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    public function testBagIt_readBagItFileNoEncoding()
+    /**
+     * @group BagItUtils
+     * @covers ::readBagItFile
+     */
+    public function testReadBagItFileNoEncoding()
     {
-        $tmpfile = tmpdir('bagit_');
+        $tmpfile = BagItUtils::tmpdir('bagit_');
         file_put_contents(
             $tmpfile,
             "BagIt-Version: 0.96\n"
         );
 
-        list($versions, $encoding, $errors) = BagIt_readBagItFile($tmpfile);
+        list($versions, $encoding, $errors) = BagItUtils::readBagItFile($tmpfile);
         $this->assertEquals(2, count($versions));
         $this->assertEquals(0, $versions['major']);
         $this->assertEquals(96, $versions['minor']);
@@ -366,10 +496,14 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(0, count($errors));
     }
 
-    public function testBagIt_readBagItFileMissing()
+    /**
+     * @group BagItUtils
+     * @covers ::readBagItFile
+     */
+    public function testReadBagItFileMissing()
     {
         $filename = __DIR__ . '/doesn-not-exist';
-        list($versions, $encoding, $errors) = BagIt_readBagItFile($filename);
+        list($versions, $encoding, $errors) = BagItUtils::readBagItFile($filename);
 
         $this->assertEquals(2, count($versions));
         $this->assertEquals(0, $versions['major']);
@@ -378,47 +512,67 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(0, count($errors));
     }
 
-    public function testBagIt_parseVersionStringPass()
+    /**
+     * @group BagItUtils
+     * @covers ::parseVersionString
+     */
+    public function testParseVersionStringPass()
     {
         $data =
             "BagIt-Version: 0.96\n" .
             "Tag-File-Character-Encoding: UTF-8\n";
-        $versions = BagIt_parseVersionString($data);
+        $versions = BagItUtils::parseVersionString($data);
 
         $this->assertEquals(2, count($versions));
         $this->assertEquals(0, $versions['major']);
         $this->assertEquals(96, $versions['minor']);
     }
 
-    public function testBagIt_parseVersionStringFail()
+    /**
+     * @group BagItUtils
+     * @covers ::parseVersionString
+     */
+    public function testParseVersionStringFail()
     {
         $data =
             "BagIt-Versions: 0.96\n" .
             "Tag-File-Character-Encoding: UTF-8\n";
-        $versions = BagIt_parseVersionString($data);
+        $versions = BagItUtils::parseVersionString($data);
 
         $this->assertNull($versions);
     }
 
-    public function testBagIt_parseEncodingStringPass()
+    /**
+     * @group BagItUtils
+     * @covers ::parseEncodingString
+     */
+    public function testParseEncodingStringPass()
     {
         $data =
             "BagIt-Version: 0.96\n" .
             "Tag-File-Character-Encoding: UTF-8\n";
-        $encoding = BagIt_parseEncodingString($data);
+        $encoding = BagItUtils::parseEncodingString($data);
         $this->assertEquals('UTF-8', $encoding);
     }
 
-    public function testBagIt_parseEncodingStringFail()
+    /**
+     * @group BagItUtils
+     * @covers ::parseEncodingString
+     */
+    public function testParseEncodingStringFail()
     {
         $data =
             "BagIt-Version: 0.96\n" .
             "Tag-File-Character-encoding: UTF-8\n";
-        $encoding = BagIt_parseEncodingString($data);
+        $encoding = BagItUtils::parseEncodingString($data);
         $this->assertNull($encoding);
     }
 
-    private function _clearTagManifest() {
+    /**
+     * Utility
+     */
+    private function clearTagManifest()
+    {
         // Other tests add a tagmanifest-sha1.txt, which isn't in the
         // archives, at the end of the list. Rm it.
         $rmfile = __DIR__ . '/TestBag/tagmanifest-sha1.txt';
@@ -427,43 +581,23 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
         }
     }
 
-    public function testBagIt_uncompressBagZip()
+    /**
+     * @group BagItUtils
+     * @covers ::uncompressBag
+     */
+    public function testUncompressBagZip()
     {
         $zipfile = __DIR__ . '/TestBag.zip';
-        $output = BagIt_uncompressBag($zipfile);
+        $output = BagItUtils::uncompressBag($zipfile);
 
         $this->assertFileExists($output);
         $this->assertTrue(strpos($output, sys_get_temp_dir()) !== false);
 
-        $this->_clearTagManifest();
+        $this->clearTagManifest();
 
-        $bagFiles = rls(__DIR__ . '/TestBag');
+        $bagFiles = BagItUtils::rls(__DIR__ . '/TestBag');
         sort($bagFiles);
-        $outFiles = rls($output);
-        sort($outFiles);
-
-        $this->assertEquals(count($bagFiles), count($outFiles));
-        for ($i=0; $i<count($outFiles); $i++) {
-            $this->assertEquals(
-                basename($bagFiles[$i]),
-                basename($outFiles[$i])
-            );
-        }
-    }
-
-    public function testBagIt_uncompressBagTar()
-    {
-        $tarfile = __DIR__ . '/TestBag.tgz';
-        $output = BagIt_uncompressBag($tarfile);
-
-        $this->assertFileExists($output);
-        $this->assertTrue(strpos($output, sys_get_temp_dir()) !== false);
-
-        $this->_clearTagManifest();
-
-        $bagFiles = rls(__DIR__ . '/TestBag');
-        sort($bagFiles);
-        $outFiles = rls($output);
+        $outFiles = BagItUtils::rls($output);
         sort($outFiles);
 
         $this->assertEquals(count($bagFiles), count($outFiles));
@@ -476,11 +610,41 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException ErrorException
+     * @group BagItUtils
+     * @covers ::uncompressBag
      */
-    public function testBagIt_uncompressBagError()
+    public function testUncompressBagTar()
     {
-        BagIt_uncompressBag(__DIR__ . '/TestBag');
+        $tarfile = __DIR__ . '/TestBag.tgz';
+        $output = BagItUtils::uncompressBag($tarfile);
+
+        $this->assertFileExists($output);
+        $this->assertTrue(strpos($output, sys_get_temp_dir()) !== false);
+
+        $this->clearTagManifest();
+
+        $bagFiles = BagItUtils::rls(__DIR__ . '/TestBag');
+        sort($bagFiles);
+        $outFiles = BagItUtils::rls($output);
+        sort($outFiles);
+
+        $this->assertEquals(count($bagFiles), count($outFiles));
+        for ($i=0; $i<count($outFiles); $i++) {
+            $this->assertEquals(
+                basename($bagFiles[$i]),
+                basename($outFiles[$i])
+            );
+        }
+    }
+
+    /**
+     * @expectedException \ErrorException
+     * @group BagItUtils
+     * @covers ::uncompressBag
+     */
+    public function testUncompressBagError()
+    {
+        BagItUtils::uncompressBag(__DIR__ . '/TestBag');
     }
 
     /* TODO: Fix these so that they're testing correctly.
@@ -505,25 +669,37 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
     }
      */
 
-    public function testBagIt_validateExistsPass()
+    /**
+     * @group BagItUtils
+     * @covers ::validateExists
+     */
+    public function testValidateExistsPass()
     {
         $errors = array();
-        $this->assertTrue(BagIt_validateExists(__FILE__, $errors));
+        $this->assertTrue(BagItUtils::validateExists(__FILE__, $errors));
         $this->assertEquals(0, count($errors));
     }
 
-    public function testBagIt_validateExistsFail()
+    /**
+     * @group BagItUtils
+     * @covers ::validateExists
+     */
+    public function testValidateExistsFail()
     {
         $errors = array();
         $this->assertFalse(
-            BagIt_validateExists(__DIR__ . '/not-here', $errors)
+            BagItUtils::validateExists(__DIR__ . '/not-here', $errors)
         );
         $this->assertEquals(1, count($errors));
         $this->assertEquals('not-here', $errors[0][0]);
         $this->assertEquals('not-here does not exist.', $errors[0][1]);
     }
 
-    public function testBagIt_parseBaseInfoEmptyLine()
+    /**
+     * @group BagItUtils
+     * @covers ::parseBagInfo
+     */
+    public function testParseBaseInfoEmptyLine()
     {
         $lines = array(
             'some: here',
@@ -531,12 +707,16 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
             'other: there'
         );
 
-        $info = BagIt_parseBagInfo($lines);
+        $info = BagItUtils::parseBagInfo($lines);
         $this->assertEquals('here', $info['some']);
         $this->assertEquals('there', $info['other']);
     }
 
-    public function testBagIt_parseBaseInfoContinued()
+    /**
+     * @group BagItUtils
+     * @covers ::parseBagInfo
+     */
+    public function testParseBaseInfoContinued()
     {
         $lines = array(
             'some: here',
@@ -545,23 +725,24 @@ class BagItUtilsTest extends PHPUnit_Framework_TestCase
             "\tand here"
         );
 
-        $info = BagIt_parseBagInfo($lines);
+        $info = BagItUtils::parseBagInfo($lines);
         $this->assertEquals('here and there', $info['some']);
         $this->assertEquals('there and here', $info['other']);
     }
 
-    public function testBagIt_parseBaseInfoStandard()
+    /**
+     * @group BagItUtils
+     * @covers ::parseBagInfo
+     */
+    public function testParseBaseInfoStandard()
     {
         $lines = array(
             'some: here',
             'other: there'
         );
 
-        $info = BagIt_parseBagInfo($lines);
+        $info = BagItUtils::parseBagInfo($lines);
         $this->assertEquals('here', $info['some']);
         $this->assertEquals('there', $info['other']);
     }
-
 }
-
-?>

@@ -1,13 +1,9 @@
 <?php
-/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
-
 /**
  * This is a PHP implementation of the {@link
  * https://wiki.ucop.edu/display/Curation/BagIt BagIt specification}. Really,
  * it is a port of {@link https://github.com/ahankinson/pybagit/ PyBagIt} for
  * PHP.
- *
- * PHP version 5
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy
@@ -16,17 +12,9 @@
  * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
  * CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
- *
- * @category  FileUtils
- * @package   Bagit
- * @author    Eric Rochester <erochest@gmail.com>
- * @author    Wayne Graham <wayne.graham@gmail.com>
- * @copyright 2011 The Board and Visitors of the University of Virginia
- * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
- * @version   0.2.1
- * @link      https://github.com/erochest/BagItPHP
- *
  */
+
+namespace ScholarsLab\BagIt;
 
 /**
  * This is a utility class for managing manifest files.
@@ -34,13 +22,14 @@
  * These files map file names to hashes.
  *
  * @category  FileUtils
- * @package   Bagit
+ * @package   ScholarsLab\BagIt
  * @author    Eric Rochester <erochest@gmail.com>
  * @author    Wayne Graham <wayne.graham@gmail.com>
+ * @author    Jared Whiklo <jwhiklo@gmail.com>
  * @copyright 2011 The Board and Visitors of the University of Virginia
  * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
- * @version   Release: <package_version>
- * @link      https://github.com/erochest/BagItPHP
+ * @version   Release: 1.0.0
+ * @link      https://github.com/whikloj/BagItPHP
  */
 class BagItManifest
 {
@@ -48,40 +37,61 @@ class BagItManifest
     //{{{ properties
 
     /**
-     * If given, this is the path prefix to strip off of files before using 
+     * If given, this is the path prefix to strip off of files before using
      * them as keys in the hash mapping (data property).
      *
      * @var string
      */
-    var $pathPrefix;
+    private $pathPrefix;
 
     /**
      * The absolute file name for the manifest file.
      *
      * @var string
      */
-    var $fileName;
+    private $fileName;
 
     /**
-     * The hash encoding to use. This must be one of 'sha1' or 'md5'.
+     * The hash encoding to use. This must be one of self::HASH_ALGORITHMS
+     * array values.
      *
      * @var string
      */
-    var $hashEncoding;
+    private $hashEncoding;
 
     /**
      * The file encoding to use when reading or writing the manifest file.
      *
      * @var string
      */
-    var $fileEncoding;
+    private $fileEncoding;
 
     /**
      * A mapping of relative path name ($pathPrefix removed) to hash.
      *
      * @var array
      */
-    var $data;
+    private $data;
+
+    /**
+     * Array of BagIt approved names of hash algorithms to the PHP names of
+     * those hash algorithms for use with hash_file().
+     *
+     * @see https://tools.ietf.org/html/rfc8493#section-2.4
+     *
+     * @var array
+     */
+    const HASH_ALGORITHMS = array(
+      'md5' => 'md5',
+      'sha1' => 'sha1',
+      'sha256' => 'sha256',
+      'sha384' => 'sha384',
+      'sha512' => 'sha512',
+      'sha3224' => 'sha3-224',
+      'sha3256' => 'sha3-256',
+      'sha3384' => 'sha3-384',
+      'sha3512' => 'sha3-512',
+    );
 
     //}}}
 
@@ -91,25 +101,27 @@ class BagItManifest
      * Define a new BagItManifest instance.
      *
      * @param string $fileName     This is the file name for the manifest file.
-     * @param string $pathPrefix   This is the prefix to remove from the 
-     * beginning of file names before they're used as keys in the hash mapping. 
+     * @param string $pathPrefix   This is the prefix to remove from the
+     * beginning of file names before they're used as keys in the hash mapping.
      * The default is an empty string (i.e., nothing removed).
-     * @param string $fileEncoding This is the encoding to use when reading or 
+     * @param string $fileEncoding This is the encoding to use when reading or
      * writing the manifest file. The default is 'UTF-8'.
      */
     public function __construct(
-        $fileName, $pathPrefix='', $fileEncoding='UTF-8'
+        $fileName,
+        $pathPrefix = '',
+        $fileEncoding = 'UTF-8'
     ) {
         $this->fileName = $fileName;
         $this->pathPrefix = $pathPrefix;
         $this->fileEncoding = $fileEncoding;
         $this->data = array();
 
-        $this->hashEncoding = $this->_parseHashEncoding($fileName);
+        $this->hashEncoding = $this->parseHashEncoding($fileName);
 
         if (file_exists($fileName)) {
             $this->read();
-        } else if (is_dir(dirname($this->fileName))) {
+        } elseif (is_dir(dirname($this->fileName))) {
             touch($this->fileName);
         }
     }
@@ -117,23 +129,22 @@ class BagItManifest
     /**
      * This reads the data from the file name.
      *
-     * @param string $fileName This is the file name to read. It defaults to 
-     * the current value of the $fileName property. If given, it will set the 
+     * @param string $fileName This is the file name to read. It defaults to
+     * the current value of the $fileName property. If given, it will set the
      * value of the property also.
      *
      * @return array The data read.
      */
-    public function read($fileName=null)
+    public function read($fileName = null)
     {
-        $this->_resetFileName($fileName);
+        $this->resetFileName($fileName);
 
         $manifest = array();
-        $hashLen = ($this->hashEncoding == 'sha1') ? 40 : 32;
-        $lines = readLines($this->fileName, $this->fileEncoding);
+        $lines = BagItUtils::readLines($this->fileName, $this->fileEncoding);
 
         foreach ($lines as $line) {
-            $hash = trim(substr($line, 0, $hashLen));
-            $payload = trim(substr($line, $hashLen));
+            $line = trim($line);
+            list($hash, $payload) = preg_split('~\s+~', $line);
 
             if (strlen($payload) > 0) {
                 $manifest[$payload] = $hash;
@@ -169,7 +180,7 @@ class BagItManifest
         foreach ($fileList as $file) {
             if (file_exists($file)) {
                 $hash = $this->calculateHash($file);
-                $csums[$this->_makeRelative($file)] = $hash;
+                $csums[$this->makeRelative($file)] = $hash;
             }
         }
 
@@ -189,21 +200,21 @@ class BagItManifest
      */
     public function calculateHash($fileName)
     {
-        return hash_file($this->hashEncoding, $fileName);
+        return hash_file($this->getPhpHashName(), $fileName);
     }
 
     /**
      * This writes the data to the manifest file.
      *
-     * @param string $fileName This is the file name to write to. It defaults 
-     * to the current value of the $fileName property. If given, it will set 
+     * @param string $fileName This is the file name to write to. It defaults
+     * to the current value of the $fileName property. If given, it will set
      * the value of the property also.
      *
      * @return void
      */
-    public function write($fileName=null)
+    public function write($fileName = null)
     {
-        $this->_resetFileName($fileName);
+        $this->resetFileName($fileName);
 
         ksort($this->data);
         $output = array();
@@ -212,7 +223,7 @@ class BagItManifest
             array_push($output, "$hash $path\n");
         }
 
-        writeFileText(
+        BagItUtils::writeFileText(
             $this->fileName,
             $this->fileEncoding,
             implode('', $output)
@@ -222,7 +233,7 @@ class BagItManifest
     /**
      * This returns the hash for a file.
      *
-     * @param string $fileName This can be either the absolute file name or the 
+     * @param string $fileName This can be either the absolute file name or the
      * file name without the path prefix.
      *
      * @return string The file's hash.
@@ -231,8 +242,8 @@ class BagItManifest
     {
         if (array_key_exists($fileName, $this->data)) {
             return $this->data[$fileName];
-        } else if (array_key_exists($this->_makeRelative($fileName), $this->data)) {
-            return $this->data[$this->_makeRelative($fileName)];
+        } elseif (array_key_exists($this->makeRelative($fileName), $this->data)) {
+            return $this->data[$this->makeRelative($fileName)];
         } else {
             return null;
         }
@@ -259,9 +270,20 @@ class BagItManifest
     }
 
     /**
+     * This returns the path prefix for this manifest file.
+     *
+     * @return string The path prefix.
+     * @author Jared Whiklo <jwhiklo@gmail.com>
+     */
+    public function getPathPrefix()
+    {
+        return $this->pathPrefix;
+    }
+
+    /**
      * This returns the file encoding.
      *
-     * @return string The encoding to use when reading or writing the manifest 
+     * @return string The encoding to use when reading or writing the manifest
      * file.
      */
     public function getFileEncoding()
@@ -272,12 +294,10 @@ class BagItManifest
     /**
      * This sets the file encoding.
      *
-     * The value for this should be either 'sha1' or 'md5', but this doesn't 
-     * verify that.
+     * The value for this should be a valid file encoding scheme like 'UTF-8',
+     * but doesn't verify it.
      *
-     * This also re-sets the manifest file name based upon this value.
-     *
-     * @param string $fileEncoding The new encoding to use when reading or 
+     * @param string $fileEncoding The new encoding to use when reading or
      * writing the manifest file.
      *
      * @return void
@@ -300,9 +320,8 @@ class BagItManifest
     /**
      * This sets the hash encoding.
      *
-     * @param string $hashEncoding This sets the encoding to use when creating 
-     * the manifest hash data. This must be either 'md5' or 'sha1'; however, it 
-     * does not test for this.
+     * @param string $hashEncoding This sets the encoding to use when creating
+     * the manifest hash data.
      *
      *  @return void
      */
@@ -363,7 +382,7 @@ class BagItManifest
                     $errors,
                     array($fileName, 'Missing data file.')
                 );
-            } else if ($this->calculateHash($fullPath) != $hash) {
+            } elseif ($this->calculateHash($fullPath) != $hash) {
                 array_push(
                     $errors,
                     array($fileName, 'Checksum mismatch.')
@@ -385,13 +404,13 @@ class BagItManifest
      * File names should be in the format '*-{sha1,md5}.txt'.
      *
      * @param string $filename The file name to parse.
-     * 
+     *
      * @return string The hash encoding, if one is found.
      */
-    private function _parseHashEncoding($filename)
+    private function parseHashEncoding($filename)
     {
         $matches = array();
-        if (preg_match('/-(sha1|md5)\.txt$/', $filename, $matches)) {
+        if (preg_match('/-(\w+)\.txt$/', $filename, $matches)) {
             return $matches[1];
         }
         return null;
@@ -400,7 +419,7 @@ class BagItManifest
     /**
      * This returns the file name to use.
      *
-     * If a file name is passed into this function, that will be used. 
+     * If a file name is passed into this function, that will be used.
      * Otherwise, the current value of the $fileName property will be used.
      *
      * @param string $fileName If given, then this file name will be used;
@@ -408,17 +427,17 @@ class BagItManifest
      *
      * @return string The file name to use for the $fileName property.
      */
-    private function _resetFileName($fileName=null)
+    private function resetFileName($fileName = null)
     {
         if ($fileName === null) {
             return $this->fileName;
         } else {
-            $this->hashEncoding = $this->_parseHashEncoding($fileName);
+            $this->hashEncoding = $this->parseHashEncoding($fileName);
             $this->fileName = $fileName;
             return $fileName;
         }
     }
-    
+
     /**
      * This takes a file name and strips the prefix path from it.
      *
@@ -429,7 +448,7 @@ class BagItManifest
      *
      * @return string The file name with the $pathPrefix.
      */
-    private function _makeRelative($filename)
+    private function makeRelative($filename)
     {
         $rel = substr($filename, strlen($this->pathPrefix));
         if (! $rel) {
@@ -438,18 +457,17 @@ class BagItManifest
             return $rel;
         }
     }
+
+    /**
+     * Needed to account for differences in PHP hash to BagIt hash naming.
+     *
+     * i.e. BagIt sha3512 -> PHP sha3-512
+     *
+     * @return string the PHP hash name for the internal hash encoding.
+     */
+    private function getPhpHashName()
+    {
+        return self::HASH_ALGORITHMS[$this->hashEncoding];
+    }
     //}}}
-
 }
-
-
-/*
- * Local variables:
- * tab-width: 4
- * c-basic-offset: 4
- * c-hanging-comment-ender-p: nil
- * End:
- */
-
-
-?>

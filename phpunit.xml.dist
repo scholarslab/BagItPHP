@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit backupGlobals="false"
+         backupStaticAttributes="false"
+         colors="false"
+         syntaxCheck="false"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         processIsolation="false"
+         stopOnFailure="false"
+         bootstrap="./vendor/autoload.php">
+
+  <testsuite name="Bagit">
+    <directory suffix=".php">test</directory>
+  </testsuite>
+  <logging>
+    <log type="coverage-clover" target="clover.xml" />
+  </logging>
+  <filter>
+    <whitelist processUncoveredFilesFromWhitelist="true">
+      <directory suffix=".php">./lib</directory>
+    </whitelist>
+  </filter>
+</phpunit>

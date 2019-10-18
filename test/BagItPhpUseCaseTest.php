@@ -1,13 +1,24 @@
 <?php
 
-require_once 'lib/bagit.php';
+namespace ScholarsLab\BagIt\Test;
+
+use PHPUnit\Framework\TestCase;
+use ScholarsLab\BagIt\BagIt;
+use ScholarsLab\BagIt\BagItUtils;
 
 /**
  * This abuses the unit test framework to do some use case testing.
+ *
+ * @package ScholarsLab\BagIt\Test
  */
-class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
+class BagItPhpUseCaseTest extends TestCase
 {
-    var $to_rm;
+    /**
+     * Things to remove.
+     *
+     * @var array
+     */
+    private $to_rm;
 
     private function queueRm($dirname)
     {
@@ -21,9 +32,8 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
 
     public function tearDown()
     {
-        foreach ($this->to_rm as $dirname)
-        {
-            rrmdir($dirname);
+        foreach ($this->to_rm as $dirname) {
+            BagItUtils::rrmdir($dirname);
         }
     }
 
@@ -38,10 +48,11 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
      * <li>Update the bag; and</li>
      * <li>Package the bag.</li>
      * </ol>
+     * @group BagItUseCase
      */
     public function testBagProducer()
     {
-        $tmpdir = tmpdir();
+        $tmpdir = BagItUtils::tmpdir();
         mkdir($tmpdir);
         $this->queueRm($tmpdir);
 
@@ -54,12 +65,12 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($bag->isExtended());
 
         $bagInfo = $bag->getBagInfo();
-        $this->assertEquals('0.96',  $bagInfo['version']);
+        $this->assertEquals('0.96', $bagInfo['version']);
         $this->assertEquals('UTF-8', $bagInfo['encoding']);
-        $this->assertEquals('sha1',  $bagInfo['hash']);
+        $this->assertEquals('sha1', $bagInfo['hash']);
 
         $this->assertEquals("$tmpbag/data", $bag->getDataDirectory());
-        $this->assertEquals('sha1', $bag->getHashEncoding());
+        $this->assertEquals(array('sha1'), $bag->getHashEncodings());
         $this->assertEquals(0, count($bag->getBagContents()));
         $this->assertEquals(0, count($bag->getBagErrors()));
 
@@ -74,7 +85,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
         );
 
         // 3. Add fetch entries;
-        $bag->fetch->add('http://www.scholarslab.org/', 'data/index.html');
+        $bag->getFetch()->add('http://www.scholarslab.org/', 'data/index.html');
 
         // 4. Update the bag; and
         $bag->update();
@@ -85,33 +96,32 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
 
         // Finally, we need to validate the contents of the package.
         $dest = new BagIt($pkgfile);
-        $this->queueRm($dest->bagDirectory);
+        $this->queueRm($dest->getBagDirectory());
 
         // First, verify that the data files are correct.
         $this->assertEquals(
             "BagIt-Version: 0.96\n" .
             "Tag-File-Character-Encoding: UTF-8\n",
-            file_get_contents($dest->bagitFile)
+            file_get_contents($dest->getBagDirectory() . "/bagit.txt")
         );
 
         // Second, verify that everything was uncompressed OK.
         $dest->validate();
-        $this->assertEquals(0, count($dest->bagErrors));
+        $this->assertEquals(0, count($dest->getBagErrors()));
 
         // Now, check that the file was fetched.
-        $dest->fetch->download();
-        $this->assertFileExists("{$dest->bagDirectory}/data/index.html");
+        $dest->getFetch()->download();
+        $this->assertFileExists("{$dest->getBagDirectory()}/data/index.html");
 
         // Also, check that fibtri.jpg was added in the data/ directory.
         $this->assertFalse(
-            file_exists("{$dest->bagDirectory}/payloads/fibtri.jpg")
+            file_exists("{$dest->getBagDirectory()}/payloads/fibtri.jpg")
         );
-        $this->assertFileExists("{$dest->bagDirectory}/data/payloads/fibtri.jpg");
-
+        $this->assertFileExists("{$dest->getBagDirectory()}/data/payloads/fibtri.jpg");
     }
 
     /**
-     * This is the use case for consuming a bag from someone else. The user 
+     * This is the use case for consuming a bag from someone else. The user
      * does these actions:
      *
      * <ol>
@@ -121,6 +131,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
      * <li>Validate the bag's contents; and</li>
      * <li>Copy items from the bag onto the local disk.</li>
      * </ol>
+     * @group BagItUseCase
      */
     public function testBagConsumer()
     {
@@ -128,17 +139,17 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
 
         // 1. Open the bag;
         $bag = new BagIt($srcbag);
-        $this->queueRm($bag->bagDirectory);
+        $this->queueRm($bag->getBagDirectory());
 
         $this->assertTrue($bag->isValid());
         $this->assertTrue($bag->isExtended());
 
         $bagInfo = $bag->getBagInfo();
-        $this->assertEquals('0.96',  $bagInfo['version']);
+        $this->assertEquals('0.96', $bagInfo['version']);
         $this->assertEquals('UTF-8', $bagInfo['encoding']);
-        $this->assertEquals('sha1',  $bagInfo['hash']);
+        $this->assertEquals('sha1', $bagInfo['hash']);
 
-        $this->assertEquals('sha1', $bag->getHashEncoding());
+        $this->assertEquals(array('sha1'), $bag->getHashEncodings());
         $this->assertEquals(7, count($bag->getBagContents()));
         $this->assertEquals(0, count($bag->getBagErrors()));
 
@@ -147,7 +158,7 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(0, count($bag->getBagErrors()));
 
         // 3. Fetch on-line items in the bag;
-        $bag->fetch->download();
+        $bag->getFetch()->download();
         $bag->update();
         $bag->validate();
         $this->assertEquals(8, count($bag->getBagContents()));
@@ -156,12 +167,11 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(0, count($bag->getBagErrors()));
 
         // 5. Copy items from the bag onto the local disk.
-        $tmpdir = tmpdir();
+        $tmpdir = BagItUtils::tmpdir();
         mkdir($tmpdir);
         $this->queueRm($tmpdir);
 
-        foreach ($bag->getBagContents() as $bagFile)
-        {
+        foreach ($bag->getBagContents() as $bagFile) {
             $basename = basename($bagFile);
             copy($bagFile, "$tmpdir/$basename");
         }
@@ -171,12 +181,8 @@ class BagPhpUseCaseTest extends PHPUnit_Framework_TestCase
             count(scandir($tmpdir))
         );
         $this->assertEquals(
-            count($bag->manifest->getData()) + 2,
+            count($bag->getManifests()['sha1']->getData()) + 2,
             count(scandir($tmpdir))
         );
-
     }
-
 }
-
-?>

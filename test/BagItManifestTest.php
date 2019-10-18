@@ -1,17 +1,36 @@
 <?php
 
-require_once 'lib/bagit_manifest.php';
-require_once 'lib/bagit_utils.php';
+namespace ScholarsLab\BagIt\Test;
 
-class BagItManifestTest extends PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+use ScholarsLab\BagIt\BagItManifest;
+use ScholarsLab\BagIt\BagItUtils;
+
+/**
+ * Class BagItManifestTest
+ * @package ScholarsLab\BagIt\Test
+ * @coversDefaultClass \ScholarsLab\BagIt\BagItManifest
+ */
+class BagItManifestTest extends TestCase
 {
-    var $tmpdir;
-    var $prefix;
-    var $manifest;
+    /**
+     * @var string
+     */
+    private $tmpdir;
+
+    /**
+     * @var string
+     */
+    private $prefix;
+
+    /**
+     * @var \ScholarsLab\BagIt\BagItManifest
+     */
+    private $manifest;
 
     public function setUp()
     {
-        $this->tmpdir = tmpdir();
+        $this->tmpdir = BagItUtils::tmpdir();
         mkdir($this->tmpdir);
 
         $this->prefix = __DIR__ . '/TestBag';
@@ -24,79 +43,112 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
 
     public function tearDown()
     {
-        rrmdir($this->tmpdir);
+        BagItUtils::rrmdir($this->tmpdir);
     }
 
+    /**
+     * Test the path prefix is set correctly.
+     * @group BagItManifest
+     * @covers ::getPathPrefix
+     */
     public function testPathPrefix()
     {
-        $this->assertEquals($this->prefix . '/', $this->manifest->pathPrefix);
+        $this->assertEquals($this->prefix . '/', $this->manifest->getPathPrefix());
     }
 
+    /**
+     * Test settings file encoding works properly.
+     * @group BagItManifest
+     * @covers ::getFileEncoding
+     */
     public function testFileEncoding()
     {
-        $this->assertEquals('UTF-8', $this->manifest->fileEncoding);
+        $this->assertEquals('UTF-8', $this->manifest->getFileEncoding());
 
         $manifest = new BagItManifest(
             "{$this->tmpdir}/manifest-sha1.txt",
             $this->prefix,
             'ISO-8859-1'
         );
-        $this->assertEquals('ISO-8859-1', $manifest->fileEncoding);
+        $this->assertEquals('ISO-8859-1', $manifest->getFileEncoding());
     }
 
+    /**
+     * Test filename is set correctly.
+     * @group BagItManifest
+     * @covers ::getFileName
+     */
     public function testFileName()
     {
         $this->assertEquals(
             "{$this->tmpdir}/manifest-sha1.txt",
-            $this->manifest->fileName
+            $this->manifest->getFileName()
         );
     }
 
+    /**
+     * Test internal data is stored correctly.
+     * @group BagItManifest
+     * @covers ::getData
+     */
     public function testData()
     {
-        $this->assertInternalType('array', $this->manifest->data);
-        $this->assertEquals(7, count($this->manifest->data));
+        $data = $this->manifest->getData();
+
+        $this->assertInternalType('array', $data);
+        $this->assertCount(7, $data);
+
 
         $this->assertEquals(
             '547b21e9c710f562d448a6cd7d32f8257b04e561',
-            $this->manifest->data['data/imgs/109x109xcoins1-150x150.jpg']
+            $data['data/imgs/109x109xcoins1-150x150.jpg']
         );
         $this->assertEquals(
             'fba552acae866d24fb143fef0ddb24efc49b097a',
-            $this->manifest->data['data/imgs/109x109xprosody.png']
+            $data['data/imgs/109x109xprosody.png']
         );
         $this->assertEquals(
             '4beed314513ad81e1f5fad42672a3b1bd3a018ea',
-            $this->manifest->data['data/imgs/110x108xmetaphor1.png']
+            $data['data/imgs/110x108xmetaphor1.png']
         );
         $this->assertEquals(
             '4372383348c55775966bb1deeeb2b758b197e2a1',
-            $this->manifest->data['data/imgs/fellows1-150x150.png']
+            $data['data/imgs/fellows1-150x150.png']
         );
         $this->assertEquals(
             'b8593e2b3c2fa3756d2b206a90c7259967ff6650',
-            $this->manifest->data['data/imgs/fibtriangle-110x110.jpg']
+            $data['data/imgs/fibtriangle-110x110.jpg']
         );
         $this->assertEquals(
             'aec60202453733a976433833c9d408a449f136b3',
-            $this->manifest->data['data/imgs/uvalib.png']
+            $data['data/imgs/uvalib.png']
         );
         $this->assertEquals(
             '0de174b95ebacc2d91b0839cb2874b2e8f604b98',
-            $this->manifest->data['data/README.txt']
+            $data['data/README.txt']
         );
     }
 
+    /**
+     * Test setting hash encoding.
+     * @group BagItManifest
+     * @covers ::getHashEncoding
+     */
     public function testHashEncoding()
     {
-        $this->assertEquals('sha1', $this->manifest->hashEncoding);
+        $this->assertEquals('sha1', $this->manifest->getHashEncoding());
 
         $md5 = "{$this->tmpdir}/manifest-md5.txt";
         touch($md5);
         $md5Manifest = new BagItManifest($md5, $this->prefix);
-        $this->assertEquals('md5', $md5Manifest->hashEncoding);
+        $this->assertEquals('md5', $md5Manifest->getHashEncoding());
     }
 
+    /**
+     * Test loading manifest file data from current file.
+     * @group BagItManifest
+     * @covers ::read
+     */
     public function testRead()
     {
         file_put_contents(
@@ -108,9 +160,9 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
 
         $data = $this->manifest->read();
 
-        $this->assertTrue($this->manifest->data === $data);
+        $this->assertTrue($this->manifest->getData() === $data);
 
-        $this->assertEquals(3, count($data));
+        $this->assertCount(3, $data);
 
         $keys = array_keys($data);
         sort($keys);
@@ -119,6 +171,11 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('file3.txt', $keys[2]);
     }
 
+    /**
+     * Test loading manifest file data from new file.
+     * @group BagItManifest
+     * @covers ::read
+     */
     public function testReadFileName()
     {
         $filename = "{$this->tmpdir}/manifest-md5.txt";
@@ -131,9 +188,9 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
 
         $data = $this->manifest->read($filename);
 
-        $this->assertTrue($this->manifest->data === $data);
+        $this->assertTrue($this->manifest->getData() === $data);
 
-        $this->assertEquals(3, count($data));
+        $this->assertCount(3, $data);
 
         $keys = array_keys($data);
         sort($keys);
@@ -141,59 +198,75 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('file-b.txt', $keys[1]);
         $this->assertEquals('file-c.txt', $keys[2]);
 
-        $this->assertEquals($filename, $this->manifest->fileName);
+        $this->assertEquals($filename, $this->manifest->getFileName());
         $this->assertEquals('md5', $this->manifest->getHashEncoding());
     }
 
+    /**
+     * Test clearing manifest data.
+     * @group BagItManifest
+     * @covers ::clear
+     */
     public function testClear()
     {
         $this->manifest->clear();
 
-        $this->assertEquals(0, count($this->manifest->data));
-        $this->assertEquals(0, filesize($this->manifest->fileName));
+        $this->assertCount(0, $this->manifest->getData());
+        $this->assertEquals(0, filesize($this->manifest->getFileName()));
     }
 
+    /**
+     * Test update manifest and verify it actions.
+     * @group BagItManifest
+     * @covers ::update
+     */
     public function testUpdate()
     {
         // First, clear it out and verify it.
         $this->manifest->clear();
-        $this->assertEquals(0, count($this->manifest->data));
-        $this->assertEquals(0, filesize($this->manifest->fileName));
+        $this->assertCount(0, $this->manifest->getData());
+        $this->assertEquals(0, filesize($this->manifest->getFileName()));
 
         // Now, regenerate it and test.
-        $this->manifest->update(rls("{$this->prefix}/data"));
-        $this->assertEquals(7, count($this->manifest->data));
+        $this->manifest->update(BagItUtils::rls("{$this->prefix}/data"));
+        $this->assertCount(7, $this->manifest->getData());
 
+        $data = $this->manifest->getData();
         $this->assertEquals(
             '547b21e9c710f562d448a6cd7d32f8257b04e561',
-            $this->manifest->data['data/imgs/109x109xcoins1-150x150.jpg']
+            $data['data/imgs/109x109xcoins1-150x150.jpg']
         );
         $this->assertEquals(
             'fba552acae866d24fb143fef0ddb24efc49b097a',
-            $this->manifest->data['data/imgs/109x109xprosody.png']
+            $data['data/imgs/109x109xprosody.png']
         );
         $this->assertEquals(
             '4beed314513ad81e1f5fad42672a3b1bd3a018ea',
-            $this->manifest->data['data/imgs/110x108xmetaphor1.png']
+            $data['data/imgs/110x108xmetaphor1.png']
         );
         $this->assertEquals(
             '4372383348c55775966bb1deeeb2b758b197e2a1',
-            $this->manifest->data['data/imgs/fellows1-150x150.png']
+            $data['data/imgs/fellows1-150x150.png']
         );
         $this->assertEquals(
             'b8593e2b3c2fa3756d2b206a90c7259967ff6650',
-            $this->manifest->data['data/imgs/fibtriangle-110x110.jpg']
+            $data['data/imgs/fibtriangle-110x110.jpg']
         );
         $this->assertEquals(
             'aec60202453733a976433833c9d408a449f136b3',
-            $this->manifest->data['data/imgs/uvalib.png']
+            $data['data/imgs/uvalib.png']
         );
         $this->assertEquals(
             '0de174b95ebacc2d91b0839cb2874b2e8f604b98',
-            $this->manifest->data['data/README.txt']
+            $data['data/README.txt']
         );
     }
 
+    /**
+     * Test calculating file hash.
+     * @group BagItManifest
+     * @covers ::calculateHash
+     */
     public function testCalculateHash()
     {
         $fileName = "{$this->tmpdir}/testCalculateHash";
@@ -205,31 +278,74 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('a5c44171ca6618c6ee24c3f3f3019df8df09a2e0', $hash);
     }
 
+    /**
+     * Test writing data to the default file.
+     *
+     * This test used to make use of access to internal $data, now we read and
+     * write, which might reduce the usefulness of this test.
+     *
+     * @group BagItManifest
+     * @covers ::write
+     */
     public function testWrite()
     {
-        $this->manifest->data = array(
-            'file-1.txt' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-            'file-2.txt' => 'abababababababababababababababababababab',
-            'file-3.txt' => 'abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd'
+
+        $filename = "{$this->tmpdir}/manifest-md5.txt";
+        file_put_contents(
+            $filename,
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa file-1.txt\n" .
+            "abababababababababababababababab file-2.txt\n" .
+            "abcdabcdabcdabcdabcdabcdabcdabcd file-3.txt\n"
         );
+        $this->manifest->read($filename);
+        $data = array(
+            'file-1.txt' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            'file-2.txt' => 'abababababababababababababababab',
+            'file-3.txt' => 'abcdabcdabcdabcdabcdabcdabcdabcd',
+        );
+        $this->assertEquals($data, $this->manifest->getData());
+
+        unlink($filename);
+        $this->assertFileNotExists($filename);
 
         $this->manifest->write();
 
         $this->assertEquals(
-            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa file-1.txt\n" .
-            "abababababababababababababababababababab file-2.txt\n" .
-            "abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd file-3.txt\n",
-            file_get_contents($this->manifest->fileName)
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa file-1.txt\n" .
+            "abababababababababababababababab file-2.txt\n" .
+            "abcdabcdabcdabcdabcdabcdabcdabcd file-3.txt\n",
+            file_get_contents($this->manifest->getFileName())
         );
     }
 
+    /**
+     * Test writing data to the specific file.
+     *
+     * This test used to make use of access to internal $data, now we read and
+     * write, which might reduce the usefulness of this test.
+     *
+     * @group BagItManifest
+     * @covers ::write
+     */
     public function testWriteFileName()
     {
-        $this->manifest->data = array(
+        $data = array(
             'file-1.txt' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
             'file-2.txt' => 'abababababababababababababababababababab',
             'file-3.txt' => 'abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd'
         );
+        $file_contents = '';
+        foreach ($data as $key => $datum) {
+            $file_contents .= "{$datum} {$key}\n";
+        }
+
+        $firstFile = "{$this->tmpdir}/test-sha1.txt";
+
+        file_put_contents($firstFile, $file_contents);
+
+        $this->manifest->read($firstFile);
+
+        unlink($firstFile);
 
         $fileName = "{$this->tmpdir}/writetest-sha1.txt";
         $this->manifest->write($fileName);
@@ -240,9 +356,14 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
             "abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd file-3.txt\n",
             file_get_contents($fileName)
         );
-        $this->assertEquals($fileName, $this->manifest->fileName);
+        $this->assertEquals($fileName, $this->manifest->getFileName());
     }
 
+    /**
+     * Test getting hashes for individual files using relative file paths.
+     * @group BagItManifest
+     * @covers ::getHash
+     */
     public function testGetHash()
     {
         $this->assertEquals(
@@ -275,11 +396,21 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * Test getting hash for missing file.
+     * @group BagItManifest
+     * @covers ::getHash
+     */
     public function testGetHashMissing()
     {
         $this->assertNull($this->manifest->getHash('data/missing'));
     }
 
+    /**
+     * Test getting hashes for individual files using absolute file paths.
+     * @group BagItManifest
+     * @covers ::getHash
+     */
     public function testGetHashAbsolute()
     {
         $pre = $this->prefix;
@@ -314,6 +445,11 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * Test getting data.
+     * @group BagItManifest
+     * @covers ::getData
+     */
     public function testGetData()
     {
         $data = $this->manifest->getData();
@@ -351,6 +487,11 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * Test getFileName
+     * @group BagItManifest
+     * @covers ::getFileName
+     */
     public function testGetFileName()
     {
         $this->assertEquals(
@@ -359,6 +500,11 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * Tests getting of file encoding via methods.
+     * @group BagItManifest
+     * @covers ::getFileEncoding
+     */
     public function testGetFileEncoding()
     {
         $this->assertEquals('UTF-8', $this->manifest->getFileEncoding());
@@ -371,12 +517,23 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('ISO-8859-1', $manifest->getFileEncoding());
     }
 
+    /**
+     * Test setting file encoding via methods.
+     * @group BagItManifest
+     * @covers ::setFileEncoding
+     */
     public function testSetFileEncoding()
     {
+        $this->assertEquals('UTF-8', $this->manifest->getFileEncoding());
         $this->manifest->setFileEncoding('ISO-8859-1');
-        $this->assertEquals('ISO-8859-1', $this->manifest->fileEncoding);
+        $this->assertEquals('ISO-8859-1', $this->manifest->getFileEncoding());
     }
 
+    /**
+     * Test getting hash encoding set by manifest constructor.
+     * @group BagItManifest
+     * @covers ::getHashEncoding
+     */
     public function testGetHashEncoding()
     {
         $this->assertEquals('sha1', $this->manifest->getHashEncoding());
@@ -387,45 +544,68 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('md5', $md5Manifest->getHashEncoding());
     }
 
-    private function _testSetHashEncoding($hashEncoding) {
-        $fileName = $this->manifest->fileName;
+    /**
+     * Utility to set hash encoding.
+     * @param $hashEncoding
+     */
+    private function setHashEncodingUtil($hashEncoding)
+    {
+        $fileName = $this->manifest->getFileName();
 
         $this->manifest->setHashEncoding($hashEncoding);
 
         $this->assertEquals($hashEncoding, $this->manifest->getHashEncoding());
         $this->assertEquals(
             "{$this->tmpdir}/manifest-{$hashEncoding}.txt",
-            $this->manifest->fileName
+            $this->manifest->getFileName()
         );
 
-        if ($fileName != $this->manifest->fileName) {
+        if ($fileName != $this->manifest->getFileName()) {
             $this->assertFalse(file_exists($fileName));
         }
-        $this->assertFileExists($this->manifest->fileName);
+        $this->assertFileExists($this->manifest->getFileName());
     }
 
-    public function testSetHashEncodingMD5()
+    /**
+     * Test setting all valid hash algorithms.
+     * @group BagItManifest
+     * @covers ::setHashEncoding
+     */
+    public function testSetHashEncoding()
     {
-        $this->_testSetHashEncoding('md5');
+        $algorithms = array_keys(BagItManifest::HASH_ALGORITHMS);
+        foreach ($algorithms as $algorithm) {
+            $this->setHashEncodingUtil($algorithm);
+        }
     }
 
-    public function testSetHashEncodingSHA1()
-    {
-        $this->_testSetHashEncoding('sha1');
-    }
-
+    /**
+     * Test setting an invalid hash encoding.
+     * @group BagItManifest
+     * @covers ::setHashEncoding
+     */
     public function testSetHashEncodingERR()
     {
-        $this->_testSetHashEncoding('err');
+        $this->setHashEncodingUtil('err');
     }
 
+    /**
+     * Test internal validation.
+     * @group BagItManifest
+     * @covers ::validate
+     */
     public function testValidateOK()
     {
         $errors = array();
         $this->assertTrue($this->manifest->validate($errors));
-        $this->assertEquals(0, count($errors));
+        $this->assertCount(0, $errors);
     }
 
+    /**
+     * Test validation failure on missing manifest file.
+     * @group BagItManifest
+     * @covers ::validate
+     */
     public function testValidateMissingManifest()
     {
         $manifest = new BagItManifest(
@@ -434,51 +614,62 @@ class BagItManifestTest extends PHPUnit_Framework_TestCase
 
         $errors = array();
         $this->assertFalse($manifest->validate($errors));
-        $this->assertTrue(seenAtKey($errors, 0, 'missing.txt'));
-        $this->assertTrue(seenAtKey($errors, 1, 'missing.txt does not exist.'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 0, 'missing.txt'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 1, 'missing.txt does not exist.'));
     }
 
+    /**
+     * Test validation failure at missing data file.
+     * @group BagItManifest
+     * @covers ::validate
+     */
     public function testValidateMissingData()
     {
-        $this->manifest->data['data/missing.txt']
-            = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        $tmp = BagItUtils::tmpdir();
+        mkdir($tmp);
+        $filename = "{$tmp}/manifest-AAA.txt";
+
+        file_put_contents(
+            $filename,
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa data/missing.txt'
+        );
+
+        $this->manifest->read($filename);
+
 
         $errors = array();
         $this->assertFalse($this->manifest->validate($errors));
 
-        $this->assertTrue(seenAtKey($errors, 0, 'data/missing.txt'));
-        $this->assertTrue(seenAtKey($errors, 1, 'Missing data file.'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 0, 'data/missing.txt'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 1, 'Missing data file.'));
+
+        BagItUtils::rrmdir($tmp);
     }
 
+    /**
+     * Test validation failure on bad checksum.
+     * @group BagItManifest
+     * @covers ::validate
+     */
     public function testValidateChecksum()
     {
-        $tmp = tmpdir();
-        try
-        {
-            mkdir($tmp);
-            mkdir($tmp . '/data');
-            file_put_contents(
-                "$tmp/manifest-sha1.txt",
-                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa data/missing.txt\n"
-            );
+        $tmp = BagItUtils::tmpdir();
+        mkdir($tmp);
+        mkdir($tmp . '/data');
+        file_put_contents(
+            "$tmp/manifest-sha1.txt",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa data/missing.txt\n"
+        );
 
-            touch("$tmp/data/missing.txt");
+        touch("$tmp/data/missing.txt");
 
-            $manifest = new BagItManifest("$tmp/manifest-sha1.txt", "$tmp/");
-            $errors = array();
-            $this->assertFalse($manifest->validate($errors));
+        $manifest = new BagItManifest("$tmp/manifest-sha1.txt", "$tmp/");
+        $errors = array();
+        $this->assertFalse($manifest->validate($errors));
 
-            $this->assertTrue(seenAtKey($errors, 0, 'data/missing.txt'));
-            $this->assertTrue(seenAtKey($errors, 1, 'Checksum mismatch.'));
-        }
-        catch (Exception $e)
-        {
-            rrmdir($tmp);
-            throw $e;
-        }
-        rrmdir($tmp);
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 0, 'data/missing.txt'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 1, 'Checksum mismatch.'));
+
+        BagItUtils::rrmdir($tmp);
     }
-
 }
-
-?>
