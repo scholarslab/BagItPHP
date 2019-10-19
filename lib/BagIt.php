@@ -926,7 +926,7 @@ class BagIt
 
         $this->bagitFile = $this->bagDirectory . '/bagit.txt';
         $this->manifest = array(
-          'sha1' => new BagItManifest(
+          self::DEFAULT_HASH_ALGORITHM => new BagItManifest(
               "{$this->bagDirectory}/manifest-" . self::DEFAULT_HASH_ALGORITHM . ".txt",
               $this->bagDirectory . '/',
               $this->tagFileEncoding

@@ -142,6 +142,7 @@ class BagItTest extends TestCase
      */
     public function testManifest()
     {
+        $this->assertTrue(array_key_exists(BagIt::DEFAULT_HASH_ALGORITHM, $this->bag->getManifests()));
         $this->assertInstanceOf(
             '\ScholarsLab\BagIt\BagItManifest',
             $this->bag->getManifests()[BagIt::DEFAULT_HASH_ALGORITHM]
