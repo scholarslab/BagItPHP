@@ -1328,8 +1328,8 @@ class BagItTest extends BagItTestCase
         $this->bag->addHashEncoding('md5');
         $expected[] = 'md5';
 
-        $this->bag->addHashEncoding('sha3512');
-        $expected[] = 'sha3512';
+        $this->bag->addHashEncoding('sha1');
+        $expected[] = 'sha1';
 
         $this->assertArrayEquals($expected, $this->bag->getHashEncodings());
 
