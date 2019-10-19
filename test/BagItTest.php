@@ -2,17 +2,17 @@
 
 namespace ScholarsLab\BagIt\Test;
 
-use PHPUnit\Framework\TestCase;
 use ScholarsLab\BagIt\BagIt;
 use ScholarsLab\BagIt\BagItManifest;
 use ScholarsLab\BagIt\BagItUtils;
+use ScholarsLab\BagIt\Tests\BagItTestCase;
 
 /**
  * Class BagItTest
  * @package ScholarsLab\BagIt\Test
  * @coversDefaultClass \ScholarsLab\BagIt\BagIt
  */
-class BagItTest extends TestCase
+class BagItTest extends BagItTestCase
 {
     /**
      * @var string
@@ -103,8 +103,8 @@ class BagItTest extends TestCase
     public function testBagVersion()
     {
         $bagInfo = $this->bag->getBagInfo();
-        $this->assertEquals(0, $bagInfo['version_parts']['major']);
-        $this->assertEquals(96, $bagInfo['version_parts']['minor']);
+        $this->assertEquals(1, $bagInfo['version_parts']['major']);
+        $this->assertEquals(0, $bagInfo['version_parts']['minor']);
 
         $tmp2 = BagItUtils::tmpdir();
         mkdir($tmp2);
@@ -142,10 +142,10 @@ class BagItTest extends TestCase
      */
     public function testManifest()
     {
-        $this->assertTrue(array_key_exists(BagIt::DEFAULT_HASH_ALGORITHM, $this->bag->getManifests()));
+        $this->assertTrue(array_key_exists('sha512', $this->bag->getManifests()));
         $this->assertInstanceOf(
             '\ScholarsLab\BagIt\BagItManifest',
-            $this->bag->getManifests()[BagIt::DEFAULT_HASH_ALGORITHM]
+            $this->bag->getManifests()['sha512']
         );
     }
 
@@ -156,9 +156,10 @@ class BagItTest extends TestCase
      */
     public function testTagManifest()
     {
+        $this->assertTrue(array_key_exists('sha512', $this->bag->getTagManifests()));
         $this->assertInstanceOf(
             '\ScholarsLab\BagIt\BagItManifest',
-            $this->bag->getTagManifests()[BagIt::DEFAULT_HASH_ALGORITHM]
+            $this->bag->getTagManifests()['sha512']
         );
     }
 
@@ -917,13 +918,13 @@ class BagItTest extends TestCase
     {
         $this->assertFileExists($this->tmpdir . '/bag-info.txt');
         $this->assertFileNotExists($this->tmpdir . '/fetch.txt');
-        $this->assertFileExists($this->tmpdir . '/tagmanifest-sha1.txt');
+        $this->assertFileExists($this->tmpdir . '/tagmanifest-sha512.txt');
 
         $tmp = BagItUtils::tmpdir();
         new BagIt($tmp, false, false);
         $this->assertFalse(is_file($tmp . '/bag-info.txt'));
         $this->assertFalse(is_file($tmp . '/fetch.txt'));
-        $this->assertFalse(is_file($tmp . '/tagmanifest-sha1.txt'));
+        $this->assertFalse(is_file($tmp . '/tagmanifest-sha512.txt'));
 
         BagItUtils::rrmdir($tmp);
     }
@@ -973,7 +974,7 @@ class BagItTest extends TestCase
      */
     public function testConstructorInvalidBagitFile()
     {
-        $this->assertEquals(0, $this->bag->getBagInfo()['version_parts']['major']);
+        $this->assertEquals(1, $this->bag->getBagInfo()['version_parts']['major']);
 
         $tmp = BagItUtils::tmpdir();
         mkdir($tmp);
@@ -1151,9 +1152,9 @@ class BagItTest extends TestCase
         $this->assertArrayHasKey('encoding', $bagInfo);
         $this->assertArrayHasKey('hash', $bagInfo);
 
-        $this->assertEquals('0.96', $bagInfo['version']);
+        $this->assertEquals('1.0', $bagInfo['version']);
         $this->assertEquals('UTF-8', $bagInfo['encoding']);
-        $this->assertEquals('sha1', $bagInfo['hash']);
+        $this->assertEquals('sha512', $bagInfo['hash']);
     }
 
     /**
@@ -1175,7 +1176,7 @@ class BagItTest extends TestCase
     public function testGetHashEncoding()
     {
         $hash = $this->bag->getHashEncodings();
-        $this->assertEquals(array(BagIt::DEFAULT_HASH_ALGORITHM), $hash);
+        $this->assertArrayEquals(array('sha512'), $hash);
     }
 
     /**
@@ -1189,9 +1190,9 @@ class BagItTest extends TestCase
     public function testDeduplicateHashEncodings()
     {
         $hash = $this->bag->getHashEncodings();
-        $this->assertEquals(array(BagIt::DEFAULT_HASH_ALGORITHM), $hash);
-        $this->bag->addHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
-        $this->assertEquals(array(BagIt::DEFAULT_HASH_ALGORITHM), $hash);
+        $this->assertArrayEquals(array('sha512'), $hash);
+        $this->bag->addHashEncoding('sha512');
+        $this->assertArrayEquals(array('sha512'), $hash);
     }
 
     /**
@@ -1204,15 +1205,18 @@ class BagItTest extends TestCase
     private function verifyAddingHashEncodingToDefault($hash)
     {
         $this->bag->addHashEncoding($hash);
-        $this->assertEquals(array(), array_diff(
-            array(BagIt::DEFAULT_HASH_ALGORITHM, $hash),
+        $this->assertArrayEquals(
+            array_unique(array('sha512', $hash)),
             $this->bag->getHashEncodings()
-        ));
-        $this->bag->removeHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
-        $this->assertEquals(array($hash), $this->bag->getHashEncodings());
+        );
+        if (count($this->bag->getHashEncodings()) > 1) {
+            // When we re-add the default we end up with a single element array, so we can't remove it.
+            $this->bag->removeHashEncoding('sha512');
+        }
+        $this->assertArrayEquals(array($hash), $this->bag->getHashEncodings());
         // Reset hash encodings if not default.
-        if ($hash != BagIt::DEFAULT_HASH_ALGORITHM) {
-            $this->bag->addHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
+        if ($hash != 'sha512') {
+            $this->bag->addHashEncoding('sha512');
             $this->bag->removeHashEncoding($hash);
         }
     }
@@ -1243,7 +1247,7 @@ class BagItTest extends TestCase
     public function testSetOtherHashEncoding()
     {
         // We only want to test non
-        $nonSha1Algos = array_diff($this->validHashAlgos, array(BagIt::DEFAULT_HASH_ALGORITHM));
+        $nonSha1Algos = array_diff($this->validHashAlgos, array('sha512'));
         foreach ($nonSha1Algos as $hash) {
             $this->verifyAddingHashEncodingToDefault($hash);
         }
@@ -1262,7 +1266,7 @@ class BagItTest extends TestCase
         foreach ($this->validHashAlgos as $hash) {
             $this->bag->addHashEncoding($hash);
         }
-        $this->assertEquals(array(), array_diff($this->validHashAlgos, $this->bag->getHashEncodings()));
+        $this->assertArrayEquals($this->validHashAlgos, $this->bag->getHashEncodings());
     }
 
 
@@ -1304,9 +1308,9 @@ class BagItTest extends TestCase
     public function testSetHashEncoding()
     {
         $hash = $this->bag->getHashEncodings();
-        $this->assertEquals(array(BagIt::DEFAULT_HASH_ALGORITHM), $hash);
+        $this->assertArrayEquals(array('sha512'), $hash);
         $this->bag->setHashEncoding('sha256');
-        $this->assertEquals(array('sha256'), $this->bag->getHashEncodings());
+        $this->assertArrayEquals(array('sha256'), $this->bag->getHashEncodings());
     }
 
     /**
@@ -1318,19 +1322,19 @@ class BagItTest extends TestCase
      */
     public function testSetHashEncodingMultiple()
     {
-        $expected = array(BagIt::DEFAULT_HASH_ALGORITHM);
-        $this->assertEquals($expected, $this->bag->getHashEncodings());
+        $expected = array('sha512');
+        $this->assertArrayEquals($expected, $this->bag->getHashEncodings());
 
         $this->bag->addHashEncoding('md5');
         $expected[] = 'md5';
 
-        $this->bag->addHashEncoding('sha512');
-        $expected[] = 'sha512';
+        $this->bag->addHashEncoding('sha3512');
+        $expected[] = 'sha3512';
 
-        $this->assertEquals($expected, $this->bag->getHashEncodings());
+        $this->assertArrayEquals($expected, $this->bag->getHashEncodings());
 
         $this->bag->setHashEncoding('sha256');
-        $this->assertEquals(array('sha256'), $this->bag->getHashEncodings());
+        $this->assertArrayEquals(array('sha256'), $this->bag->getHashEncodings());
     }
 
     /**
@@ -1354,8 +1358,8 @@ class BagItTest extends TestCase
      */
     public function testRemoveLastHashEncoding()
     {
-        $this->assertEquals(array(BagIt::DEFAULT_HASH_ALGORITHM), $this->bag->getHashEncodings());
-        $this->bag->removeHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
+        $this->assertArrayEquals(array('sha512'), $this->bag->getHashEncodings());
+        $this->bag->removeHashEncoding('sha512');
     }
 
     /**
@@ -1451,6 +1455,7 @@ class BagItTest extends TestCase
         );
         mkdir($tmp . '/data');
         touch($tmp . '/data/missing.txt');
+        $this->createBagItTxt($tmp);
         $bag = new BagIt($tmp);
         $bag->validate();
         $bagErrors = $bag->getBagErrors();
@@ -1472,14 +1477,14 @@ class BagItTest extends TestCase
         $tmp = BagItUtils::tmpdir();
 
         $this->assertFileNotExists($tmp . '/bagit.txt');
-        $this->assertFileNotExists($tmp . '/manifest-sha1.txt');
+        $this->assertFileNotExists($tmp . '/manifest-sha512.txt');
         $this->assertFileNotExists($tmp . '/data');
 
         $bag = new BagIt($tmp);
         $bag->update();
 
         $this->assertFileExists($tmp . '/bagit.txt');
-        $this->assertFileExists($tmp . '/manifest-sha1.txt');
+        $this->assertFileExists($tmp . '/manifest-sha512.txt');
         $this->assertTrue(is_dir($tmp . '/data'));
 
         BagItUtils::rrmdir($tmp);
@@ -1536,6 +1541,7 @@ class BagItTest extends TestCase
             $tmp . '/data/missing.txt',
             "This space intentionally left blank.\n"
         );
+        $this->createBagItTxt($tmp);
         $bag = new BagIt($tmp);
         $bag->update();
 
@@ -1566,6 +1572,7 @@ class BagItTest extends TestCase
             "This space intentionally left blank.\n"
         );
         $bag = new BagIt($tmp);
+        $bag->setHashEncoding('sha1');
         $bag->update();
 
         $this->assertEquals(
@@ -1594,9 +1601,10 @@ class BagItTest extends TestCase
             "abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd data/missing.txt\n"
         );
         mkdir($tmp . '/data');
+        $this->createBagItTxt($tmp);
         $bag = new BagIt($tmp);
-        $bag->update();
 
+        $bag->update();
         $this->assertEquals(
             '',
             file_get_contents($tmp . '/manifest-sha1.txt')
@@ -1618,14 +1626,14 @@ class BagItTest extends TestCase
         $tmp = BagItUtils::tmpdir();
 
         $this->assertFileNotExists($tmp . '/bag-info.txt');
-        $this->assertFileNotExists($tmp . '/tagmanifest-sha1.txt');
+        $this->assertFileNotExists($tmp . '/tagmanifest-sha512.txt');
         $this->assertFileNotExists($tmp . '/fetch.txt');
 
         $bag = new BagIt($tmp);
         $bag->update();
 
         $this->assertFileExists($tmp . '/bag-info.txt');
-        $this->assertFileExists($tmp . '/tagmanifest-sha1.txt');
+        $this->assertFileExists($tmp . '/tagmanifest-sha512.txt');
         $this->assertFileNotExists($tmp . '/fetch.txt');
 
         BagItUtils::rrmdir($tmp);
@@ -1843,10 +1851,10 @@ class BagItTest extends TestCase
 
         new BagIt($tmp);
         $this->assertFileExists("$tmp/bagit.txt");
-        $this->assertFileExists("$tmp/manifest-sha1.txt");
+        $this->assertFileExists("$tmp/manifest-sha512.txt");
         $this->assertFileExists("$tmp/bag-info.txt");
         $this->assertFileNotExists("$tmp/fetch.txt");
-        $this->assertFileExists("$tmp/tagmanifest-sha1.txt");
+        $this->assertFileExists("$tmp/tagmanifest-sha512.txt");
 
         BagItUtils::rrmdir($tmp);
     }

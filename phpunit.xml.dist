@@ -11,7 +11,8 @@
          bootstrap="./vendor/autoload.php">
 
   <testsuite name="Bagit">
-    <directory suffix=".php">test</directory>
+    <directory suffix=".php">./test</directory>
+    <exclude>./test/BagItTestCase.php</exclude>
   </testsuite>
   <logging>
     <log type="coverage-clover" target="clover.xml" />

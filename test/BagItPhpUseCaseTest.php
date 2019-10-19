@@ -2,16 +2,16 @@
 
 namespace ScholarsLab\BagIt\Test;
 
-use PHPUnit\Framework\TestCase;
 use ScholarsLab\BagIt\BagIt;
 use ScholarsLab\BagIt\BagItUtils;
+use ScholarsLab\BagIt\Tests\BagItTestCase;
 
 /**
  * This abuses the unit test framework to do some use case testing.
  *
  * @package ScholarsLab\BagIt\Test
  */
-class BagItPhpUseCaseTest extends TestCase
+class BagItPhpUseCaseTest extends BagItTestCase
 {
     /**
      * Things to remove.
@@ -65,12 +65,12 @@ class BagItPhpUseCaseTest extends TestCase
         $this->assertTrue($bag->isExtended());
 
         $bagInfo = $bag->getBagInfo();
-        $this->assertEquals('0.96', $bagInfo['version']);
+        $this->assertEquals('1.0', $bagInfo['version']);
         $this->assertEquals('UTF-8', $bagInfo['encoding']);
-        $this->assertEquals('sha1', $bagInfo['hash']);
+        $this->assertEquals('sha512', $bagInfo['hash']);
 
         $this->assertEquals("$tmpbag/data", $bag->getDataDirectory());
-        $this->assertEquals(array('sha1'), $bag->getHashEncodings());
+        $this->assertArrayEquals(array('sha512'), $bag->getHashEncodings());
         $this->assertEquals(0, count($bag->getBagContents()));
         $this->assertEquals(0, count($bag->getBagErrors()));
 
@@ -100,7 +100,7 @@ class BagItPhpUseCaseTest extends TestCase
 
         // First, verify that the data files are correct.
         $this->assertEquals(
-            "BagIt-Version: 0.96\n" .
+            "BagIt-Version: 1.0\n" .
             "Tag-File-Character-Encoding: UTF-8\n",
             file_get_contents($dest->getBagDirectory() . "/bagit.txt")
         );
@@ -149,7 +149,7 @@ class BagItPhpUseCaseTest extends TestCase
         $this->assertEquals('UTF-8', $bagInfo['encoding']);
         $this->assertEquals('sha1', $bagInfo['hash']);
 
-        $this->assertEquals(array('sha1'), $bag->getHashEncodings());
+        $this->assertArrayEquals(array('sha1'), $bag->getHashEncodings());
         $this->assertEquals(7, count($bag->getBagContents()));
         $this->assertEquals(0, count($bag->getBagErrors()));
 

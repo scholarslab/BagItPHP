@@ -84,7 +84,7 @@ class BagIt
      *
      * @var array
      */
-    private $manifest;
+    private $manifest = [];
 
     /**
      * Information about the 'tagmanifest-{hash}.txt'.
@@ -93,7 +93,7 @@ class BagIt
      *
      * @var array
      */
-    private $tagManifest;
+    private $tagManifest = [];
 
     /**
      * Information about files that need to be downloaded, listed in fetch.txt.
@@ -154,6 +154,19 @@ class BagIt
     const DEFAULT_HASH_ALGORITHM = 'sha512';
 
     /**
+     * The default file encoding if one is not specified.
+     */
+    const DEFAULT_FILE_ENCODING = 'UTF-8';
+
+    /**
+     * The default bagit version.
+     */
+    const DEFAULT_BAGIT_VERSION = array(
+        'major' => 1,
+        'minor' => 0,
+    );
+
+    /**
      * Bag-info fields that MUST not be repeated (in lowercase).
      */
     const BAG_INFO_MUST_NOT_REPEAT = array(
@@ -204,8 +217,8 @@ class BagIt
     ) {
         $this->bag = $bag;
         $this->extended = $extended || (! is_null($bagInfoData));
-        $this->bagVersion = array('major' => 0, 'minor' => 96);
-        $this->tagFileEncoding = 'UTF-8';
+        $this->bagVersion = self::DEFAULT_BAGIT_VERSION;
+        $this->tagFileEncoding = self::DEFAULT_FILE_ENCODING;
         $this->bagDirectory = null;
         $this->bagitFile = null;
         $this->manifest = array();
@@ -860,8 +873,11 @@ class BagIt
             if ($this->isExtended()) {
                 $manifestFiles = BagItUtils::findAllByPattern("$bagdir/tagmanifest-*.txt");
                 if (count($manifestFiles) == 0) {
-                    // Set a default.
-                    $manifestFiles = array("{$bagdir}/tagmanifest-" . self::DEFAULT_HASH_ALGORITHM . '.txt');
+                    // If there are no tagmanifest then we must have set a manifest.
+                    $manifestFiles = array();
+                    foreach (array_keys($this->manifest) as $hash) {
+                        $manifestFiles[]="{$bagdir}/tagmanifest-{$hash}.txt";
+                    }
                 }
                 foreach ($manifestFiles as $manifestFile) {
                     $hash = $this->determineHashFromFilename($manifestFile);
@@ -1000,7 +1016,7 @@ class BagIt
     {
         $lines = array();
 
-        if (count($this->bagInfoData)) {
+        if (is_array($this->bagInfoData) && count($this->bagInfoData)) {
             foreach ($this->bagInfoData as $label => $value) {
                 if (is_array($value)) {
                     foreach ($value as $v) {
