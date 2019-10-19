@@ -1210,9 +1210,11 @@ class BagItTest extends TestCase
         ));
         $this->bag->removeHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
         $this->assertEquals(array($hash), $this->bag->getHashEncodings());
-        // Reset hash encodings
-        $this->bag->addHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
-        $this->bag->removeHashEncoding($hash);
+        // Reset hash encodings if not default.
+        if ($hash != BagIt::DEFAULT_HASH_ALGORITHM) {
+            $this->bag->addHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
+            $this->bag->removeHashEncoding($hash);
+        }
     }
 
     /**
