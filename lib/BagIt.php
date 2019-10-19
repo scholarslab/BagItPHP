@@ -153,6 +153,23 @@ class BagIt
      */
     const DEFAULT_HASH_ALGORITHM = 'sha1';
 
+    /**
+     * Bag-info fields that MUST not be repeated (in lowercase).
+     */
+    const BAG_INFO_MUST_NOT_REPEAT = array(
+        'payload-oxum'
+    );
+
+    /**
+     * Bag-info fields that SHOULD not be repeated (in lowercase). Not currently enforced or validated.
+     */
+    const BAG_INFO_SHOULD_NOT_REPEAT = array(
+        'bagging-date',
+        'bag-size',
+        'bag-group-identifier',
+        'bag-count',
+    );
+
     //}}}
 
     //{{{ Public Methods
@@ -324,31 +341,21 @@ class BagIt
     }
 
     /**
-     * Sets the bag's checksum hash algorithm.
+     * Sets the bag's checksum hash algorithm, but removes any existing ones. Use addHashEncoding() to add additional
+     * hash encodings.
      *
-     * @deprecated This defines a single encoding, which removes all others.
-     * It is recommended to use addHashEncoding() and removeHashEncoding().
+     * @param string $hashAlgorithm The bag's checksum hash algorithm.
      *
-     * @param string $hashAlgorithm The bag's checksum hash algorithm. Must be
-     * either 'sha1' or 'md5'.
-     *
-     * @return void
-     *
-     * @throws \InvalidArgumentException If hash algorithm is not "md5" or "sha1"
-     * or if the hash algorithm is not supported.
-     * @throws \ScholarsLab\BagIt\BagItException If you try to remove the only hash encoding, should not occur here.
+     * @throws \InvalidArgumentException If hash algorithm is not supported.
      */
     public function setHashEncoding($hashAlgorithm)
     {
         $hashAlgorithm = strtolower($hashAlgorithm);
-        if ($hashAlgorithm != 'md5' && $hashAlgorithm != 'sha1') {
-            throw new \InvalidArgumentException("Invalid hash algorithim: '$hashAlgorithm'.");
-        }
-        // Add first to avoid the removeHashEncoding exception
+        // Add first to validate the algorithm is valid before removing any.
         $this->addHashEncoding($hashAlgorithm);
         foreach ($this->manifest as $hash => $manifest) {
             if ($hash != $hashAlgorithm) {
-                $this->removeHashEncoding($hash);
+                $this->clearManifest($hash);
             }
         }
     }
@@ -370,13 +377,7 @@ class BagIt
             if (count($this->manifest) == 1) {
                 throw new BagItException("Cannot remove the last hash encoding, you must add a new one first.");
             }
-            unlink($this->manifest[$hashAlgorithm]->getFileName());
-            unset($this->manifest[$hashAlgorithm]);
-
-            if (isset($this->tagManifest[$hashAlgorithm])) {
-                unlink($this->tagManifest[$hashAlgorithm]->getFileName());
-                unset($this->tagManifest[$hashAlgorithm]);
-            }
+            $this->clearManifest($hashAlgorithm);
         }
     }
 
@@ -478,7 +479,7 @@ class BagIt
 
     /**
      * Runs the bag validator on the contents of the bag. This verifies the
-     * presence of required iles and folders and verifies the checksum for
+     * presence of required files and folders and verifies the checksum for
      * each file.
      *
      * For the results of validation, check isValid() and getBagErrors().
@@ -494,7 +495,7 @@ class BagIt
         foreach ($this->manifest as $hash => $manifest) {
             $manifest->validate($errors);
         }
-
+        $this->validateBagInfo($errors);
         $this->bagErrors = $errors;
         return $this->bagErrors;
     }
@@ -682,17 +683,20 @@ class BagIt
     }
 
     /**
-     * This inserts a value into bagInfoData.
+     * This inserts a value into bagInfoData. Checks for only one of non-repeatable ones.
      *
      * @param string $key   This is the key to insert into the data.
      * @param string $value This is the value to associate with the key.
      *
-     * @return void
+     * @throws \ScholarsLab\BagIt\BagItException if trying to duplicate a non-repeatable field.
+     *
      * @author Eric Rochester <erochest@virginia.edu>
+     * @author Jared Whiklo <jwhiklo@gmail.com>
      **/
     public function setBagInfoData($key, $value)
     {
         $this->ensureBagInfoData();
+        $this->checkForNonRepeatableBagInfoFields($key);
         $this->bagInfoData[$key] = BagItUtils::getAccumulatedValue(
             $this->bagInfoData,
             $key,
@@ -1083,6 +1087,69 @@ class BagIt
     {
         $hashAlgorithm = strtolower($hashAlgorithm);
         return in_array($hashAlgorithm, $this->validHashAlgorithms);
+    }
+
+    /**
+     * Check that the key is not non-repeatable and already in the bagInfo.
+     *
+     * @param string $key The key being added.
+     *
+     * @throws \ScholarsLab\BagIt\BagItException If the key is non-repeatable and already in the bagInfo.
+     */
+    private function checkForNonRepeatableBagInfoFields($key)
+    {
+        $lowerCaseKeys = array_keys($this->bagInfoData);
+        array_walk($lowerCaseKeys, function (&$item) {
+            $item = strtolower($item);
+        });
+        if (in_array(strtolower($key), self::BAG_INFO_MUST_NOT_REPEAT) &&
+            in_array(strtolower($key), $lowerCaseKeys)) {
+            throw new BagItException("You cannot add more than one instance of {$key} to the bag-info.txt");
+        }
+    }
+
+    /**
+     * Check for validity of bag-info fields.
+     *
+     * @param array $errors Array of errors in validation.
+     */
+    private function validateBagInfo(array &$errors)
+    {
+        $this->ensureBagInfoData();
+        $bagInfoKeys = array_keys($this->bagInfoData);
+        array_walk($bagInfoKeys, function (&$item) {
+            $item = strtolower($item);
+        });
+        $countBagInfoKeys = array_count_values($bagInfoKeys);
+        foreach (self::BAG_INFO_MUST_NOT_REPEAT as $key) {
+            if (array_key_exists(strtolower($key), $countBagInfoKeys) && $countBagInfoKeys[$key] > 1) {
+                $errors[] = array(
+                    "{$this->getBagDirectory()}/bag-info.txt",
+                    "cannot contain more than one of tag {$key}, {$countBagInfoKeys[$key]} found",
+                );
+            }
+        }
+    }
+
+    /**
+     * Utility to properly remove a manifest/tagmanifest file from the bag.
+     *
+     * @param string $hashAlgorithm The hash algorithm to remove.
+     */
+    private function clearManifest($hashAlgorithm)
+    {
+        if (array_key_exists($hashAlgorithm, $this->manifest)) {
+            if (file_exists($this->manifest[$hashAlgorithm]->getFileName())) {
+                unlink($this->manifest[$hashAlgorithm]->getFileName());
+            }
+            unset($this->manifest[$hashAlgorithm]);
+        }
+        if (array_key_exists($hashAlgorithm, $this->tagManifest)) {
+            if (file_exists($this->tagManifest[$hashAlgorithm]->getFileName())) {
+                unlink($this->tagManifest[$hashAlgorithm]->getFileName());
+            }
+            unset($this->tagManifest[$hashAlgorithm]);
+        }
     }
 
     //}}}

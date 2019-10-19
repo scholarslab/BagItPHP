@@ -381,6 +381,154 @@ class BagItTest extends TestCase
         BagItUtils::rrmdir($tmp2);
     }
 
+    /*
+     * Non repeatable fields in setBagInfoData.
+     */
+
+    /**
+     * Ensure we can't set non-repeatable fields.
+     * @group BagIt
+     * @covers ::setBagInfoData
+     * @covers ::checkForNonRepeatableBagInfoFields
+     * @expectedException \ScholarsLab\BagIt\BagItException
+     */
+    public function testSetNonRepeatableFieldsTwice()
+    {
+        $tmp2 = BagItUtils::tmpdir();
+        mkdir($tmp2);
+        file_put_contents(
+            $tmp2 . "/bag-info.txt",
+            "Source-organization: University of Virginia Alderman Library\n" .
+            "Contact-name: Eric Rochester\n" .
+            "Bag-size: very, very small\n"
+        );
+        $this->createBagItTxt($tmp2);
+        $bag = new BagIt($tmp2);
+
+        $bag->setBagInfoData('Payload-Oxum', 'Some value');
+        $bag->setBagInfoData('Payload-Oxum', 'Some other value');
+    }
+
+    /**
+     * Ensure we can't set non-repeatable fields if it loaded from the file.
+     * @group BagIt
+     * @covers ::setBagInfoData
+     * @covers ::checkForNonRepeatableBagInfoFields
+     * @expectedException \ScholarsLab\BagIt\BagItException
+     */
+    public function testSetNonRepeatableFieldsTwiceFromFile()
+    {
+        $tmp2 = BagItUtils::tmpdir();
+        mkdir($tmp2);
+        file_put_contents(
+            $tmp2 . "/bag-info.txt",
+            "Source-organization: University of Virginia Alderman Library\n" .
+            "Contact-name: Eric Rochester\n" .
+            "Payload-Oxum: very, very small\n"
+        );
+        $this->createBagItTxt($tmp2);
+        $bag = new BagIt($tmp2);
+
+        $bag->setBagInfoData('Payload-Oxum', 'Some value');
+    }
+
+    /**
+     * Ensure we can't set non-repeatable fields case insensitive.
+     * @group BagIt
+     * @covers ::setBagInfoData
+     * @covers ::checkForNonRepeatableBagInfoFields
+     * @expectedException \ScholarsLab\BagIt\BagItException
+     */
+    public function testSetNonRepeatableFieldsTwiceCase()
+    {
+        $tmp2 = BagItUtils::tmpdir();
+        mkdir($tmp2);
+        file_put_contents(
+            $tmp2 . "/bag-info.txt",
+            "Source-organization: University of Virginia Alderman Library\n" .
+            "Contact-name: Eric Rochester\n" .
+            "Bag-size: very, very small\n"
+        );
+        $this->createBagItTxt($tmp2);
+        $bag = new BagIt($tmp2);
+
+        $bag->setBagInfoData('Payload-Oxum', 'Some value');
+        $bag->setBagInfoData('PayLOAD-oXuM', 'Some other value');
+    }
+
+    /**
+     * Ensure we can't set non-repeatable fields.
+     * @group BagIt
+     * @covers ::setBagInfoData
+     * @covers ::checkForNonRepeatableBagInfoFields
+     * @expectedException \ScholarsLab\BagIt\BagItException
+     */
+    public function testSetNonRepeatableFieldsTwiceCaseFromFile()
+    {
+        $tmp2 = BagItUtils::tmpdir();
+        mkdir($tmp2);
+        file_put_contents(
+            $tmp2 . "/bag-info.txt",
+            "Source-organization: University of Virginia Alderman Library\n" .
+            "Contact-name: Eric Rochester\n" .
+            "payload-oxum: real big\n"
+        );
+        $this->createBagItTxt($tmp2);
+        $bag = new BagIt($tmp2);
+
+        $bag->setBagInfoData('PaYLOAd-oxum', 'Some value');
+    }
+
+    /**
+     * Test validation errors on incorrect bag-info.txt.
+     * @group BagIt
+     * @covers ::validate
+     * @covers ::validateBagInfo
+     */
+    public function testLoadInvalidBagInfoValidate()
+    {
+        $tmp2 = BagItUtils::tmpdir();
+        mkdir($tmp2);
+        file_put_contents(
+            $tmp2 . "/bag-info.txt",
+            "Source-organization: University of Virginia Alderman Library\n" .
+            "Contact-name: Eric Rochester\n" .
+            "payload-oxum: real big\n" .
+            "PAYLOAD-OXUM: real small\n"
+        );
+        $this->createBagItTxt($tmp2);
+        mkdir("$tmp2/data");
+        $bag = new BagIt($tmp2);
+        $errors = $bag->getBagErrors();
+        $this->assertCount(0, $errors);
+        $errors = $bag->validate();
+        $this->assertCount(1, $errors);
+    }
+
+    /**
+     * Test validation errors on incorrect bag-info.txt on construct.
+     * @group BagIt
+     * @covers ::validate
+     * @covers ::validateBagInfo
+     */
+    public function testLoadInvalidBagInfoValidateOnOpen()
+    {
+        $tmp2 = BagItUtils::tmpdir();
+        mkdir($tmp2);
+        file_put_contents(
+            $tmp2 . "/bag-info.txt",
+            "Source-organization: University of Virginia Alderman Library\n" .
+            "Contact-name: Eric Rochester\n" .
+            "payload-oxum: real big\n" .
+            "PAYLOAD-OXUM: real small\n"
+        );
+        $this->createBagItTxt($tmp2);
+        mkdir("$tmp2/data");
+        $bag = new BagIt($tmp2, true);
+        $errors = $bag->getBagErrors();
+        $this->assertCount(1, $errors);
+    }
+
     /**
      * Test clearing bag-info.txt values.
      * @group BagIt
@@ -1026,7 +1174,7 @@ class BagItTest extends TestCase
     public function testGetHashEncoding()
     {
         $hash = $this->bag->getHashEncodings();
-        $this->assertEquals(array('sha1'), $hash);
+        $this->assertEquals(array(BagIt::DEFAULT_HASH_ALGORITHM), $hash);
     }
 
     /**
@@ -1040,9 +1188,9 @@ class BagItTest extends TestCase
     public function testDeduplicateHashEncodings()
     {
         $hash = $this->bag->getHashEncodings();
-        $this->assertEquals(array('sha1'), $hash);
-        $this->bag->addHashEncoding('sha1');
-        $this->assertEquals(array('sha1'), $hash);
+        $this->assertEquals(array(BagIt::DEFAULT_HASH_ALGORITHM), $hash);
+        $this->bag->addHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
+        $this->assertEquals(array(BagIt::DEFAULT_HASH_ALGORITHM), $hash);
     }
 
     /**
@@ -1055,11 +1203,14 @@ class BagItTest extends TestCase
     private function verifyAddingHashEncodingToDefault($hash)
     {
         $this->bag->addHashEncoding($hash);
-        $this->assertEquals(array(), array_diff(array('sha1', $hash), $this->bag->getHashEncodings()));
-        $this->bag->removeHashEncoding('sha1');
+        $this->assertEquals(array(), array_diff(
+            array(BagIt::DEFAULT_HASH_ALGORITHM, $hash),
+            $this->bag->getHashEncodings()
+        ));
+        $this->bag->removeHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
         $this->assertEquals(array($hash), $this->bag->getHashEncodings());
         // Reset hash encodings
-        $this->bag->addHashEncoding('sha1');
+        $this->bag->addHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
         $this->bag->removeHashEncoding($hash);
     }
 
@@ -1070,6 +1221,7 @@ class BagItTest extends TestCase
      * @covers ::removeHashEncoding
      * @covers ::checkSupportedHash
      * @covers ::isSupportedHash
+     * @covers ::clearManifest
      */
     public function testRequiredHashEncodings()
     {
@@ -1088,7 +1240,7 @@ class BagItTest extends TestCase
     public function testSetOtherHashEncoding()
     {
         // We only want to test non
-        $nonSha1Algos = array_diff($this->validHashAlgos, array('sha1'));
+        $nonSha1Algos = array_diff($this->validHashAlgos, array(BagIt::DEFAULT_HASH_ALGORITHM));
         foreach ($nonSha1Algos as $hash) {
             $this->verifyAddingHashEncodingToDefault($hash);
         }
@@ -1119,9 +1271,63 @@ class BagItTest extends TestCase
      * @covers ::checkSupportedHash
      * @covers ::isSupportedHash
      */
-    public function testSetHashEncodingERR()
+    public function testAddHashEncodingERR()
     {
         $this->bag->addHashEncoding('err');
+    }
+
+    /**
+     * Test setting an invalid hash encoding algorithm.
+     * @group BagIt
+     * @expectedException \InvalidArgumentException
+     * @covers ::setHashEncoding
+     * @covers ::addHashEncoding
+     * @covers ::checkSupportedHash
+     * @covers ::isSupportedHash
+     */
+    public function testSetHashEncodingERR()
+    {
+        $this->bag->setHashEncoding('err');
+    }
+
+    /**
+     * Ensure the set hash encodings works.
+     * @group BagIt
+     * @covers ::setHashEncoding
+     * @covers ::addHashEncoding
+     * @covers ::clearManifest
+     *
+     */
+    public function testSetHashEncoding()
+    {
+        $hash = $this->bag->getHashEncodings();
+        $this->assertEquals(array(BagIt::DEFAULT_HASH_ALGORITHM), $hash);
+        $this->bag->setHashEncoding('sha256');
+        $this->assertEquals(array('sha256'), $this->bag->getHashEncodings());
+    }
+
+    /**
+     * Test that setHashEncoding removes all old hash encodings.
+     * @group BagIt
+     * @covers ::setHashEncoding
+     * @covers ::addHashEncoding
+     * @covers ::clearManifest
+     */
+    public function testSetHashEncodingMultiple()
+    {
+        $expected = array(BagIt::DEFAULT_HASH_ALGORITHM);
+        $this->assertEquals($expected, $this->bag->getHashEncodings());
+
+        $this->bag->addHashEncoding('md5');
+        $expected[] = 'md5';
+
+        $this->bag->addHashEncoding('sha512');
+        $expected[] = 'sha512';
+
+        $this->assertEquals($expected, $this->bag->getHashEncodings());
+
+        $this->bag->setHashEncoding('sha256');
+        $this->assertEquals(array('sha256'), $this->bag->getHashEncodings());
     }
 
     /**
@@ -1145,8 +1351,8 @@ class BagItTest extends TestCase
      */
     public function testRemoveLastHashEncoding()
     {
-        $this->assertEquals(array('sha1'), $this->bag->getHashEncodings());
-        $this->bag->removeHashEncoding('sha1');
+        $this->assertEquals(array(BagIt::DEFAULT_HASH_ALGORITHM), $this->bag->getHashEncodings());
+        $this->bag->removeHashEncoding(BagIt::DEFAULT_HASH_ALGORITHM);
     }
 
     /**
