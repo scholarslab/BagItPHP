@@ -151,7 +151,7 @@ class BagIt
     /**
      * The default algorithm to use if one is not specified.
      */
-    const DEFAULT_HASH_ALGORITHM = 'sha1';
+    const DEFAULT_HASH_ALGORITHM = 'sha512';
 
     /**
      * Bag-info fields that MUST not be repeated (in lowercase).

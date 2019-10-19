@@ -1,9 +1,9 @@
 # BagIt PHP
 
-[![Build Status](https://secure.travis-ci.org/scholarslab/BagItPHP.png?branch=develop)](http://travis-ci.org/scholarslab/BagItPHP)
+[![Build Status](https://travis-ci.com/whikloj/BagItPHP.svg?branch=develop)](http://travis-ci.com/whikloj/BagItPHP)
 
 This is a PHP implementation of the [BagIt
-0.96 specification](https://wiki.ucop.edu/display/Curation/BagIt)
+1.0 specification](https://wiki.ucop.edu/display/Curation/BagIt)
 
 ## Supported Features:
 
@@ -12,37 +12,35 @@ This is a PHP implementation of the [BagIt
 * generation of tag files, bag-info.txt and bagit.txt
 * fetching remote files (fetch.txt)
 * bag validation
-
-## Using Composer
-
-BagItPHP can be installed using [composer](https://getcomposer.org/) using a
-package repository. Your `composer.json` will need to look something like this:
-
-```json
-{
-  "require": {
-    "scholarslab/bagit": "~0.2"
-  }
-}
-```
+* support for multiple manifest/tagmanifest files with different hash algorithms
+* support for the following hash algorithms (if you PHP installation supports them)
+   * md5, sha-1, sha-256, sha-384, sha-512, sha3-224, sha3-256, sha3-384, sha3-512
 
 ## Installation
 
+### Using Composer
+
+BagItPHP can be installed using [composer](https://getcomposer.org/) using a
+package repository. 
+
+```bash
+% composer require scholarslab/bagit
+```
+
+### Cloning this Repository
+
+You can also clone this repository to try out the BagItPHP library.
 
 ```bash
 % git clone git://github.com/scholarslab/BagItPHP.git
+% cd BagItPHP
+% composer install
 ```
-
-## Dependencies
-
-You'll need to have these installed to use this:
-
- * Archive\_Tar (http://pear.php.net/package/Archive\_Tar)
 
 ## Example: Creating a bag
 
 ```php
-require_once 'lib/bagit.php';
+require_once 'lib/BagIt.php';
 
 define('BASE_DIR', 'testbag');
 
@@ -64,7 +62,7 @@ $bag->package('testbag');
 ## Example: Creating an extended bag, with fetch.txt and bag-info.txt entries
 
 ```php
-require_once 'lib/bagit.php';
+require_once 'lib/BagIt.php';
 
 define('BASE_DIR', 'testbag');
 
@@ -98,7 +96,7 @@ $bag->package('testbag');
 ## Example: Validating an existing bag
 
 ```php
-require_once 'lib/bagit.php';
+require_once 'lib/BagIt.php';
 
 // use an existing bag
 $bag = new BagIt('test/TestBag.tgz');
@@ -110,7 +108,7 @@ var_dump((bool)$bag->isValid());
 ## Example: Reading a bag
 
 ```php
-require_once 'lib/bagit.php';
+require_once 'lib/BagIt.php';
 
 // use an existing bag
 $bag = new BagIt('test/TestBag.tgz');
@@ -137,12 +135,16 @@ feedback. File bugs or other issues [here][issues].
 
 [issues]: http://github.com/scholarslab/BagItPHP/issues
 
+## Maintainers
+
+* [Mark Jordan](https://github.com/mjordan)
+* [Jared Whiklo](https://github.com/whikloj)
+
 ## Tests
 
 The BagItPHP library includes unit tests to ensure the quality of the software.
-The easiest way to contribute to the project is to to let us know about andy bugs,
-and include a test case. Read the build.xml file more more information
-on running tests, the underlying report types, and packing information.
+The easiest way to contribute to the project is to to let us know about any bugs,
+and include a test case.
 
 ## Note on Patches/Pull Requests
 
@@ -157,6 +159,10 @@ on running tests, the underlying report types, and packing information.
 
 Thanks to everyone who's contributed to this:
 
-* [Wayne Graham](https://github.com/waynegraham/)
+* [Wayne Graham](https://github.com/waynegraham)
 * [Mark Jordan](https://github.com/mjordan)
+* [Eric Rochester](https://github.com/erochest)
 
+## License
+
+Apache 2.0
