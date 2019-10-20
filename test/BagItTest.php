@@ -409,6 +409,7 @@ class BagItTest extends BagItTestCase
 
         $bag->setBagInfoData('Payload-Oxum', 'Some value');
         $bag->setBagInfoData('Payload-Oxum', 'Some other value');
+        BagItUtils::rrmdir($tmp2);
     }
 
     /**
@@ -432,6 +433,7 @@ class BagItTest extends BagItTestCase
         $bag = new BagIt($tmp2);
 
         $bag->setBagInfoData('Payload-Oxum', 'Some value');
+        BagItUtils::rrmdir($tmp2);
     }
 
     /**
@@ -456,6 +458,7 @@ class BagItTest extends BagItTestCase
 
         $bag->setBagInfoData('Payload-Oxum', 'Some value');
         $bag->setBagInfoData('PayLOAD-oXuM', 'Some other value');
+        BagItUtils::rrmdir($tmp2);
     }
 
     /**
@@ -479,6 +482,7 @@ class BagItTest extends BagItTestCase
         $bag = new BagIt($tmp2);
 
         $bag->setBagInfoData('PaYLOAd-oxum', 'Some value');
+        BagItUtils::rrmdir($tmp2);
     }
 
     /**
@@ -505,6 +509,7 @@ class BagItTest extends BagItTestCase
         $this->assertCount(0, $errors);
         $errors = $bag->validate();
         $this->assertCount(1, $errors);
+        BagItUtils::rrmdir($tmp2);
     }
 
     /**
@@ -529,6 +534,7 @@ class BagItTest extends BagItTestCase
         $bag = new BagIt($tmp2, true);
         $errors = $bag->getBagErrors();
         $this->assertCount(1, $errors);
+        BagItUtils::rrmdir($tmp2);
     }
 
     /**
@@ -1057,11 +1063,12 @@ class BagItTest extends BagItTestCase
      */
     public function testConstructorDir()
     {
-        $bagDir = __DIR__ . '/TestBag';
+        $bagDir = $this->prepareTestBagDirectory();
         $bag = new BagIt($bagDir);
 
         $this->assertFalse($bag->isCompressed());
         $this->verifySampleBag($bag);
+        BagItUtils::rrmdir($bagDir);
     }
 
     /**

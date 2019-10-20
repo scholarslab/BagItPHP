@@ -174,13 +174,23 @@ class BagIt
     );
 
     /**
-     * Bag-info fields that SHOULD not be repeated (in lowercase). Not currently enforced or validated.
+     * Reserved element names for Bag-info fields.
      */
-    const BAG_INFO_SHOULD_NOT_REPEAT = array(
+    const BAG_INFO_RESERVED_ELEMENTS = array(
+        'source-organization',
+        'organization-address',
+        'contact-name',
+        'contact-phone',
+        'contact-email',
+        'external-description',
         'bagging-date',
+        'external-identifier',
+        'payload-oxum',
         'bag-size',
         'bag-group-identifier',
         'bag-count',
+        'internal-sender-identifier',
+        'internal-sender-description',
     );
 
     //}}}
@@ -191,7 +201,7 @@ class BagIt
      * Define a new BagIt instance.
      *
      * @param string $bag          Either a non-existing folder name (will create
-     * a new bag here); an existing folder name (this will treat it as a bag
+     * a new bag here); an existing folder name (this will treat it as a bag IF bagit.txt exists
      * and create any missing files or folders needed); or an existing
      * compressed file (this will un-compress it to a temporary directory and
      * treat it as a bag).
@@ -685,14 +695,16 @@ class BagIt
      * This tests whether bagInfoData has a key.
      *
      * @param string $key The key to test for existence of.
+     * @param bool $caseinsensitive Whether to use a case insensitive lookup for the key.
      *
-     * @return bool
+     * @return bool True if we have
      * @author Eric Rochester <erochest@virginia.edu>
      **/
-    public function hasBagInfoData($key)
+    public function hasBagInfoData($key, $caseinsensitive = false)
     {
         $this->ensureBagInfoData();
-        return array_key_exists($key, $this->bagInfoData);
+        return ($caseinsensitive ? self::arrayKeyExistsNoCase($key, $this->bagInfoData) :
+            array_key_exists($key, $this->bagInfoData));
     }
 
     /**
@@ -747,7 +759,7 @@ class BagIt
     /**
      * Return a list of all keys in the `bag-info.txt` file.
      *
-     * @return array
+     * @return array array of all bagInfo keys.
      */
     public function getBagInfoKeys()
     {
@@ -760,7 +772,7 @@ class BagIt
      *
      * @param string $key This is the key to get the value associated.
      *
-     * @return string|null
+     * @return string|null the BagInfo value or null if key not found.
      * @author Eric Rochester <erochest@virginia.edu>
      **/
     public function getBagInfoData($key)
@@ -800,7 +812,7 @@ class BagIt
     /**
      * Get all manifest objects in associative array keyed on hash algorithm.
      *
-     * @return array
+     * @return array the manifests.
      * @author Jared Whiklo <jwhiklo@gmail.com>
      */
     public function getManifests()
@@ -811,7 +823,7 @@ class BagIt
     /**
      * Get all tag manifest objects in associative array keyed on hash algorithm.
      *
-     * @return array
+     * @return array the tagManifests.
      * @author Jared Whiklo <jwhiklo@gmail.com>
      */
     public function getTagManifests()
@@ -827,7 +839,6 @@ class BagIt
      * Open an existing bag. This expects $bag to be set.
      *
      * @return void
-     *
      * @throws \ErrorException If trying to uncompress a non-compressed bag.
      */
     private function openBag()
@@ -839,6 +850,9 @@ class BagIt
         }
 
         $this->bagitFile = "{$this->bagDirectory}/bagit.txt";
+        if (!file_exists($this->bagitFile)) {
+            $this->createDefaultBagItTxt();
+        }
         list($version, $fileEncoding, $errors) = BagItUtils::readBagItFile(
             $this->bagitFile
         );
@@ -948,12 +962,7 @@ class BagIt
               $this->tagFileEncoding
           ));
 
-        $major = $this->bagVersion['major'];
-        $minor = $this->bagVersion['minor'];
-        $bagItData
-            = "BagIt-Version: $major.$minor\n" .
-              "Tag-File-Character-Encoding: {$this->tagFileEncoding}\n";
-        BagItUtils::writeFileText($this->bagitFile, $this->tagFileEncoding, $bagItData);
+        $this->createDefaultBagItTxt();
 
         $this->createExtendedBag();
     }
@@ -1031,10 +1040,20 @@ class BagIt
         BagItUtils::writeFileText($this->bagInfoFile, $this->tagFileEncoding, join('', $lines));
     }
 
+    private function createDefaultBagItTxt()
+    {
+        $major = $this->bagVersion['major'];
+        $minor = $this->bagVersion['minor'];
+        $bagItData
+            = "BagIt-Version: $major.$minor\n" .
+            "Tag-File-Character-Encoding: {$this->tagFileEncoding}\n";
+        BagItUtils::writeFileText($this->bagitFile, $this->tagFileEncoding, $bagItData);
+    }
+
     /**
      * Tests if a bag is compressed
      *
-     * @return True if this is a compressed bag.
+     * @return bool True if this is a compressed bag.
      */
     private function checkCompressed()
     {
@@ -1056,7 +1075,7 @@ class BagIt
     /**
      * This makes sure that bagInfoData is not null.
      *
-     * @return array
+     * @return void
      * @author Eric Rochester <erochest@virginia.edu>
      **/
     private function ensureBagInfoData()
@@ -1064,11 +1083,10 @@ class BagIt
         if (is_null($this->bagInfoData)) {
             $this->bagInfoData = array();
         }
-        return $this->bagInfoData;
     }
 
     /**
-     * Normalize a PHP hash algorithm to a BagIt specification name.
+     * Normalize a PHP hash algorithm to a BagIt specification name. Used to alter the incoming $item.
      *
      * @param string $item The hash algorithm name.
      * @author Jared Whiklo <jwhiklo@gmail.com>
@@ -1110,24 +1128,23 @@ class BagIt
      *
      * @param string $key The key being added.
      *
+     * @return void
      * @throws \ScholarsLab\BagIt\BagItException If the key is non-repeatable and already in the bagInfo.
      */
     private function checkForNonRepeatableBagInfoFields($key)
     {
-        $lowerCaseKeys = array_keys($this->bagInfoData);
-        array_walk($lowerCaseKeys, function (&$item) {
-            $item = strtolower($item);
-        });
         if (in_array(strtolower($key), self::BAG_INFO_MUST_NOT_REPEAT) &&
-            in_array(strtolower($key), $lowerCaseKeys)) {
+            self::arrayKeyExistsNoCase($key, $this->bagInfoData)) {
             throw new BagItException("You cannot add more than one instance of {$key} to the bag-info.txt");
         }
     }
 
     /**
-     * Check for validity of bag-info fields.
+     * Check for validity of bag-info fields. Adds errors to the $errors array.
      *
      * @param array $errors Array of errors in validation.
+     *
+     * @return void
      */
     private function validateBagInfo(array &$errors)
     {
@@ -1151,6 +1168,8 @@ class BagIt
      * Utility to properly remove a manifest/tagmanifest file from the bag.
      *
      * @param string $hashAlgorithm The hash algorithm to remove.
+     *
+     * @return void
      */
     private function clearManifest($hashAlgorithm)
     {
@@ -1166,6 +1185,22 @@ class BagIt
             }
             unset($this->tagManifest[$hashAlgorithm]);
         }
+    }
+
+    /**
+     * Case-insensitive version of array_key_exists
+     *
+     * @param string $search The key to look for.
+     * @param array $map The associative array to search.
+     * @return bool True if the key exists regardless of case.
+     */
+    private static function arrayKeyExistsNoCase($search, array $map)
+    {
+        $keys = array_keys($map);
+        array_walk($keys, function (&$item) {
+            $item = strtolower($item);
+        });
+        return in_array(strtolower($search), $keys);
     }
 
     //}}}

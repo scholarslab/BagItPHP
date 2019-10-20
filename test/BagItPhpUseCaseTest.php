@@ -118,6 +118,8 @@ class BagItPhpUseCaseTest extends BagItTestCase
             file_exists("{$dest->getBagDirectory()}/payloads/fibtri.jpg")
         );
         $this->assertFileExists("{$dest->getBagDirectory()}/data/payloads/fibtri.jpg");
+
+        BagItUtils::rrmdir($tmpdir);
     }
 
     /**
@@ -184,5 +186,7 @@ class BagItPhpUseCaseTest extends BagItTestCase
             count($bag->getManifests()['sha1']->getData()) + 2,
             count(scandir($tmpdir))
         );
+
+        BagItUtils::rrmdir($tmpdir);
     }
 }

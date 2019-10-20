@@ -2,8 +2,8 @@
 
 namespace ScholarsLab\BagIt\Test;
 
-use PHPUnit\Framework\TestCase;
 use ScholarsLab\BagIt\BagItUtils;
+use ScholarsLab\BagIt\Tests\BagItTestCase;
 
 /**
  * Test BagItUtil functions.
@@ -11,7 +11,7 @@ use ScholarsLab\BagIt\BagItUtils;
  * @package ScholarsLab\BagIt\Test
  * @coversDefaultClass \ScholarsLab\BagIt\BagItUtils
  */
-class BagItUtilsTest extends TestCase
+class BagItUtilsTest extends BagItTestCase
 {
 
     /**
@@ -200,6 +200,7 @@ class BagItUtilsTest extends TestCase
         $tmpdir = BagItUtils::tmpdir();
         $this->assertFalse(file_exists($tmpdir));
         $this->assertTrue(strpos($tmpdir, sys_get_temp_dir()) !== false);
+        BagItUtils::rrmdir($tmpdir);
     }
 
     /**
@@ -284,6 +285,7 @@ class BagItUtilsTest extends TestCase
             'html',
             strtolower(file_get_contents("$tmpdir/google.html"))
         );
+        BagItUtils::rrmdir($tmpdir);
     }
 
     /**
@@ -301,6 +303,7 @@ class BagItUtilsTest extends TestCase
             "$tmpdir/c",
             BagItUtils::findFirstExisting(array("$tmpdir/a", "$tmpdir/b", "$tmpdir/c"))
         );
+        BagItUtils::rrmdir($tmpdir);
     }
 
     /**
@@ -317,6 +320,7 @@ class BagItUtilsTest extends TestCase
         $this->assertNull(
             BagItUtils::findFirstExisting(array("$tmpdir/a", "$tmpdir/b", "$tmpdir/d"))
         );
+        BagItUtils::rrmdir($tmpdir);
     }
 
     /**
@@ -337,6 +341,7 @@ class BagItUtilsTest extends TestCase
                 "$tmpdir/default"
             )
         );
+        BagItUtils::rrmdir($tmpdir);
     }
 
     /**
@@ -345,11 +350,13 @@ class BagItUtilsTest extends TestCase
      */
     public function testReadFileText()
     {
+        $tmpdir = $this->prepareTestBagDirectory();
         $this->assertEquals(
             "BagIt-Version: 0.96\n" .
             "Tag-File-Character-Encoding: UTF-8\n",
-            BagItUtils::readFileText(__DIR__ . '/TestBag/bagit.txt', 'UTF-8')
+            BagItUtils::readFileText("{$tmpdir}/bagit.txt", 'UTF-8')
         );
+        BagItUtils::rrmdir($tmpdir);
     }
 
     /**
@@ -358,10 +365,12 @@ class BagItUtilsTest extends TestCase
      */
     public function testReadLines()
     {
-        $lines = BagItUtils::readLines(__DIR__ . '/TestBag/bagit.txt', 'UTF-8');
+        $tmpdir = $this->prepareTestBagDirectory();
+        $lines = BagItUtils::readLines("{$tmpdir}/bagit.txt", 'UTF-8');
         $this->assertEquals(2, count($lines));
         $this->assertEquals("BagIt-Version: 0.96", $lines[0]);
         $this->assertEquals("Tag-File-Character-Encoding: UTF-8", $lines[1]);
+        BagItUtils::rrmdir($tmpdir);
     }
 
     /**
@@ -382,6 +391,7 @@ class BagItUtilsTest extends TestCase
             "This is some text.\nYep, it sure is.\n",
             file_get_contents($tmpfile)
         );
+        BagItUtils::rrmdir($tmpfile);
     }
 
     /**
@@ -439,7 +449,8 @@ class BagItUtilsTest extends TestCase
      */
     public function testReadBagItFile()
     {
-        $filename = __DIR__ . '/TestBag/bagit.txt';
+        $tmpdir = $this->prepareTestBagDirectory();
+        $filename = "{$tmpdir}/bagit.txt";
         list($versions, $encoding, $errors) = BagItUtils::readBagItFile($filename);
 
         $this->assertEquals(2, count($versions));
@@ -470,6 +481,7 @@ class BagItUtilsTest extends TestCase
             'Error reading version information from bagit.txt file.',
             $errors[0][1]
         );
+        unlink($tmpfile);
     }
 
     /**
@@ -494,6 +506,7 @@ class BagItUtilsTest extends TestCase
         // error.
         $this->assertNull($encoding);
         $this->assertEquals(0, count($errors));
+        unlink($tmpfile);
     }
 
     /**
@@ -571,11 +584,11 @@ class BagItUtilsTest extends TestCase
     /**
      * Utility
      */
-    private function clearTagManifest()
+    private function clearTagManifest($directory)
     {
         // Other tests add a tagmanifest-sha1.txt, which isn't in the
         // archives, at the end of the list. Rm it.
-        $rmfile = __DIR__ . '/TestBag/tagmanifest-sha1.txt';
+        $rmfile = "{$directory}/tagmanifest-sha1.txt";
         if (file_exists($rmfile)) {
             unlink($rmfile);
         }
@@ -587,15 +600,15 @@ class BagItUtilsTest extends TestCase
      */
     public function testUncompressBagZip()
     {
-        $zipfile = __DIR__ . '/TestBag.zip';
-        $output = BagItUtils::uncompressBag($zipfile);
+        $output = BagItUtils::uncompressBag(self::TEST_BAG_ZIP);
+        $fullBag = $this->prepareTestBagDirectory();
 
         $this->assertFileExists($output);
         $this->assertTrue(strpos($output, sys_get_temp_dir()) !== false);
 
-        $this->clearTagManifest();
+        $this->clearTagManifest($fullBag);
 
-        $bagFiles = BagItUtils::rls(__DIR__ . '/TestBag');
+        $bagFiles = BagItUtils::rls($fullBag);
         sort($bagFiles);
         $outFiles = BagItUtils::rls($output);
         sort($outFiles);
@@ -607,6 +620,8 @@ class BagItUtilsTest extends TestCase
                 basename($outFiles[$i])
             );
         }
+        BagItUtils::rrmdir($output);
+        BagItUtils::rrmdir($fullBag);
     }
 
     /**
@@ -615,15 +630,15 @@ class BagItUtilsTest extends TestCase
      */
     public function testUncompressBagTar()
     {
-        $tarfile = __DIR__ . '/TestBag.tgz';
-        $output = BagItUtils::uncompressBag($tarfile);
+        $output = BagItUtils::uncompressBag(self::TEST_BAG_TGZ);
+        $fullBag = $this->prepareTestBagDirectory();
 
         $this->assertFileExists($output);
         $this->assertTrue(strpos($output, sys_get_temp_dir()) !== false);
 
-        $this->clearTagManifest();
+        $this->clearTagManifest($fullBag);
 
-        $bagFiles = BagItUtils::rls(__DIR__ . '/TestBag');
+        $bagFiles = BagItUtils::rls($fullBag);
         sort($bagFiles);
         $outFiles = BagItUtils::rls($output);
         sort($outFiles);
@@ -635,6 +650,8 @@ class BagItUtilsTest extends TestCase
                 basename($outFiles[$i])
             );
         }
+        BagItUtils::rrmdir($output);
+        BagItUtils::rrmdir($fullBag);
     }
 
     /**
@@ -644,7 +661,7 @@ class BagItUtilsTest extends TestCase
      */
     public function testUncompressBagError()
     {
-        BagItUtils::uncompressBag(__DIR__ . '/TestBag');
+        BagItUtils::uncompressBag(__DIR__);
     }
 
     /* TODO: Fix these so that they're testing correctly.

@@ -136,7 +136,7 @@ class BagItUtils
      *
      * @return string The name of the temporary directory.
      */
-    public static function tmpdir($prefix = 'bag')
+    public static function tmpdir($prefix = 'bag_')
     {
         $dir=tempnam(sys_get_temp_dir(), $prefix);
         unlink($dir);
