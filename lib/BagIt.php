@@ -697,7 +697,7 @@ class BagIt
      * @param string $key The key to test for existence of.
      * @param bool $caseinsensitive Whether to use a case insensitive lookup for the key.
      *
-     * @return bool True if we have
+     * @return bool True if we have the key in the bagInfo.
      * @author Eric Rochester <erochest@virginia.edu>
      **/
     public function hasBagInfoData($key, $caseinsensitive = false)
@@ -1040,6 +1040,9 @@ class BagIt
         BagItUtils::writeFileText($this->bagInfoFile, $this->tagFileEncoding, join('', $lines));
     }
 
+    /**
+     * Create a default bag-info.txt file.
+     */
     private function createDefaultBagItTxt()
     {
         $major = $this->bagVersion['major'];
