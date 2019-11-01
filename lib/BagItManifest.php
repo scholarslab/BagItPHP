@@ -29,7 +29,7 @@ namespace ScholarsLab\BagIt;
  * @copyright 2011 The Board and Visitors of the University of Virginia
  * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
  * @version   Release: 1.0.0
- * @link      https://github.com/whikloj/BagItPHP
+ * @link      https://github.com/ScholarsLab/BagItPHP
  */
 class BagItManifest
 {

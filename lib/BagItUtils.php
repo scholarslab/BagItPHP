@@ -26,7 +26,7 @@ namespace ScholarsLab\BagIt;
  * @copyright 2011 The Board and Visitors of the University of Virginia
  * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache 2.0
  * @version   Release: 1.0.0
- * @link      https://github.com/whikloj/BagItPHP
+ * @link      https://github.com/ScholarsLab/BagItPHP
  */
 class BagItUtils
 {
@@ -234,6 +234,7 @@ class BagItUtils
      */
     public static function readFileText($fileName, $fileEncoding)
     {
+        $fileEncoding = trim($fileEncoding);
         $data=iconv($fileEncoding, 'UTF-8', file_get_contents($fileName));
         return $data;
     }
@@ -267,6 +268,7 @@ class BagItUtils
      */
     public static function writeFileText($fileName, $fileEncoding, $data)
     {
+        $fileEncoding = trim($fileEncoding);
         file_put_contents($fileName, iconv('UTF-8', $fileEncoding, $data));
     }
 
