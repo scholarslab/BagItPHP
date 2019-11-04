@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/ScholarsLab/BagItPHP.svg?branch=develop)](http://travis-ci.com/ScholarsLab/BagItPHP)
 
 This is a PHP implementation of the [BagIt
-1.0 specification](https://wiki.ucop.edu/display/Curation/BagIt)
+1.0 specification](https://tools.ietf.org/html/rfc8493)
 
 ## Supported Features:
 
@@ -13,10 +13,14 @@ This is a PHP implementation of the [BagIt
 * fetching remote files (fetch.txt)
 * bag validation
 * support for multiple manifest/tagmanifest files with different hash algorithms
-* support for the following hash algorithms (if you PHP installation supports them)
+* support for the following hash algorithms (if your PHP installation supports them)
    * md5, sha-1, sha-256, sha-384, sha-512, sha3-224, sha3-256, sha3-384, sha3-512
 
 ## Installation
+
+BagItPHP requires the [zip](https://www.php.net/manual/en/book.zip.php), [hash](https://www.php.net/manual/en/book.hash.php)
+and [iconv](https://www.php.net/manual/en/book.iconv.php) PHP extensions to be installed. Composer will attempt
+to verify these extensions exist before installing.
 
 ### Using Composer
 
@@ -40,7 +44,9 @@ You can also clone this repository to try out the BagItPHP library.
 ## Example: Creating a bag
 
 ```php
-require_once 'lib/BagIt.php';
+require_once '<path to BagItPHP>/vendor/autoload.php';
+
+use ScholarsLab\BagIt\BagIt;
 
 define('BASE_DIR', 'testbag');
 
@@ -62,7 +68,9 @@ $bag->package('testbag');
 ## Example: Creating an extended bag, with fetch.txt and bag-info.txt entries
 
 ```php
-require_once 'lib/BagIt.php';
+require_once '<path to BagItPHP>/vendor/autoload.php';
+
+use ScholarsLab\BagIt\BagIt;
 
 define('BASE_DIR', 'testbag');
 
@@ -96,7 +104,9 @@ $bag->package('testbag');
 ## Example: Validating an existing bag
 
 ```php
-require_once 'lib/BagIt.php';
+require_once '<path to BagItPHP>/vendor/autoload.php';
+
+use ScholarsLab\BagIt\BagIt;
 
 // use an existing bag
 $bag = new BagIt('test/TestBag.tgz');
@@ -108,7 +118,9 @@ var_dump((bool)$bag->isValid());
 ## Example: Reading a bag
 
 ```php
-require_once 'lib/BagIt.php';
+require_once '<path to BagItPHP>/vendor/autoload.php';
+
+use ScholarsLab\BagIt\BagIt;
 
 // use an existing bag
 $bag = new BagIt('test/TestBag.tgz');
