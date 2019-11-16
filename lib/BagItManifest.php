@@ -365,10 +365,10 @@ class BagItManifest
         // That the manifest file does exist;
         if (! file_exists($this->fileName)) {
             $basename = basename($this->fileName);
-            array_push(
-                $errors,
-                array($basename, "$basename does not exist.")
-            );
+            $errors[] = [
+                'path' => $basename,
+                'error' => "$basename does not exist.",
+            ];
             // There's no manifest file, so we might as well bail now.
             return false;
         }
@@ -378,15 +378,15 @@ class BagItManifest
         foreach ($this->data as $fileName => $hash) {
             $fullPath = $this->pathPrefix . $fileName;
             if (! file_exists($fullPath)) {
-                array_push(
-                    $errors,
-                    array($fileName, 'Missing data file.')
-                );
+                $errors[] = [
+                    'path' => $fileName,
+                    'error' => 'Missing data file.',
+                ];
             } elseif ($this->calculateHash($fullPath) != $hash) {
-                array_push(
-                    $errors,
-                    array($fileName, 'Checksum mismatch.')
-                );
+                $errors[] = [
+                    'path' => $fileName,
+                    'error' => 'Checksum mismatch.',
+                ];
             }
         }
 

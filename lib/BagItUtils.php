@@ -154,14 +154,8 @@ class BagItUtils
      */
     public static function seenAtKey($array, $key, $item)
     {
-        $keys=array_keys($array);
-        for ($x=0, $len=count($keys); $x < $len; $x++) {
-            $sub=$array[$keys[$x]];
-            if (array_key_exists($key, $sub) && $sub[$key] == $item) {
-                return true;
-            }
-        }
-        return false;
+        $values = array_column($array, $key);
+        return in_array($item, $values);
     }
 
     /**
@@ -302,95 +296,6 @@ class BagItUtils
         }
 
         return $filename;
-    }
-
-    /**
-     * This reads the information from the bag it file.
-     *
-     * @param string $filename The bagit.txt file to read.
-     *
-     * @return array An array triple of the version, the file encoding, and any
-     * errors encountered.
-     */
-    public static function readBagItFile($filename)
-    {
-        $errors=array();
-
-        if (file_exists($filename)) {
-            $data=self::readFileText($filename, 'UTF-8');
-
-            $versions=self::parseVersionString($data);
-            if ($versions === null) {
-                array_push(
-                    $errors,
-                    array(
-                    'bagit',
-                    'Error reading version information from bagit.txt file.'
-                    )
-                );
-            }
-
-            $fileEncoding=self::parseEncodingString($data);
-        } else {
-            $versions=array('major'=>0, 'minor'=>96);
-            $fileEncoding='UTF-8';
-        }
-
-        return array($versions, $fileEncoding, $errors);
-    }
-
-    /**
-     * This parses the version string from the bagit.txt file.
-     *
-     * @param string $bagitFileData The contents of the bagit file.
-     *
-     * @return array A two-item array containing the version string as
-     * integers. The keys for this array are 'major' and 'minor'.
-     *
-     * @throws \Exception If non-numeric version string defined.
-     */
-    public static function parseVersionString($bagitFileData)
-    {
-        $matches=array();
-        $success=preg_match(
-            "/BagIt-Version: (\d+)\.(\d+)/",
-            $bagitFileData,
-            $matches
-        );
-
-        if ($success) {
-            $major=(int)$matches[1];
-            $minor=(int)$matches[2];
-            if ($major === null || $minor === null) {
-                throw new \Exception("Invalid bagit version: '{$matches[0]}'.");
-            }
-            return array('major'=>$major, 'minor'=>$minor);
-        }
-
-        return null;
-    }
-
-    /**
-     * This parses the encoding string from the bagit.txt file.
-     *
-     * @param string $bagitFileData The contents of the bagit file.
-     *
-     * @return string The encoding.
-     */
-    public static function parseEncodingString($bagitFileData)
-    {
-        $matches=array();
-        $success=preg_match(
-            '/Tag-File-Character-Encoding: (.*)/',
-            $bagitFileData,
-            $matches
-        );
-
-        if ($success) {
-            return $matches[1];
-        }
-
-        return null;
     }
 
     /**

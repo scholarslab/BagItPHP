@@ -992,7 +992,8 @@ class BagItTest extends BagItTestCase
         $bag = new BagIt($tmp);
         $this->assertFalse($bag->isValid());
         $bagErrors = $bag->getBagErrors();
-        $this->assertTrue(BagItUtils::seenAtKey($bagErrors, 0, 'bagit'));
+        $this->assertCount(2, $bagErrors);
+        $this->assertTrue(BagItUtils::seenAtKey($bagErrors, 'path', 'bagit.txt'));
         BagItUtils::rrmdir($tmp);
     }
 
@@ -1444,7 +1445,7 @@ class BagItTest extends BagItTestCase
         $bagErrors = $this->bag->getBagErrors();
 
         $this->assertFalse($this->bag->isValid());
-        $this->assertTrue(BagItUtils::seenAtKey($bagErrors, 0, 'bagit.txt'));
+        $this->assertTrue(BagItUtils::seenAtKey($bagErrors, 'path', 'bagit.txt'));
     }
 
     /**
@@ -1468,8 +1469,8 @@ class BagItTest extends BagItTestCase
         $bagErrors = $bag->getBagErrors();
 
         $this->assertFalse($bag->isValid());
-        $this->assertTrue(BagItUtils::seenAtKey($bagErrors, 0, 'data/missing.txt'));
-        $this->assertTrue(BagItUtils::seenAtKey($bagErrors, 1, 'Checksum mismatch.'));
+        $this->assertTrue(BagItUtils::seenAtKey($bagErrors, 'path', 'data/missing.txt'));
+        $this->assertTrue(BagItUtils::seenAtKey($bagErrors, 'error', 'Checksum mismatch.'));
 
         BagItUtils::rrmdir($tmp);
     }
@@ -1877,6 +1878,10 @@ class BagItTest extends BagItTestCase
         BagItUtils::rrmdir($tmp);
     }
 
+    /**
+     * Test validating against on disk contents.
+     * @group BagIt
+     */
     public function testValidateAlterBagIt()
     {
         $tmp = BagItUtils::tmpdir();
@@ -1888,5 +1893,186 @@ class BagItTest extends BagItTestCase
             "Tag-File-Character-Encoding: ISO-8859-1\n"
         );
         $this->assertFalse($bag->isValid());
+    }
+
+    /**
+     * Test reading a bagit.txt file.
+     *
+     * @group BagIt
+     * @covers ::readBagItFile
+     * @covers ::parseEncodingString
+     * @covers ::parseVersionString
+     * @covers ::validateBagIt
+     */
+    public function testReadBagItFile()
+    {
+        $tmpdir = $this->prepareTestBagDirectory();
+        $bag = new BagIt($tmpdir);
+        $bagit = $bag->getBagInfo();
+
+        $this->assertEquals(2, count($bagit['version_parts']));
+        $this->assertEquals(0, $bagit['version_parts']['major']);
+        $this->assertEquals(96, $bagit['version_parts']['minor']);
+        $this->assertEquals('UTF-8', $bagit['encoding']);
+        $this->assertEquals(0, count($bag->getBagErrors()));
+    }
+
+    /**
+     * Test reading a bagit.txt file with no version specified.
+     *
+     * @group BagIt
+     * @covers ::readBagItFile
+     * @covers ::parseEncodingString
+     * @covers ::parseVersionString
+     * @covers ::validateBagIt
+     */
+    public function testReadBagItFileNoVersion()
+    {
+        $tmpdir = BagItUtils::tmpdir('bagit_');
+        mkdir($tmpdir);
+        mkdir("{$tmpdir}/data");
+        file_put_contents(
+            "{$tmpdir}/bagit.txt",
+            "Tag-File-Character-Encoding: ISO-8859-1\n"
+        );
+
+        $bag = new BagIt($tmpdir);
+        $bagit = $bag->getBagInfo();
+        $versions = $bagit['version_parts'];
+        $encoding = $bagit['encoding'];
+        $errors = $bag->getBagErrors(true);
+
+        $this->assertNull($versions);
+        $this->assertEquals('ISO-8859-1', $encoding);
+        $this->assertEquals(3, count($errors));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 'path', 'bagit.txt'));
+        $this->assertTrue(BagItUtils::seenAtKey(
+            $errors,
+            'error',
+            'Line 1 does not match pattern BagIt-Version: M.N'
+        ));
+
+        BagItUtils::rrmdir($tmpdir);
+    }
+
+    /**
+     * Test reading a bagit.txt file with no file encoding specified.
+     *
+     * @group BagIt
+     * @covers ::readBagItFile
+     * @covers ::parseEncodingString
+     * @covers ::parseVersionString
+     * @covers ::validateBagIt
+     */
+    public function testReadBagItFileNoEncoding()
+    {
+        $tmpdir = BagItUtils::tmpdir('bagit_');
+        mkdir($tmpdir);
+        mkdir("{$tmpdir}/data");
+        file_put_contents(
+            "{$tmpdir}/bagit.txt",
+            "BagIt-Version: 0.96\n"
+        );
+
+        $bag = new BagIt($tmpdir);
+        $bagit = $bag->getBagInfo();
+        $versions = $bagit['version_parts'];
+        $encoding = $bagit['encoding'];
+        $errors = $bag->getBagErrors(true);
+
+        $this->assertEquals(2, count($versions));
+        $this->assertEquals(0, $versions['major']);
+        $this->assertEquals(96, $versions['minor']);
+
+        // I'm not entirely sure that this is the behavior I want here.
+        // I think maybe it should set the default (UTF-8) and signal an
+        // error.
+        $this->assertNull($encoding);
+        $this->assertEquals(2, count($errors));
+        BagItUtils::rrmdir($tmpdir);
+    }
+
+    /**
+     * Test parsing bagit.txt with invalid version tag.
+     *
+     * @group BagIt
+     * @covers ::parseVersionString
+     */
+    public function testParseVersionStringFail()
+    {
+        $tmpdir = BagItUtils::tmpdir('bagit_');
+        mkdir($tmpdir);
+        mkdir("{$tmpdir}/data");
+        file_put_contents(
+            "{$tmpdir}/bagit.txt",
+            "BagIt-Versions: 0.96\n" .
+            "Tag-File-Character-Encoding: UTF-8\n"
+        );
+
+        $bag = new BagIt($tmpdir);
+        $bagit = $bag->getBagInfo();
+        $errors = $bag->getBagErrors(true);
+
+        $this->assertNull($bagit['version']);
+        $this->assertCount(1, $errors);
+
+        BagItUtils::rrmdir($tmpdir);
+    }
+
+    /**
+     * Test parsing bagit.txt with valid file encoding tag.
+     *
+     * @group BagIt
+     * @covers ::parseEncodingString
+     */
+    public function testParseEncodingStringPass()
+    {
+        $tmpdir = BagItUtils::tmpdir('bagit_');
+        mkdir($tmpdir);
+        mkdir("{$tmpdir}/data");
+
+        file_put_contents(
+            "{$tmpdir}/bagit.txt",
+            "BagIt-Version: 0.96\n" .
+            "Tag-File-Character-Encoding: UTF-8\n"
+        );
+
+        $bag = new BagIt($tmpdir);
+        $bagit = $bag->getBagInfo();
+        $encoding = $bagit['encoding'];
+        $errors = $bag->getBagErrors(true);
+
+        $this->assertCount(0, $errors);
+        $this->assertEquals('UTF-8', $encoding);
+
+        BagItUtils::rrmdir($tmpdir);
+    }
+
+    /**
+     * Test parsing bagit.txt with invalid file encoding tag.
+     *
+     * @group BagIt
+     * @covers ::parseEncodingString
+     */
+    public function testParseEncodingStringFail()
+    {
+        $tmpdir = BagItUtils::tmpdir('bagit_');
+        mkdir($tmpdir);
+        mkdir("{$tmpdir}/data");
+
+        file_put_contents(
+            "{$tmpdir}/bagit.txt",
+            "BagIt-Version: 0.96\n" .
+            "Tag-File-Character-encoding: UTF-8\n"
+        );
+        $bag = new BagIt($tmpdir);
+        $bagit = $bag->getBagInfo();
+        $encoding = $bagit['encoding'];
+        $errors = $bag->getBagErrors(true);
+
+        $this->assertCount(1, $errors);
+        $this->assertNull($encoding);
+
+        BagItUtils::rrmdir($tmpdir);
     }
 }

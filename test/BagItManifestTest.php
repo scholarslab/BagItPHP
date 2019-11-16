@@ -616,8 +616,8 @@ class BagItManifestTest extends TestCase
 
         $errors = array();
         $this->assertFalse($manifest->validate($errors));
-        $this->assertTrue(BagItUtils::seenAtKey($errors, 0, 'missing.txt'));
-        $this->assertTrue(BagItUtils::seenAtKey($errors, 1, 'missing.txt does not exist.'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 'path', 'missing.txt'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 'error', 'missing.txt does not exist.'));
     }
 
     /**
@@ -642,8 +642,8 @@ class BagItManifestTest extends TestCase
         $errors = array();
         $this->assertFalse($this->manifest->validate($errors));
 
-        $this->assertTrue(BagItUtils::seenAtKey($errors, 0, 'data/missing.txt'));
-        $this->assertTrue(BagItUtils::seenAtKey($errors, 1, 'Missing data file.'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 'path', 'data/missing.txt'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 'error', 'Missing data file.'));
 
         BagItUtils::rrmdir($tmp);
     }
@@ -669,8 +669,8 @@ class BagItManifestTest extends TestCase
         $errors = array();
         $this->assertFalse($manifest->validate($errors));
 
-        $this->assertTrue(BagItUtils::seenAtKey($errors, 0, 'data/missing.txt'));
-        $this->assertTrue(BagItUtils::seenAtKey($errors, 1, 'Checksum mismatch.'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 'path', 'data/missing.txt'));
+        $this->assertTrue(BagItUtils::seenAtKey($errors, 'error', 'Checksum mismatch.'));
 
         BagItUtils::rrmdir($tmp);
     }

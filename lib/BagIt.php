@@ -132,8 +132,8 @@ class BagIt
     private $bagIsCompressed;
 
     /**
-     * An array of all bag validation errors. Each entries is a two-element
-     * array containing the path of the file and the error message.
+     * An array of all bag validation errors. Each entries is a associative array
+     * array containing 'path' => the path of the file and 'error' => the error message.
      *
      * @var array
      */
@@ -295,11 +295,16 @@ class BagIt
      */
     public function getBagInfo()
     {
-        $major = $this->bagVersion['major'];
-        $minor = $this->bagVersion['minor'];
+        if (!is_null($this->bagVersion)) {
+            $major=$this->bagVersion['major'];
+            $minor=$this->bagVersion['minor'];
+            $version_string="{$major}.{$minor}";
+        } else {
+            $version_string = null;
+        }
 
         $info = array(
-            'version'  => "$major.$minor",
+            'version'  => $version_string,
             'version_parts' => $this->bagVersion,
             'encoding' => $this->tagFileEncoding,
             'hash'     => implode(",", $this->getHashEncodings()),
@@ -510,17 +515,28 @@ class BagIt
      */
     public function validate()
     {
-        $errors = array();
+        $this->bagErrors = array();
+        $errors = [];
         // A valid bag must have a bagit.txt
-        BagItUtils::validateExists($this->bagitFile, $errors);
-        // A valid bag must have a payload directory.
-        BagItUtils::validateExists($this->getDataDirectory(), $errors);
-        //
-        foreach ($this->manifest as $hash => $manifest) {
-            $manifest->validate($errors);
+        if (!BagItUtils::validateExists($this->bagitFile, $errors)) {
+            $this->bagErrors[] = [
+                'path' => $this->makeRelative($this->bagitFile),
+                'error' => "Required file missing.",
+            ];
+        } else {
+            $this->validateBagIt();
         }
-        $this->validateBagInfo($errors);
-        $this->bagErrors = $errors;
+        // A valid bag must have a payload directory.
+        if (!BagItUtils::validateExists($this->getDataDirectory(), $errors)) {
+            $this->bagErrors[] = [
+                'path' => "data",
+                'error' => 'Required directory missing',
+            ];
+        };
+        // Validate manifests and tag manifest (if they exist).
+        $this->validateManifests();
+        $this->validateBagInfo();
+        //$this->bagErrors = $errors;
         return $this->bagErrors;
     }
 
@@ -854,7 +870,7 @@ class BagIt
         if (!file_exists($this->bagitFile)) {
             $this->createDefaultBagItTxt();
         }
-        list($version, $fileEncoding, $errors) = BagItUtils::readBagItFile(
+        list($version, $fileEncoding, $errors) = $this->readBagItFile(
             $this->bagitFile
         );
         $this->bagVersion = $version;
@@ -1148,11 +1164,9 @@ class BagIt
     /**
      * Check for validity of bag-info fields. Adds errors to the $errors array.
      *
-     * @param array $errors Array of errors in validation.
-     *
      * @return void
      */
-    private function validateBagInfo(array &$errors)
+    private function validateBagInfo()
     {
         $this->ensureBagInfoData();
         $bagInfoKeys = array_keys($this->bagInfoData);
@@ -1162,10 +1176,217 @@ class BagIt
         $countBagInfoKeys = array_count_values($bagInfoKeys);
         foreach (self::BAG_INFO_MUST_NOT_REPEAT as $key) {
             if (array_key_exists(strtolower($key), $countBagInfoKeys) && $countBagInfoKeys[$key] > 1) {
-                $errors[] = array(
-                    "{$this->getBagDirectory()}/bag-info.txt",
-                    "cannot contain more than one of tag {$key}, {$countBagInfoKeys[$key]} found",
-                );
+                $this->bagErrors[] = [
+                    'path' => "bag-info.txt",
+                    'error' => "cannot contain more than one of tag {$key}, {$countBagInfoKeys[$key]} found",
+                ];
+            }
+        }
+    }
+
+    /**
+     * Run BagIt specification checks against the bagit.txt file.
+     */
+    private function validateBagIt()
+    {
+        $content = file_get_contents($this->bagitFile);
+        if (mb_detect_encoding($content, "UTF-8", true) === false) {
+            $this->bagErrors[] = [
+                'path' => $this->makeRelative($this->bagitFile),
+                'error' => "File is not encoded in UTF-8",
+            ];
+        } else {
+            if (preg_match("/^\xEF\xBB\xBF/u", $content) === 1) {
+                $this->bagErrors[] = [
+                    'path' => $this->makeRelative($this->bagitFile),
+                    'error' => "File contains a byte order mark (BOM)",
+                ];
+            }
+        }
+        $lines = preg_split('/[\n\r]+/', $content, null, PREG_SPLIT_NO_EMPTY);
+        if (count($lines) != 2) {
+            $this->bagErrors[] = [
+                'path' => $this->makeRelative($this->bagitFile),
+                'error' => sprintf("File expected to have only 2 lines, found %b", count($lines)),
+            ];
+        }
+        if (count($lines) <= 0 || $this->parseVersionString($lines[0]) == null) {
+            $this->bagErrors[] = [
+                'path' => $this->makeRelative($this->bagitFile),
+                'error' => "Line 1 does not match pattern BagIt-Version: M.N",
+            ];
+        }
+        if (count($lines) <= 1 || $this->parseEncodingString($lines[1]) == null) {
+            $this->bagErrors[] = [
+                'path' => $this->makeRelative($this->bagitFile),
+                'error' => "Line 2 does not match pattern Tag-File-Character-Encoding: ENCODING",
+            ];
+        }
+    }
+
+
+    /**
+     * This reads the information from the bag it file.
+     *
+     * @param string $filename The bagit.txt file to read.
+     *
+     * @return array An array triple of the version, the file encoding, and any
+     * errors encountered.
+     */
+    private function readBagItFile($filename)
+    {
+        $errors=array();
+
+        if (file_exists($filename)) {
+            $data = BagItUtils::readFileText($filename, 'UTF-8');
+
+            $versions = $this->parseVersionString($data);
+            if ($versions === null) {
+                $this->bagErrors[] = [
+                    'path' => "bagit.txt",
+                    'error' => "Error reading version information from bagit.txt file.",
+                ];
+            }
+
+            $fileEncoding = $this->parseEncodingString($data);
+            if ($fileEncoding === null) {
+                $this->bagErrors[] = [
+                    'path' => 'bagit.txt',
+                    'error' => "Error reading file encoding information from bagit.txt file.",
+                ];
+            }
+        } else {
+            $versions = [
+                'major' => self::DEFAULT_BAGIT_VERSION['major'],
+                'minor' => self::DEFAULT_BAGIT_VERSION['minor'],
+            ];
+            $fileEncoding = self::DEFAULT_FILE_ENCODING;
+        }
+
+        return array($versions, $fileEncoding, $errors);
+    }
+
+    /**
+     * This parses the version string from the bagit.txt file.
+     *
+     * @param string $data The contents of the bagit file.
+     *
+     * @return array A two-item array containing the version string as
+     * integers. The keys for this array are 'major' and 'minor' or null if line does not match pattern.
+     */
+    private function parseVersionString($data)
+    {
+        $matches=array();
+        $success=preg_match(
+            "/BagIt-Version: (\d+)\.(\d+)/",
+            $data,
+            $matches
+        );
+
+        if ($success) {
+            $major = (int)$matches[1];
+            $minor = (int)$matches[2];
+            return array('major'=>$major, 'minor'=>$minor);
+        }
+
+        return null;
+    }
+
+
+    /**
+     * This parses the encoding string from the bagit.txt file.
+     *
+     * @param string $data The contents of the bagit file.
+     *
+     * @return string The encoding or null if line does not match.
+     */
+    private function parseEncodingString($data)
+    {
+        $matches=array();
+        $success=preg_match(
+            '/Tag-File-Character-Encoding: (.*)/',
+            $data,
+            $matches
+        );
+
+        if ($success) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Do BagIt manifest validation based on current bag version against specification.
+     */
+    private function validateManifests()
+    {
+        foreach ($this->getTagManifests() as $hash => $manifest) {
+            if (is_array($manifest)) {
+                // Should not happen, means the bag is invalid.
+                $this->bagErrors[] = [
+                    'path' => $this->makeRelative($manifest[0]->getFileName()),
+                    'error' => sprintf(
+                        "Found multiple tag manifest files for hash %s : %s",
+                        $hash,
+                        implode(", ", $manifest)
+                    ),
+                ];
+            } else {
+                $manifest->validate($this->bagErrors);
+            }
+        }
+        // Load all the payload files from disk.
+        $payloadFiles=[];
+        if (file_exists($this->getDataDirectory())) {
+            $payloadFiles=array_unique(BagItUtils::rls($this->getDataDirectory()));
+            array_walk($payloadFiles, function (&$o) {
+                $o=substr($o, strlen($this->getBagDirectory()) + 1);
+            });
+        }
+        $manifestFiles = [];
+        foreach ($this->getManifests() as $hash => $manifest) {
+            if (is_array($manifest)) {
+                $this->bagErrors[] = [
+                    'path' => $this->makeRelative($manifest[0]->getFileName()),
+                    'error' => sprintf(
+                        "Found multiple manifest files for hash %s : %s",
+                        $hash,
+                        implode(", ", $manifest)
+                    ),
+                ];
+            } else {
+                $manifest->validate($this->bagErrors);
+                $filesInManifest = array_keys($manifest->getData());
+                if ((int)$this->bagVersion['major'] == 1) {
+                    // Every payload file MUST appear in every manifest file.
+                    $missing = array_diff($payloadFiles, $filesInManifest);
+                    if (count($missing) > 0) {
+                        $this->bagErrors[] = [
+                            'path' => $this->makeRelative($manifest->getFileName()),
+                            'error' => sprintf(
+                                "Payload files not listed in manifest : %s",
+                                implode(", ", $missing)
+                            ),
+                        ];
+                    }
+                } else {
+                    $manifestFiles = array_merge($manifestFiles, $filesInManifest);
+                }
+            }
+        }
+        if ((int)$this->bagVersion['major'] == 0) {
+            // Every payload file MUST appear in at least one manifest.
+            $manifestFiles = array_unique($manifestFiles);
+            $missing = array_diff($payloadFiles, $manifestFiles);
+            if (count($missing) > 0) {
+                $this->bagErrors[] = [
+                    'path' => 'manifest-*alg*.txt',
+                    'error' => sprintf(
+                        'Payload files not listed in any manifest : %s',
+                        implode(", ", $missing)
+                    ),
+                ];
             }
         }
     }
@@ -1230,6 +1451,24 @@ class BagIt
             $manifestList[$hash][] = $manifestFile;
         } else {
             $manifestList[$hash] = $manifestFile;
+        }
+    }
+
+    /**
+     * Remove all the extraneous path information and make relative to bag root.
+     *
+     * @param $path
+     *   The path to process
+     * @return bool|string
+     *   The shortened string.
+     */
+    private function makeRelative($path)
+    {
+        $rel = substr($path, strlen($this->getBagDirectory()) + 1);
+        if (! $rel) {
+            return '';
+        } else {
+            return $rel;
         }
     }
 
