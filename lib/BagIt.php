@@ -200,20 +200,19 @@ class BagIt
     /**
      * Define a new BagIt instance.
      *
-     * @param string $bag          Either a non-existing folder name (will create
-     * a new bag here); an existing folder name (this will treat it as a bag IF bagit.txt exists
-     * and create any missing files or folders needed); or an existing
-     * compressed file (this will un-compress it to a temporary directory and
-     * treat it as a bag).
-     * @param boolean $validate    This will validate all files in the bag,
-     * including running checksums on all of them. Default is false.
-     * @param boolean $extended    This will ensure that optional 'bag-info.txt',
-     * 'fetch.txt', and 'tagmanifest-{sha1,md5}.txt' are created. Default is
-     * true.
-     * @param boolean $fetch       If true, it will download all files in
-     * 'fetch.txt'. Default is false.
-     * @param array $bagInfoData   If given, this sets the bagInfoData
-     * property.
+     * @param string $bag
+     *   Either a non-existing folder name (will create a new bag here); an existing folder name (this will treat it as
+     *   a bag IF bagit.txt exists and create any missing files or folders needed); or an existing compressed file
+     *   (this will un-compress it to a temporary directory and treat it as a bag).
+     * @param boolean $validate
+     *   This will validate all files in the bag, including running checksums on all of them. Default is false.
+     * @param boolean $extended
+     *   This will ensure that optional 'bag-info.txt','fetch.txt', and 'tagmanifest-{algorithm}.txt' are created.
+     *   Default is true.
+     * @param boolean $fetch
+     *   If true, it will download all files in 'fetch.txt'. Default is false.
+     * @param array $bagInfoData
+     *   If given, this sets the bagInfoData property and makes an "extended" bag.
      *
      * @throws \ErrorException     If existing bag is not properly compressed.
      *
@@ -255,7 +254,7 @@ class BagIt
             $this->createBag();
         }
 
-        if ($fetch) {
+        if ($this->isExtended() && $fetch) {
             $this->fetch->download();
         }
 
@@ -277,8 +276,8 @@ class BagIt
     /**
      * Test if a bag has optional files
      *
-     * @return boolean True if the bag contains the optional files
-     * 'bag-info.txt', 'fetch.txt', or 'tagmanifest-{sha1,md5}.txt'.
+     * @return boolean
+     *   True if the bag contains the optional files 'bag-info.txt', 'fetch.txt', or 'tagmanifest-{algorithm}.txt'.
      */
     public function isExtended()
     {
@@ -512,9 +511,11 @@ class BagIt
     public function validate()
     {
         $errors = array();
-
+        // A valid bag must have a bagit.txt
         BagItUtils::validateExists($this->bagitFile, $errors);
+        // A valid bag must have a payload directory.
         BagItUtils::validateExists($this->getDataDirectory(), $errors);
+        //
         foreach ($this->manifest as $hash => $manifest) {
             $manifest->validate($errors);
         }
@@ -871,11 +872,12 @@ class BagIt
                 }
                 foreach ($manifestFiles as $manifestFile) {
                     $hash = $this->determineHashFromFilename($manifestFile);
-                    $this->manifest[$hash] = new BagItManifest(
+                    $manifest = new BagItManifest(
                         $manifestFile,
                         $this->bagDirectory . '/',
                         $this->tagFileEncoding
                     );
+                    $this->addManifest($this->manifest, $hash, $manifest);
                 }
             } catch (\Exception $exc) {
                 array_push(
@@ -895,11 +897,12 @@ class BagIt
                 }
                 foreach ($manifestFiles as $manifestFile) {
                     $hash = $this->determineHashFromFilename($manifestFile);
-                    $this->tagManifest[$hash] = new BagItManifest(
+                    $manifest = new BagItManifest(
                         $manifestFile,
                         $this->bagDirectory . '/',
                         $this->tagFileEncoding
                     );
+                    $this->addManifest($this->tagManifest, $hash, $manifest);
                 }
 
                 try {
@@ -1204,6 +1207,30 @@ class BagIt
             $item = strtolower($item);
         });
         return in_array(strtolower($search), $keys);
+    }
+
+    /**
+     * Add manifests on to the list.
+     *
+     * @param array $manifestList
+     *   The manifest list array.
+     * @param $hash
+     *   The hash algorithm this manifest is for.
+     * @param \ScholarsLab\BagIt\BagItManifest $manifestFile
+     *   The manifest file.
+     */
+    private function addManifest(array &$manifestList, $hash, BagItManifest $manifestFile)
+    {
+        if (array_key_exists($hash, $manifestList)) {
+            // Technically this bag is invalid, but we should track both manifests.
+            if (!is_array($manifestList[$hash])) {
+                $tmp = $manifestList[$hash];
+                $manifestList[$hash] = [$tmp];
+            }
+            $manifestList[$hash][] = $manifestFile;
+        } else {
+            $manifestList[$hash] = $manifestFile;
+        }
     }
 
     //}}}

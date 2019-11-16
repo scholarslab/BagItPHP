@@ -1865,4 +1865,28 @@ class BagItTest extends BagItTestCase
 
         BagItUtils::rrmdir($tmp);
     }
+
+    /**
+     * Test using extended=false and fetch=true construct parameters.
+     * @group BagIt
+     */
+    public function testBagNotExtendedButFetch()
+    {
+        $tmp = BagItUtils::tmpdir();
+        new BagIt($tmp, false, false, true);
+        BagItUtils::rrmdir($tmp);
+    }
+
+    public function testValidateAlterBagIt()
+    {
+        $tmp = BagItUtils::tmpdir();
+        $bag = new BagIt($tmp, true);
+        $this->assertTrue($bag->isValid());
+        $this->assertFileExists("$tmp/bagit.txt");
+        file_put_contents(
+            "$tmp/bagit.txt",
+            "Tag-File-Character-Encoding: ISO-8859-1\n"
+        );
+        $this->assertFalse($bag->isValid());
+    }
 }

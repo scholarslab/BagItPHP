@@ -67,9 +67,10 @@ class BagItFetch
     /**
      * This initializes a new BagItFetch instance.
      *
-     * @param string $fileName     This is the file name for the fetch file.
-     * @param string $fileEncoding This is the encoding to use when reading or
-     * writing the fetch file. The default is 'UTF-8'.
+     * @param string $fileName
+     *   This is the file name for the fetch file.
+     * @param string $fileEncoding
+     *   This is the encoding to use when reading or writing the fetch file. The default is 'UTF-8'.
      */
     public function __construct($fileName, $fileEncoding = 'UTF-8')
     {
