@@ -2,12 +2,12 @@
 /* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
 /**
- * This is a PHP implementation of the {@link 
- * https://wiki.ucop.edu/display/Curation/BagIt BagIt specification}. Really, 
- * it is a port of {@link https://github.com/ahankinson/pybagit/ PyBagIt} for 
+ * This is a PHP implementation of the {@link
+ * https://wiki.ucop.edu/display/Curation/BagIt BagIt specification}. Really,
+ * it is a port of {@link https://github.com/ahankinson/pybagit/ PyBagIt} for
  * PHP. This contains some useful functions.
- * 
- * PHP version 5 
+ *
+ * PHP version 5
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -35,10 +35,10 @@
  *
  * @param string $regex The regex to filter by.
  * @param array  $list  The list of items to filter.
- * 
+ *
  * @return The match objects for items from $list that match $regex.
  */
-function filterArrayMatches($regex, $list) 
+function filterArrayMatches($regex, $list)
 {
     $ret = array();
 
@@ -57,24 +57,24 @@ function filterArrayMatches($regex, $list)
  *
  * @param string $main   The primary string to test.
  * @param string $suffix The string to test against the end of the other.
- * 
+ *
  * @return True if $suffix occurs at the end of $main.
  */
-function endsWith($main, $suffix) 
+function endsWith($main, $suffix)
 {
     $len = strlen($suffix);
     return substr_compare($main, $suffix, -$len, $len) === 0;
 }
 
 /**
- * This recursively lists the contents of a directory. This doesn't return 
+ * This recursively lists the contents of a directory. This doesn't return
  * hidden files.
- * 
+ *
  * @param string $dir The name of the directory to list.
- * 
+ *
  * @return array A list of files in the directory.
  */
-function rls($dir) 
+function rls($dir)
 {
     $files = array();
     $queue = array($dir);
@@ -205,11 +205,11 @@ function findFirstExisting($fileNames, $default=null)
 }
 
 /**
- * This reads the data in $fileName and converts it from $fileEncoding to 
+ * This reads the data in $fileName and converts it from $fileEncoding to
  * UTF-8.
  *
  * @param string $fileName     The file name to read.
- * @param string $fileEncoding The encoding that the text in the file is stored 
+ * @param string $fileEncoding The encoding that the text in the file is stored
  * in.
  *
  * @return string The data in $fileName in UTF-8.
@@ -221,11 +221,11 @@ function readFileText($fileName, $fileEncoding)
 }
 
 /**
- * This reads the data in $fileName, converts it from $fileEncoding to UTF-8, 
+ * This reads the data in $fileName, converts it from $fileEncoding to UTF-8,
  * and splits it into lines.
  *
  * @param string $fileName     The file name to read.
- * @param string $fileEncoding The encoding to that the text in file is stored 
+ * @param string $fileEncoding The encoding to that the text in file is stored
  * in.
  *
  * @return array The lines of data in the file.
@@ -241,7 +241,7 @@ function readLines($fileName, $fileEncoding)
  * Write the data in the file, converting it from UTF-8 to tagFileEncoding.
  *
  * @param string $fileName     The name of the file to write to.
- * @param string $fileEncoding The encoding that the text in the file is stored 
+ * @param string $fileEncoding The encoding that the text in the file is stored
  * in.
  * @param string $data         The data to write.
  *
@@ -288,7 +288,7 @@ function BagIt_sanitizeFileName($filename)
  *
  * @param string $filename The bagit.txt file to read.
  *
- * @return array An array triple of the version, the file encoding, and any 
+ * @return array An array triple of the version, the file encoding, and any
  * errors encountered.
  */
 function BagIt_readBagItFile($filename)
@@ -363,7 +363,7 @@ function BagIt_parseEncodingString($bagitFileData)
     );
 
     if ($success) {
-        return $matches[1];
+        return trim($matches[1]);
     }
 
     return null;
@@ -386,7 +386,7 @@ function BagIt_uncompressBag($compressedFile)
     // Pull apart the compressed file name.
     $matches = array();
     $success = preg_match(
-        '/^(.*)\.(zip|tar\.gz|tgz)$/',
+        '/^(.*)\.(zip|tar(\.gz)?|tgz)$/',
         basename($compressedFile),
         $matches
     );
@@ -414,6 +414,9 @@ function BagIt_uncompressBag($compressedFile)
         $tar = new Archive_Tar($compressedFile, 'gz');
         $tar->extract($dir);
 
+    } else if ($ext == 'tar') {
+        $tar = new Archive_Tar($compressedFile);
+        $tar->extract($dir);
     }
 
     return "$dir/$bagBase";
@@ -447,6 +450,9 @@ function BagIt_compressBag($dirname, $output, $method='tgz')
         $tar = new Archive_Tar($output, 'gz');
         $tar->createModify($dirname, $base, $dirname);
 
+    } else if ($method == 'tar') {
+        $tar = new Archive_Tar($output, '');
+        $tar->createModify($dirname, $base, $dirname);
     }
 }
 
@@ -512,15 +518,15 @@ function BagIt_parseBagInfo($lines)
 /**
  * This accumulates values into an array.
  *
- * If $key exists in the array, the new value is appended to the array 
- * currently in the associative array. If the current value isn't an array, 
+ * If $key exists in the array, the new value is appended to the array
+ * currently in the associative array. If the current value isn't an array,
  * then it's wrapped in one.
  *
  * @param $map array  The associative array containing the current value.
  * @param $key string The key storing the current value.
  * @param $val mixed  The new value to add to the array under the given key.
  *
- * @return mixed $val The value either plan or appended to the end of an array 
+ * @return mixed $val The value either plan or appended to the end of an array
  * containing the current values in the parent array.
  * @author Eric Rochester <erochest@virginia.edu>
  **/

@@ -476,7 +476,7 @@ class BagIt
      * Compresses the bag into a file.
      *
      * @param string $destination The file to put the bag into.
-     * @param string $method      Either 'tgz' or 'zip'. Default is 'tgz'.
+     * @param string $method      Either 'tar', 'tgz' or 'zip'. Default is 'tgz'.
      *
      * @return void
      */
@@ -752,6 +752,9 @@ class BagIt
                 return true;
             } else if (endsWith($bag, '.tar.gz') || endsWith($bag, '.tgz')) {
                 $this->bagCompression = 'tgz';
+                return true;
+            } else if (endsWith($bag, '.tar')) {
+                $this->bagCompression = '';
                 return true;
             }
         }

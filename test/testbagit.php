@@ -1,7 +1,7 @@
 <?php
 
-require_once 'lib/bagit.php';
-require_once 'lib/bagit_utils.php';
+require_once __DIR__ . '/../lib/bagit.php';
+require_once __DIR__ . '/../lib/bagit_utils.php';
 
 class BagItTest extends PHPUnit_Framework_TestCase
 {
@@ -796,6 +796,15 @@ class BagItTest extends PHPUnit_Framework_TestCase
         $bag = new BagIt($bagTar);
 
         $this->assertEquals('tgz', $bag->bagCompression);
+        $this->_testSampleBag($bag);
+    }
+
+    public function testConstructorTar()
+    {
+        $bagTar = __DIR__ . '/TestBag.tar';
+        $bag = new BagIt($bagTar);
+
+        $this->assertEquals('', $bag->bagCompression);
         $this->_testSampleBag($bag);
     }
 
