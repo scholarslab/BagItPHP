@@ -386,7 +386,7 @@ function BagIt_uncompressBag($compressedFile)
     // Pull apart the compressed file name.
     $matches = array();
     $success = preg_match(
-        '/^(.*)\.(zip|tar\.gz|tgz)$/',
+        '/^(.*)\.(zip|tar\.gz|tgz|tar)$/',
         basename($compressedFile),
         $matches
     );
@@ -408,7 +408,12 @@ function BagIt_uncompressBag($compressedFile)
         if (!file_exists($datadir)) {
             mkdir($datadir, 0700);
         }
+        
+    } else if ($ext == 'tar') {
 
+        $tar = new Archive_Tar($compressedFile, NULL);
+        $tar->extract($dir);
+        
     } else if ($ext == 'tgz' || $ext == 'tar.gz') {
 
         $tar = new Archive_Tar($compressedFile, 'gz');
@@ -442,6 +447,10 @@ function BagIt_compressBag($dirname, $output, $method='tgz')
         }
 
         $zip->close();
+        
+    } else if ($method == 'tar') {
+        $tar = new Archive_Tar($output, NULL);
+        $tar->createModify($dirname, $base, $dirname);
 
     } else if ($method == 'tgz') {
         $tar = new Archive_Tar($output, 'gz');
