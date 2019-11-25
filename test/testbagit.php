@@ -799,6 +799,15 @@ class BagItTest extends PHPUnit_Framework_TestCase
         $this->_testSampleBag($bag);
     }
 
+    public function testConstructorTar()
+    {
+        $bagTar = __DIR__ . '/TestBag.tar';
+        $bag = new BagIt($bagTar);
+
+        $this->assertEquals('tgz', $bag->bagCompression);
+        $this->_testSampleBag($bag);
+    }
+
     public function testIsValid()
     {
         $this->assertTrue($this->bag->isValid());
