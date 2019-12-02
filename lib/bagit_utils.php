@@ -363,7 +363,7 @@ function BagIt_parseEncodingString($bagitFileData)
     );
 
     if ($success) {
-        return $matches[1];
+        return trim($matches[1]);
     }
 
     return null;
