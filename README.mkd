@@ -1,3 +1,10 @@
+## This repository is no longer maintained.
+
+We apologize to inform you that this library is no longer maintained. There are some [notes here](./Notes.md) if you
+wish to continue using this library. Alternatively, there is [BagItTools](https://github.com/whikloj/BagItTools).
+
+---
+
 # BagIt PHP
 
 [![Build Status](https://secure.travis-ci.org/scholarslab/BagItPHP.png?branch=develop)](http://travis-ci.org/scholarslab/BagItPHP)
