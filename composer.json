@@ -9,7 +9,7 @@
     },
     "require-dev": {
         "phpunit/phpunit": "~4.4",
-        "phpdocumentor/phpdocumentor": "2.*",
+        "phpdocumentor/phpdocumentor": "^2.0",
         "pdepend/pdepend" : "2.1.0",
         "phpmd/phpmd" : "@stable",
         "sebastian/phpcpd": "*",
