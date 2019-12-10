@@ -57,7 +57,7 @@ class BagItFetch
     /**
      * The data from the fetch file.
      *
-     * This is an array-list containing array-mappings with the keys 'url', 
+     * This is an array-list containing array-mappings with the keys 'url',
      * 'length', and 'filename'.
      *
      * @var array
@@ -79,7 +79,7 @@ class BagItFetch
      * This initializes a new BagItFetch instance.
      *
      * @param string $fileName     This is the file name for the fetch file.
-     * @param string $fileEncoding This is the encoding to use when reading or 
+     * @param string $fileEncoding This is the encoding to use when reading or
      * writing the fetch file. The default is 'UTF-8'.
      */
     public function __construct($fileName, $fileEncoding='UTF-8')
@@ -165,13 +165,16 @@ class BagItFetch
      * This adds an entry to the fetch data.
      *
      * @param string $url      This is the URL to load the file from.
-     * @param string $filename This is the file name, relative to the fetch 
+     * @param string $filename This is the file name, relative to the fetch
      * file's directory, to save the data to.
      *
      * @return void
      */
     public function add($url, $filename)
     {
+        if (substr($filename, 0, 5) != 'data/') {
+            $filename = "data/$filename";
+        }
         array_push(
             $this->data,
             array('url' => $url, 'length' => '-', 'filename' => $filename)
@@ -180,7 +183,7 @@ class BagItFetch
     }
 
     /**
-     * This downloads the files in the fetch information that aren't on the 
+     * This downloads the files in the fetch information that aren't on the
      * file system.
      *
      * @return void
